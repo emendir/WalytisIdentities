@@ -1,5 +1,4 @@
-from identity.member_blocks import NewMemberBlock, MemberUpdateBlock
-
+from ..identity.member_blocks import DidDocBlock
 import os
 import json
 
@@ -27,7 +26,7 @@ class ContactsManager:
         with open(self.config_file, "w+") as file:
             file.write(data)
 
-    def on_member_update_received(self, block: MemberUpdateBlock):
+    def on_did_update_received(self, block: DidDocBlock):
         # verify signature
         # verify current_key
         # update contact

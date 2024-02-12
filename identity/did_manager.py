@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from typing import Union
 from .utils import validate_did_doc,  bytes_to_string, bytes_from_string
 from .member_blocks import (
-    NewMemberBlock, MemberUpdateBlock, KeyBlock, DidDocBlock,
-    get_latest_control_key, get_latest_did_doc
+    ControlKeyBlock, DidDocBlock, MembersListBlock,
+    get_latest_control_key, get_latest_did_doc, get_latest_members_list
 )
 
 DID_METHOD_NAME = "wlaytis-contacts"
@@ -29,6 +29,7 @@ class DidManager:
 
     control_key: Key
     did_doc: dict
+    members_list: list
 
     @staticmethod
     def load_from_blockchain(blockchain: Blockchain, crypt: Crypt = None):
@@ -54,7 +55,7 @@ class DidManager:
         blockchain = Blockchain.create(blockchain_name=f"waco-{crypt.public_key}")
 
         # publish first key on blockchain
-        keyblock = KeyBlock.new(
+        keyblock = ControlKeyBlock.new(
             old_key_type=crypt.family,
             old_key=crypt.public_key,
             new_key_type=crypt.family,
@@ -71,41 +72,6 @@ class DidManager:
         blockchain.terminate()
         return did_manager
 
-    # @ staticmethod
-    # def load_from_did_doc(did_doc: dict, crypt: Crypt):
-    #
-    #     blockchain_id = did_doc['id'].split(":")[-1]
-    #     return cls.load_from_blockchain(blockchain_id, crypt)
-    #     # keys = [
-    #     #     Key.from_key_spec(key_spec)
-    #     #     for key_spec in did_doc['verificationMethod']
-    #     # ]
-    #     # services = [
-    #     #     Service.from_service_spec(service_spec)
-    #     #     for service_spec in did_doc['service']
-    #     # ]
-    #     #
-    #     # return DidManager(
-    #     #     blockchain=Blockchain(blockchain_id),
-    #     #     keys=keys,
-    #     #     services=services
-    #     # )
-
-    def update_did_doc(self, did_doc: dict):
-        did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(self.crypt)
-        self.blockchain.add_block(
-            did_doc_block.generate_block_content(),
-            topics="did_doc"
-        )
-
-        self.did_doc = did_doc
-
-    def get_did_doc(self):
-        if not self.did_doc:
-            self.did_doc = get_latest_did_doc(self.blockchain)
-        return self.did_doc
-
     def get_did(self):
         return f"did:{DID_METHOD_NAME}:{self.blockchain.id}"
 
@@ -114,8 +80,8 @@ class DidManager:
         # create new crypto keys
         new_crypt = Crypt.new(CRYPTO_FAMILY)
 
-        # create KeyBlock (becomes the Walytis-Block's content)
-        keyblock = KeyBlock.new(
+        # create ControlKeyBlock (becomes the Walytis-Block's content)
+        keyblock = ControlKeyBlock.new(
             old_key_type=self.crypt.family,
             old_key=self.crypt.public_key,
             new_key_type=new_crypt.family,
@@ -136,11 +102,35 @@ class DidManager:
             self.control_key = get_latest_control_key(self.blockchain)
         return self.control_key
 
-    def update_members(self):
-        pass
+    def update_did_doc(self, did_doc: dict):
+        did_doc_block = DidDocBlock.new(did_doc)
+        did_doc_block.sign(self.crypt)
+        self.blockchain.add_block(
+            did_doc_block.generate_block_content(),
+            topics="did_doc"
+        )
 
-    def get_members(self):
-        pass
+        self.did_doc = did_doc
+
+    def get_did_doc(self):
+        if not self.did_doc:
+            self.did_doc = get_latest_did_doc(self.blockchain)
+        return self.did_doc
+
+    def update_members(self, members_list):
+        members_block = MembersListBlock.new(members_list)
+        members_block.sign(self.crypt)
+        self.blockchain.add_block(
+            members_block.generate_block_content(),
+            topics="members_list"
+        )
+
+        self.members_list = members_list
+
+    def get_members_list(self):
+        if not self.members_list:
+            self.members_list = get_latest_members_list(self.blockchain)
+        return self.members_list
 
     def delete(self):
         self.blockchain.terminate()

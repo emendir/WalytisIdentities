@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from .did_objects import Key, Service
 from multi_crypt import Crypt
 import walytis_beta_api as walytis_api
@@ -15,37 +16,26 @@ CRYPTO_FAMILY = "EC-secp256k1"
 
 
 @dataclass
-class Identity:
+class Identity(ABC):
     did_manager: DidManager
 
     keys: list
     services: list
     properties: dict
-    # members: list[Identity]
-    members: list
+    # # members: list[Identity]
+    # members: list
 
     def __init__(self, did_manager):
         self.did_manager = did_manager
 
-    @staticmethod
-    def create():
+    @classmethod
+    def create(cls):
         did_manager = DidManager.create()
-        return Identity(did_manager)
+        return cls(did_manager)
 
+    @abstractmethod
     def generate_did_doc(self):
-        did_doc = {
-            "id": self.get_did(),
-            "verificationMethod": [
-                key.generate_key_spec(self.get_did()) for key in self.keys
-            ],
-            "service": [
-                service.generate_service_spec() for service in self.services
-            ]
-        }
-
-        # check that components produce valid URIs
-        validate_did_doc(did_doc)
-        return did_doc
+        pass
 
     def get_did(self):
         return self.did_manager.get_did()
@@ -79,6 +69,54 @@ class Identity:
 
     def __del__(self):
         self.terminate()
+
+
+class PersonIdentity(Identity):
+    members: list
+
+    @classmethod
+    def create(cls):
+        return super().create()
+
+    def generate_did_doc(self):
+        did_doc = {
+            "id": self.get_did(),
+            "verificationMethod": [
+                key.generate_key_spec(self.get_did()) for key in self.keys
+            ],
+            "service": [
+                service.generate_service_spec() for service in self.services
+            ],
+            "members": self.members
+        }
+
+        # check that components produce valid URIs
+        validate_did_doc(did_doc)
+        return did_doc
+
+
+class DeviceIdentity(Identity):
+    ipfs_peer_id: str
+
+    @classmethod
+    def create(cls):
+        return super().create()
+
+    def generate_did_doc(self):
+        did_doc = {
+            "id": self.get_did(),
+            "verificationMethod": [
+                key.generate_key_spec(self.get_did()) for key in self.keys
+            ],
+            "service": [
+                service.generate_service_spec() for service in self.services
+            ],
+            "ipfs_peer_id": self.ipfs_peer_id
+        }
+
+        # check that components produce valid URIs
+        validate_did_doc(did_doc)
+        return did_doc
 
 
 def blockchain_id_from_did(did: str):
