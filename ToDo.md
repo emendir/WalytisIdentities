@@ -7,4 +7,4 @@
 
 
 # Next Step:
-- tests for identity.did_manager.update_members() and -.get_members()
+- 

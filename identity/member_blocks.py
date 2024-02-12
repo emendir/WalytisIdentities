@@ -118,12 +118,16 @@ class InfoBlock(ABC):
 
 @dataclass
 class DidDocBlock(InfoBlock):
+    walytis_block_topic = "did_doc"
+
     def get_did(self):
         return self.info_content
 
 
 @dataclass
 class MembersListBlock(InfoBlock):
+    walytis_block_topic = 'members_list'
+
     def get_members(self):
         return self.info_content
 
@@ -249,7 +253,10 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
     Returns:
         dict: the currently valid DID-document of the identity
     """
-    latest_block = get_latest_block(blockchain, 'did_doc')
+    latest_block = get_latest_block(
+        blockchain,
+        DidDocBlock.walytis_block_topic
+    )
     if latest_block:
         return latest_block.info_content
 
@@ -266,6 +273,9 @@ def get_latest_members_list(blockchain: Blockchain) -> dict:
     Returns:
         dict: the currently valid DID-document of the identity
     """
-    latest_block = get_latest_block(blockchain, 'members')
+    latest_block = get_latest_block(
+        blockchain,
+        MembersListBlock.walytis_block_topic
+    )
     if latest_block:
         return latest_block.info_content

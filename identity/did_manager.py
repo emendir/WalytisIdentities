@@ -38,12 +38,13 @@ class DidManager:
 
         control_key = get_latest_control_key(blockchain)
         did_doc = get_latest_did_doc(blockchain)
-
+        members_list = get_latest_members_list(blockchain)
         return DidManager(
             blockchain=blockchain,
             crypt=crypt,
             control_key=control_key,
             did_doc=did_doc,
+            members_list=members_list
         )
 
     @staticmethod
@@ -107,7 +108,7 @@ class DidManager:
         did_doc_block.sign(self.crypt)
         self.blockchain.add_block(
             did_doc_block.generate_block_content(),
-            topics="did_doc"
+            topics=DidDocBlock.walytis_block_topic
         )
 
         self.did_doc = did_doc
@@ -117,12 +118,12 @@ class DidManager:
             self.did_doc = get_latest_did_doc(self.blockchain)
         return self.did_doc
 
-    def update_members(self, members_list):
+    def update_members_list(self, members_list):
         members_block = MembersListBlock.new(members_list)
         members_block.sign(self.crypt)
         self.blockchain.add_block(
             members_block.generate_block_content(),
-            topics="members_list"
+            topics=MembersListBlock.walytis_block_topic
         )
 
         self.members_list = members_list
