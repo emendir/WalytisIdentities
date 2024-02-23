@@ -1,8 +1,8 @@
-from identity.identity import Identity
+from identity.identity import IdentityAccess
 
 
 def create_identity():
-    return Identity.create()
+    return IdentityAccess.create()
 
 
 def update_identity():

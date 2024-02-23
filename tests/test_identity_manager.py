@@ -9,7 +9,7 @@ if True:
     sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
     from management import friends_management
     from management import identity_management
-    from identity.identity import Identity
+    from identity.identity import IdentityAccess
 import tempfile
 BREAKPOINTS = True
 PYTEST = True  # whether or not this script is being run by pytest
@@ -54,7 +54,7 @@ def test_create_identity():
         pytest.me1.did_manager.crypt.private_key
     )
     id = pytest.me1.get_did()
-    mark(isinstance(pytest.me1, Identity), "identity creation")
+    mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
 
 
 def test_create_contacts_manager():
