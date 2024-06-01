@@ -17,9 +17,9 @@ def validate_did_doc(did_doc: dict):
     document, raisng an expetion if not"""
     try:
         rfc3987.parse(did_doc['id'], rule='URI')
-        for key in did_doc['verificationMethod']:
+        for key in did_doc.get('verificationMethod', []):
             rfc3987.parse(f"{did_doc['id']}{key['id']}", rule='URI')
-        for service in did_doc['service']:
+        for service in did_doc.get('service', []):
             rfc3987.parse(f"{did_doc['id']}{service['id']}", rule='URI')
     except Exception as e:
         raise ValueError("One of this Identy's fields has an incompatible value.")

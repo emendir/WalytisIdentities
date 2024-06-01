@@ -9,6 +9,7 @@ from multi_crypt import Crypt, verify_signature
 from walytis_beta_api import Blockchain
 
 from .did_objects import Key
+from .exceptions import NotValidDidBlockchainError
 from .utils import bytes_from_string, bytes_to_string
 
 PRIBLOCKS_VERSION = (0, 0, 1)
@@ -112,7 +113,7 @@ class InfoBlock(ABC):
     @classmethod
     def new(
             cls: Type[_InfoBlock],
-            info_content: dict
+            info_content: dict | list
     ) -> _InfoBlock:
         """Prepare a Block (not yet signed).
 
@@ -310,7 +311,7 @@ def get_latest_block(
     return None
 
 
-def get_latest_did_doc(blockchain: Blockchain) -> dict | None:
+def get_latest_did_doc(blockchain: Blockchain) -> dict:
     """Get a DID-Manager's blockchain's newest DID-Document.
 
     Iterates through the blockchain's blocks to find the latest valid
@@ -329,7 +330,7 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict | None:
         DidDocBlock
     )
     if not latest_block:
-        return None
+        raise NotValidDidBlockchainError()
     if not isinstance(latest_block, DidDocBlock):
         raise ValueError(
             "Bug: get_latest_block() should've returned a DidDocBlock, "

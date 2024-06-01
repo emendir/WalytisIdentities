@@ -71,10 +71,10 @@ def pytest_unconfigure():
     pass
 
 
-def test_update_control_key():
+def test_renew_control_key():
     old_control_key = pytest.did_manager.get_control_key()
 
-    pytest.did_manager.update_control_key()
+    pytest.did_manager.renew_control_key()
 
     pytest.new_control_key = pytest.did_manager.get_control_key()
     mark(
@@ -130,7 +130,7 @@ def run_tests():
 
     # run tests
     test_create_did_manager()
-    test_update_control_key()
+    test_renew_control_key()
     test_update_did_doc()
     test_update_members_list()
     test_reload_did_manager()
