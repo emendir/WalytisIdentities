@@ -1,18 +1,26 @@
-""""""
-from multi_crypt import verify_signature
-from .utils import bytes_to_string, bytes_from_string
+"""Machinery for working with Walytis blocks for the DID-Manager."""
 import json
-from dataclasses import dataclass, asdict
+from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
+from typing import Type, TypeVar
 
 import walytis_beta_api as walytis_api
-from walytis_beta_api import Blockchain, delete_blockchain
-from .did_objects import Key, Service
-from abc import ABC, abstractmethod
+from multi_crypt import Crypt, verify_signature
+from walytis_beta_api import Blockchain
+
+from .did_objects import Key
+from .utils import bytes_from_string, bytes_to_string
+
 PRIBLOCKS_VERSION = (0, 0, 1)
+
+
+_ControlKeyBlock = TypeVar('_ControlKeyBlock', bound='ControlKeyBlock')
 
 
 @dataclass
 class ControlKeyBlock:
+    """Representation of a block that publishes a control key update."""
+
     old_key: str
     old_key_type: str
     new_key: str
@@ -21,14 +29,16 @@ class ControlKeyBlock:
 
     priblocks_version: tuple
 
-    @staticmethod
+    @classmethod
     def new(
+        cls: Type[_ControlKeyBlock],
         old_key: str,
         old_key_type: str,
         new_key: str,
         new_key_type: str
-    ):
-        return ControlKeyBlock(
+    ) -> _ControlKeyBlock:
+        """Prepare a control-key-update block (not yet signed)."""
+        return cls(
             old_key=bytes_to_string(old_key),
             old_key_type=bytes_to_string(old_key_type),
             new_key=bytes_to_string(new_key),
@@ -37,23 +47,30 @@ class ControlKeyBlock:
             signature=""
         )
 
-    def get_signature_data(self):
+    def get_signature_data(self) -> bytes:
+        """Get the portion of this block's content that will be signed."""
         return (
             f"{self.old_key_type}:{self.old_key};"
             f"{self.new_key_type}:{self.new_key}"
         ).encode()
 
-    def sign(self, crypt):
+    def sign(self, crypt: Crypt) -> None:
+        """Sign key update with old key."""
         self.signature = bytes_to_string(crypt.sign(self.get_signature_data()))
 
     @classmethod
-    def load_from_block_content(cls, block_content):
+    def load_from_block_content(
+        cls: Type[_ControlKeyBlock], block_content: bytearray
+    ) -> _ControlKeyBlock:
+        """Create a ControlKeyBlock object given raw block content."""
         return cls(**json.loads(block_content.decode()))
 
-    def generate_block_content(self):
+    def generate_block_content(self) -> bytes:
+        """Generate raw block content for a Walytis block."""
         return json.dumps(asdict(self)).encode()
 
-    def get_old_key(self):
+    def get_old_key(self) -> Key:
+        """Get this control-key-update's old key."""
         return Key(
             key_id=None,
             type=self.old_key_type,
@@ -62,6 +79,7 @@ class ControlKeyBlock:
         )
 
     def get_new_key(self) -> Key:
+        """Get this control-key-update's new key."""
         return Key(
             key_id=None,
             type=self.new_key_type,
@@ -70,21 +88,35 @@ class ControlKeyBlock:
         )
 
 
+_InfoBlock = TypeVar('_InfoBlock', bound='InfoBlock')
+
+
 @dataclass
 class InfoBlock(ABC):
-    """Base class for all blocks published on this blockchain other than the
-    control-key blocks.
+    """Base class for representing blocks other than the control-key blocks.
+
     It defines the fields that are encapsulated into a Walytis-Block, and
     includes functionality for serialisation into blocks and content signing.
     """
-    info_content: any   # the essential content of this block from the perspective of the DidManager
+
+    # essential content of this block from the perspective of the DidManager
+    info_content: dict | list
     signature: str
     priblocks_version: tuple
 
+    @property
+    @abstractmethod
+    def walytis_block_topic(self) -> str:
+        """The Walytis block topic that identifies this type of block."""
+
     @classmethod
-    def new(cls, info_content):
-        """
-        Parameters:
+    def new(
+            cls: Type[_InfoBlock],
+            info_content: dict
+    ) -> _InfoBlock:
+        """Prepare a Block (not yet signed).
+
+        Args:
             info_content: the essential content of this block from the
                 perspective of the DidManager, e.g. DID-doc, members list
         """
@@ -95,19 +127,26 @@ class InfoBlock(ABC):
         )
 
     @classmethod
-    def load_from_block_content(cls, block_content):
+    def load_from_block_content(
+            cls: Type[_InfoBlock], block_content: bytes | bytearray
+    ) -> _InfoBlock:
+        """Create a BlockInfo object given raw block content."""
         return cls(**json.loads(block_content.decode()))
 
-    def generate_block_content(self):
+    def generate_block_content(self) -> bytes:
+        """Generate raw block content for a Walytis block."""
         return json.dumps(asdict(self)).encode()
 
-    def get_signature_data(self):
+    def get_signature_data(self) -> bytes:
+        """Get the portion of this block's content that will be signed."""
         return json.dumps(self.info_content).encode()
 
-    def sign(self, crypt):
+    def sign(self, crypt: Crypt) -> None:
+        """Sign this block's content with a control-key."""
         self.signature = bytes_to_string(crypt.sign(self.get_signature_data()))
 
-    def verify_signature(self, key):
+    def verify_signature(self, key: Key) -> bool:
+        """Verify this block's signature."""
         return verify_signature(
             key.type,
             bytes_from_string(self.signature),
@@ -118,23 +157,36 @@ class InfoBlock(ABC):
 
 @dataclass
 class DidDocBlock(InfoBlock):
-    walytis_block_topic = "did_doc"
+    """A block containing a DID document."""
 
-    def get_did(self):
+    walytis_block_topic = "did_doc"
+    info_content: dict
+
+    def get_did_doc(self) -> dict:
+        """Get the DID-Document which this block publishes."""
         return self.info_content
 
 
 @dataclass
 class MembersListBlock(InfoBlock):
+    """Representation of a block publishing this DID's member-devices."""
+
     walytis_block_topic = 'members_list'
+    info_content: list
 
     def get_members(self) -> list:
+        """Get the member devices published."""
         return self.info_content
 
 
-def verify_control_key_update(key_block_1: ControlKeyBlock, key_block_2: ControlKeyBlock):
-    """Check if the untrusted key_block_2 is a valid successor for the trusted
-    key_block_1."""
+def verify_control_key_update(
+        key_block_1: ControlKeyBlock, key_block_2: ControlKeyBlock
+) -> bool:
+    """Verify a control-key-update's validity.
+
+    Checks if the untrusted key_block_2 is a valid successor for the trusted
+    key_block_1.
+    """
     # assert that the new block refers to the old block's key
     if not (
         key_block_1.new_key == key_block_2.old_key and
@@ -151,7 +203,8 @@ def verify_control_key_update(key_block_1: ControlKeyBlock, key_block_2: Control
     )
 
 
-def get_latest_control_key(blockchain: Blockchain):
+def get_latest_control_key(blockchain: Blockchain) -> Key:
+    """Get a DID-Manager's blockchain's newest control-key."""
     # get all key blocks from blockchain
     ctrl_key_blocks = [
         ControlKeyBlock.load_from_block_content(
@@ -181,21 +234,34 @@ def get_latest_control_key(blockchain: Blockchain):
     return control_key
 
 
-def get_latest_block(blockchain: Blockchain, topic: str) -> InfoBlock | None:
-    """Iterates through the blockchain's blocks to find the latest valid
+# type representing the child-classes of InfoBlocks
+InfoBlockType = TypeVar('InfoBlockType', bound=InfoBlock)
+
+
+def get_latest_block(
+    blockchain: Blockchain,
+    block_type: Type[InfoBlockType]
+) -> InfoBlockType | None:
+    """Get the latest validly signed block of the given topic.
+
+    Iterates through the blockchain's blocks to find the latest valid
     block of the given topic, except for control-key blocks
     (use get_latest_control_key for control-key blocks).
     This function looks so complex because it has to work even if the latest
     valid block was created before the currently valid control key.
 
-    Parameters:
-        blockchain (Blockchain): the identity-control-blockchain of the
+    Args:
+        blockchain: the identity-control-blockchain of the
                                 identity whose DID-doc is to be retrieved
+        block_type: the type of blocks to search through
     Returns:
         dict: the currently valid DID-document of the identity
     """
     last_key_block = None
     last_info_block = None
+
+    topic = block_type.walytis_block_topic
+
     for block_id in blockchain.block_ids:
         # if this block is a control key update block
         if 'control_key' in walytis_api.decode_short_id(block_id)['topics']:
@@ -205,7 +271,8 @@ def get_latest_block(blockchain: Blockchain, topic: str) -> InfoBlock | None:
             )
             # if we haven't processed this blockchain's first ctrl key yet
             if not last_key_block:
-                # ensure the first ControlKeyBlock has identical current and new keys
+                # ensure the first ControlKeyBlock
+                # has identical current and new keys
                 if not (
                     ctrl_key_block.old_key == ctrl_key_block.new_key
                     and ctrl_key_block.old_key_type
@@ -214,21 +281,23 @@ def get_latest_block(blockchain: Blockchain, topic: str) -> InfoBlock | None:
                     raise Exception(
                         "First key block doesn't have identical keys!")
                 last_key_block = ctrl_key_block
-            else:   # we've already processed this blockchain's first ctrl key
-                # if this block's signaure is validated by the last ctrl key
-                if verify_control_key_update(last_key_block, ctrl_key_block):
-                    last_key_block = ctrl_key_block
-                else:
-                    print("Found Control Key Block with invalid signature")
+
+            # we've already processed this blockchain's first ctrl key
+            # if this block's signaure is validated by the last ctrl key
+            elif verify_control_key_update(last_key_block, ctrl_key_block):
+                last_key_block = ctrl_key_block
+            else:
+                print("Found Control Key Block with invalid signature")
 
         # if this block is of the type we are looking for
         if topic in walytis_api.decode_short_id(block_id)['topics']:
             # load block content
-            info_block = InfoBlock.load_from_block_content(
+            info_block = block_type.load_from_block_content(
                 blockchain.get_block(block_id).content
             )
             # if its signature is validated by the last ctrl key
-            if last_key_block and info_block.verify_signature(last_key_block.get_new_key()):
+            if (last_key_block and
+                    info_block.verify_signature(last_key_block.get_new_key())):
                 # set this to the latest info-block
                 last_info_block = info_block
             else:
@@ -242,43 +311,56 @@ def get_latest_block(blockchain: Blockchain, topic: str) -> InfoBlock | None:
 
 
 def get_latest_did_doc(blockchain: Blockchain) -> dict | None:
-    """Iterates through the blockchain's blocks to find the latest valid
+    """Get a DID-Manager's blockchain's newest DID-Document.
+
+    Iterates through the blockchain's blocks to find the latest valid
     DID-document.
     This function lookss so complex because it has to work even if the latest
     valid DID-Doc block was created before the currently valid control key.
 
-    Parameters:
-        blockchain (Blockchain): the identity-control-blockchain of the
+    Args:
+        blockchain: the identity-control-blockchain of the identity whose
+                    DID-doc is to be retrieved
+    Returns:
+        dict: the currently valid DID-document of the identity
+    """
+    latest_block = get_latest_block(
+        blockchain,
+        DidDocBlock
+    )
+    if not latest_block:
+        return None
+    if not isinstance(latest_block, DidDocBlock):
+        raise ValueError(
+            "Bug: get_latest_block() should've returned a DidDocBlock, "
+            f"not {type(latest_block)}"
+        )
+    return latest_block.info_content
+
+
+def get_latest_members_list(blockchain: Blockchain) -> list | None:
+    """Get a DID-Manager's blockchain's current members-list.
+
+    Iterates through the blockchain's blocks to find the latest valid
+    DID-document.
+    This function lookss so complex because it has to work even if the latest
+    valid DID-Doc block was created before the currently valid control key.
+
+    Args:
+        blockchain: the identity-control-blockchain of the
                                 identity whose DID-doc is to be retrieved
     Returns:
         dict: the currently valid DID-document of the identity
     """
     latest_block = get_latest_block(
         blockchain,
-        DidDocBlock.walytis_block_topic
+        MembersListBlock
     )
-    if latest_block:
-        return latest_block.info_content
-    return None
-
-
-def get_latest_members_list(blockchain: Blockchain) -> dict | None:
-    """Iterates through the blockchain's blocks to find the latest valid
-    DID-document.
-    This function lookss so complex because it has to work even if the latest
-    valid DID-Doc block was created before the currently valid control key.
-
-    Parameters:
-        blockchain (Blockchain): the identity-control-blockchain of the
-                                identity whose DID-doc is to be retrieved
-    Returns:
-        dict: the currently valid DID-document of the identity
-    """
-    latest_block = get_latest_block(
-        blockchain,
-        MembersListBlock.walytis_block_topic
-    )
-    if latest_block:
-        return latest_block.info_content
-
-    return None
+    if not latest_block:
+        return None
+    if not isinstance(latest_block, MembersListBlock):
+        raise ValueError(
+            "Bug: get_latest_block() should've returned a DidDocBlock, "
+            f"not {type(latest_block)}"
+        )
+    return latest_block.info_content

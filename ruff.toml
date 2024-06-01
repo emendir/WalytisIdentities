@@ -35,6 +35,7 @@ line-length = 79
 [lint]
 select = ["PL","E", "W", "D", "F", "ANN", "INP", "I", "RSE", "FA"]
 ignore = [
+"FA100", # Missing `from __future__ import annotations`, but uses `typing.Type`
 "FA102",  # Missing `from __future__ import annotations`, but uses PEP 604 union
 "ANN101",  # annotation for self method
 "ANN204", # Missing return type annotation for special method `__init__`
