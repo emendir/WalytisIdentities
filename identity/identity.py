@@ -1,25 +1,26 @@
-import ipfs_api
+"""Classes for managing Person and Device identities."""
+
 from abc import ABC, abstractmethod
-from .did_objects import Key, Service
-from multi_crypt import Crypt
-import walytis_beta_api as walytis_api
-from walytis_beta_api import Blockchain, delete_blockchain
-import rfc3987
-import json
 from dataclasses import dataclass
-from typing import Union
-from .utils import validate_did_doc
+from typing import Type, TypeVar
+
+import ipfs_api
+
 from .did_manager import DidManager
+from .utils import validate_did_doc
+
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
 
 CRYPTO_FAMILY = "EC-secp256k1"
 
+_IdentityAccess = TypeVar('_IdentityAccess', bound='IdentityAccess')
+
 
 @dataclass
 class IdentityAccess(ABC):
-    """A class for accessing and controlling an Identity's data and functions.
-    """
+    """Base class for managing Person & Device identities."""
+
     did_manager: DidManager
 
     keys: list
@@ -28,22 +29,25 @@ class IdentityAccess(ABC):
     # # members: list[IdentityAccess]
     # members: list
 
-    def __init__(self, did_manager):
+    def __init__(self, did_manager: DidManager):
         self.did_manager = did_manager
 
-    @classmethod
-    def create(cls):
-        did_manager = DidManager.create()
-        return cls(did_manager)
+    def _create(self) -> None:
+        """Create a new IdentityAccess object."""
+        if self.did_manager:
+            raise Exception("self.did_manager is already set!")
+        self.did_manager = DidManager.create()
 
     @abstractmethod
-    def generate_did_doc(self):
+    def generate_did_doc(self) -> dict:
+        """Generate a DID-document."""
         pass
 
-    def get_did(self):
+    def get_did(self) -> str:
+        """Get our DID."""
         return self.did_manager.get_did()
 
-    def sign(self, data):
+    def sign(self, data: bytes | bytearray):
         # get current DID-Doc
         # extract signing public key from DID-Doc
         # get private key for public key
@@ -64,26 +68,35 @@ class IdentityAccess(ABC):
         # return plaintext
         pass
 
-    def delete(self):
+    def delete(self) -> None:
+        """Delete this Identity."""
         self.did_manager.delete()
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """Stop this Identity object, cleaning up resources."""
         self.did_manager.terminate()
 
-    def __del__(self):
+    def __del__(self) -> None:
+        """Stop this Identity object, cleaning up resources."""
         self.terminate()
 
 
+_DeviceIdentityAccess = TypeVar('_DeviceIdentityAccess', bound='DeviceIdentityAccess')
+
+
 class DeviceIdentityAccess(IdentityAccess):
+    """Class for managing a device' identity."""
     @property
     def ipfs_peer_id(self) -> str:
         return ipfs_api.my_id()
 
     @classmethod
-    def create(cls):
+    def create(cls: Type[_DeviceIdentityAccess]) -> _DeviceIdentityAccess:
+        """Create a new DeviceIdentityAccess object."""
         return super().create()
 
-    def generate_did_doc(self):
+    def generate_did_doc(self) -> dict:
+        """Generate a DID-document."""
         did_doc = {
             "id": self.get_did(),
             "verificationMethod": [
@@ -100,15 +113,31 @@ class DeviceIdentityAccess(IdentityAccess):
         return did_doc
 
 
+_PersonIdentityAccess = TypeVar('_PersonIdentityAccess', bound='PersonIdentityAccess')
+
+
 class PersonIdentityAccess(IdentityAccess):
+    """Class for managing a person's identity."""
     members: list
     device_identity_access: DeviceIdentityAccess
 
+    def __init__(self, device_identity_access, members):
+        pass
+
     @classmethod
-    def create(cls, device_identity_access, *args):
+    def create(
+        cls: Type[_PersonIdentityAccess],
+        device_identity_access: DeviceIdentityAccess,
+        *args
+    ) -> _PersonIdentityAccess:
+        """Create a new PersonIdentityAccess object."""
         # create PersonIdentityAccess object and
         # run it's IdentityAccess initialiser
-        person_id_acc = super().create(*args)
+        person_id_acc = cls(
+            members=[],
+            device_identity_access=device_identity_access
+        )
+        person_id_acc._create()
 
         # set its device_identity_access
         person_id_acc.device_identity_access = device_identity_access
@@ -118,10 +147,12 @@ class PersonIdentityAccess(IdentityAccess):
         ])
         return person_id_acc
 
-    def get_members(self) -> list:
+    def get_members(self) -> list | None:
+        """Get the current list of member-devices."""
         return self.did_manager.get_members()
 
-    def generate_did_doc(self):
+    def generate_did_doc(self) -> dict:
+        """Generate a DID-document."""
         did_doc = {
             "id": self.get_did(),
             "verificationMethod": [
@@ -137,16 +168,16 @@ class PersonIdentityAccess(IdentityAccess):
         validate_did_doc(did_doc)
         return did_doc
 
-    def delete(self):
+    def delete(self) -> None:
+        """Delete this Identity."""
         self.device_identity_access.delete()
         super().delete()
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """Stop this Identity object, cleaning up resources."""
         self.device_identity_access.terminate()
         super().terminate()
 
-
-def blockchain_id_from_did(did: str):
-    if not (did.startswith("did:") and did.count(":") == 2):
-        raise ValueError("Wrong DID format!")
-    return did[:4]
+    def __del__(self):
+        """Stop this Identity object, cleaning up resources."""
+        self.terminate()

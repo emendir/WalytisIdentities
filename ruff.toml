@@ -41,6 +41,7 @@ ignore = [
 "ANN204", # Missing return type annotation for special method `__init__`
 "PLW0603", # Using the global statement to update `update_blockchain_blocks_listener` is discouraged
 "RSE102", # Unnecessary parentheses on raised exception
+"D107", # Missing docstring in `__init__`
 "D406", # Section name should end with a newline ("Returns")
 "D407", # Missing dashed underline after section ("Args")
 "D413", #Missing blank line after last section ("Returns")
