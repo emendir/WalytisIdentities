@@ -4,7 +4,7 @@ from multi_crypt import Crypt
 from walytis_beta_api import Blockchain, delete_blockchain
 
 from .did_objects import Key
-from .member_blocks import (
+from .did_manager_blocks import (
     ControlKeyBlock,
     DidDocBlock,
     MembersListBlock,
