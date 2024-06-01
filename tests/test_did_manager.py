@@ -1,58 +1,47 @@
-import walytis_beta_api as walytis_api
-from termcolor import colored as coloured
-import pytest
-import sys
 import os
+import shutil
+import sys
+import tempfile
+from multi_crypt import Crypt
+import pytest
+import walytis_beta_api as walytis_api
+from testing_utils import mark
+
 if True:
-    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+    sys.path.insert(0, os.path.abspath(
+        os.path.dirname(os.path.dirname(__file__))))
     # from management import friends_management
     # from management import identity_management
     # from identity.identity import IdentityAccess
     from identity.did_manager import DidManager
     from identity.did_objects import Key
+    from identity.key_store import KeyStore
 
 BREAKPOINTS = True
 PYTEST = True  # whether or not this script is being run by pytest
 
 
-def mark(success: bool, message: str, error_info: str = ""):
-    """Prints a check or cross and message depending on the given success.
-    If pytest is running this test, an exception is thrown if success is False.
-
-    Parameters:
-            success (bool): whether or not the test succeeded
-            message (str): short description of the test to print
-            error_info (str): message to print in case of failure
-    """
-    if success:
-        mark = coloured("✓", "green")
-    else:
-        mark = coloured("✗", "red")
-        if error_info:
-            print(error_info)
-        if BREAKPOINTS:
-            breakpoint()
-    print(mark, message)
-    if PYTEST and not success:
-        raise Exception(f'Failed {message}')
-    return success
-
-
 def pytest_configure():
-    """Setup resources in preparation for tests."""
-    # declare 'global' variables
-    pytest.did_manager = None
+    pytest.tempdir = tempfile.mkdtemp()
+    pytest.keystore_path = os.path.join(pytest.tempdir, "keystore.json")
+
+    pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
+    pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
+
+
+def pytest_unconfigure():
+    """Clean up resources used during tests."""
+    shutil.rmtree(pytest.tempdir)
 
 
 def test_create_did_manager():
-    pytest.did_manager = DidManager.create()
+    pytest.keystore = KeyStore(pytest.keystore_path, pytest.CRYPT)
+    pytest.did_manager = DidManager.create(pytest.keystore)
     blockchain_id = pytest.did_manager.blockchain.blockchain_id
 
     mark(
-        (
-            isinstance(pytest.did_manager, DidManager)
-            and blockchain_id in walytis_api.list_blockchain_ids()
-        ),
+        isinstance(pytest.did_manager, DidManager)
+        and blockchain_id in walytis_api.list_blockchain_ids(),
         "Create DidManager"
     )
 
@@ -64,11 +53,6 @@ def test_delete_did_manager():
         blockchain_id not in walytis_api.list_blockchain_ids(),
         "Delete DidManager"
     )
-
-
-def pytest_unconfigure():
-    """Clean up resources used during tests."""
-    pass
 
 
 def test_renew_control_key():
@@ -91,7 +75,8 @@ def test_update_did_doc():
     pytest.did_doc = {
         "id": pytest.did_manager.get_did(),
         "verificationMethod": [
-            pytest.new_control_key.generate_key_spec(pytest.did_manager.get_did())
+            pytest.new_control_key.generate_key_spec(
+                pytest.did_manager.get_did())
         ]
     }
     pytest.did_manager.update_did_doc(pytest.did_doc)
@@ -111,7 +96,10 @@ def test_update_members_list():
 
 
 def test_reload_did_manager():
-    did_manager_copy = DidManager.load_from_blockchain(pytest.did_manager.blockchain.blockchain_id)
+    did_manager_copy = DidManager(
+        pytest.did_manager.blockchain.blockchain_id,
+        pytest.keystore
+    )
 
     mark((
         did_manager_copy.get_control_key().public_key == pytest.new_control_key.public_key

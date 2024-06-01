@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Type, TypeVar
-
+from multi_crypt import Crypt
 _Service = TypeVar('_Service', bound='Service')
 
 
@@ -42,9 +42,9 @@ _Key = TypeVar('_Key', bound='Key')
 class Key:
     """Represents a set of cryptographic keys, compatible with DID specs."""
 
-    key_id: str | None
-    type: str | None
-    public_key: str | None
+    key_id: str
+    type: str
+    public_key: str
     private_key: str | None
 
     @classmethod
@@ -65,3 +65,27 @@ class Key:
             "publicKeyMultibase": self.public_key,
             "controller": controller
         }
+
+    def serialise(self, crypt: Crypt) -> str:
+        """Serialise this key's data, including the private key encrypted."""
+        if not (self.key_id and self.type
+                and self.public_key and self.private_key):
+            raise ValueError("Not all of this objects' fields are set.")
+
+        return {
+            "key_id": self.key_id,
+            "type": self.type,
+            "public_key": self.public_key,
+            "private_key": Crypt.encrypt(self.private_key.encode()).hex(),
+        }
+
+    @classmethod
+    def deserialise(cls: Type[_Key], data: dict, crypt: Crypt) -> _Key:
+        """Deserialise data with encrypted private key."""
+        private_key = crypt.decrypt(bytes.fromhex(data["private_key"])).decode()
+        return cls(
+            key_id=data["key_id"],
+            type=data["type"],
+            public_key=data["public_key"],
+            private_key=private_key,
+        )

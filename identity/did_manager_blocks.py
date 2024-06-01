@@ -73,7 +73,7 @@ class ControlKeyBlock:
     def get_old_key(self) -> Key:
         """Get this control-key-update's old key."""
         return Key(
-            key_id=None,
+            key_id=self.old_key,
             type=self.old_key_type,
             public_key=self.old_key,
             private_key=None
@@ -82,7 +82,7 @@ class ControlKeyBlock:
     def get_new_key(self) -> Key:
         """Get this control-key-update's new key."""
         return Key(
-            key_id=None,
+            key_id=self.new_key,
             type=self.new_key_type,
             public_key=self.new_key,
             private_key=None

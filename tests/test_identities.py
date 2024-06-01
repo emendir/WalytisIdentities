@@ -4,6 +4,9 @@ from termcolor import colored as coloured
 import pytest
 import sys
 import os
+import shutil
+import tempfile
+from multi_crypt import Crypt
 if True:
     # for Hydrogen
     if False:
@@ -21,38 +24,20 @@ BREAKPOINTS = True
 PYTEST = True  # whether or not this script is being run by pytest
 
 
-def mark(success: bool, message: str, error_info: str = ""):
-    """Prints a check or cross and message depending on the given success.
-    If pytest is running this test, an exception is thrown if success is False.
-
-    Parameters:
-            success (bool): whether or not the test succeeded
-            message (str): short description of the test to print
-            error_info (str): message to print in case of failure
-    """
-    if success:
-        mark = coloured("✓", "green")
-    else:
-        mark = coloured("✗", "red")
-        if error_info:
-            print(error_info)
-        if BREAKPOINTS:
-            breakpoint()
-    print(mark, message)
-    if PYTEST and not success:
-        raise Exception(f'Failed {message}')
-    return success
-
-
 def pytest_configure():
     """Setup resources in preparation for tests."""
     # declare 'global' variables
     pytest.device_identity_access = None
+    pytest.tempdir = tempfile.mkdtemp()
+    pytest.keystore_path = os.path.join(pytest.tempdir, "keystore.json")
+
+    pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
+    pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
 
 
 def pytest_unconfigure():
     """Clean up resources used during tests."""
-    pass
+    shutil.rmtree(pytest.tempdir)
 
 
 def test_create_device_identity():

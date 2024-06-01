@@ -8,4 +8,6 @@
 
 
 # Next Step:
-- member management, key sharing
+- update IdentityAccess to work with KeyStore instead of Crypt
+- key sharing
+- member management

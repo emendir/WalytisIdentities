@@ -1,5 +1,7 @@
 """Classes for managing Person and Device identities."""
 
+import json
+from multi_crypt import Crypt
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Type, TypeVar
@@ -8,6 +10,7 @@ import ipfs_api
 
 from .did_manager import DidManager
 from .utils import validate_did_doc
+from .key_store import KeyStore
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -26,17 +29,9 @@ class IdentityAccess(ABC):
     keys: list
     services: list
     properties: dict
-    # # members: list[IdentityAccess]
-    # members: list
 
     def __init__(self, did_manager: DidManager):
         self.did_manager = did_manager
-
-    def _create(self) -> None:
-        """Create a new IdentityAccess object."""
-        if self.did_manager:
-            raise Exception("self.did_manager is already set!")
-        self.did_manager = DidManager.create()
 
     @abstractmethod
     def generate_did_doc(self) -> dict:
@@ -86,6 +81,10 @@ _DeviceIdentityAccess = TypeVar('_DeviceIdentityAccess', bound='DeviceIdentityAc
 
 class DeviceIdentityAccess(IdentityAccess):
     """Class for managing a device' identity."""
+
+    def __init__(self, did_manager: DidManager):
+        self.did_manager = did_manager
+
     @property
     def ipfs_peer_id(self) -> str:
         return ipfs_api.my_id()
@@ -93,7 +92,8 @@ class DeviceIdentityAccess(IdentityAccess):
     @classmethod
     def create(cls: Type[_DeviceIdentityAccess]) -> _DeviceIdentityAccess:
         """Create a new DeviceIdentityAccess object."""
-        return super().create()
+        did_manager = DidManager.create()
+        return cls(did_manager)
 
     def generate_did_doc(self) -> dict:
         """Generate a DID-document."""
@@ -113,31 +113,73 @@ class DeviceIdentityAccess(IdentityAccess):
         return did_doc
 
 
-_PersonIdentityAccess = TypeVar('_PersonIdentityAccess', bound='PersonIdentityAccess')
+_PersonIdentityAccess = TypeVar(
+    '_PersonIdentityAccess', bound='PersonIdentityAccess'
+)
 
 
 class PersonIdentityAccess(IdentityAccess):
     """Class for managing a person's identity."""
-    members: list
+
     device_identity_access: DeviceIdentityAccess
 
-    def __init__(self, device_identity_access, members):
-        pass
+    def __init__(
+        self,
+        did_manager: DidManager,
+        device_identity_access: DeviceIdentityAccess,
+        crypt: Crypt,
+        config_file: str
+    ):
+        super().__init__(did_manager)
+        self.device_identity_access = device_identity_access
+        self.crypt = crypt
+        self.config_file = config_file
+
+    @classmethod
+    def load_from_appdata(cls, cryp: Crypt, config_file: str):
+        with open(config_file, "r") as file:
+            data = json.loads(file.read())
+        return serialise(data)
+
+    def save_appdata(self):
+        data = json.dumps(self.serialise())
+        with open(self.config_file, "w+") as file:
+            file.write(data)
+
+    @classmethod
+    def deserialise(cls, data: dict, key_store: KeyStore):
+        return cls(
+            did_manager=DidManager(
+                data["blockchain"],
+                key_store=key_store
+            )
+
+        )
+
+    def serialise(self) -> dict:
+        return {
+            "blockchain_id": self.did_manager.blockchain.blockchain_id,
+            "key_store_path": self.key_store,
+
+        }
 
     @classmethod
     def create(
         cls: Type[_PersonIdentityAccess],
         device_identity_access: DeviceIdentityAccess,
-        *args
+        crypt: Crypt,
+        config_file: str
     ) -> _PersonIdentityAccess:
         """Create a new PersonIdentityAccess object."""
         # create PersonIdentityAccess object and
         # run it's IdentityAccess initialiser
+        did_manager = DidManager.create()
         person_id_acc = cls(
-            members=[],
-            device_identity_access=device_identity_access
+            did_manager=did_manager,
+            device_identity_access=device_identity_access,
+            crypt=crypt,
+            config_file=config_file
         )
-        person_id_acc._create()
 
         # set its device_identity_access
         person_id_acc.device_identity_access = device_identity_access

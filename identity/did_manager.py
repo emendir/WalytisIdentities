@@ -16,6 +16,8 @@ from .did_manager_blocks import (
 )
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
+from .key_store import KeyStore
+from .utils import bytes_to_string
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -35,41 +37,37 @@ class DidManager:
     """
 
     blockchain: Blockchain
-    crypt: Crypt
+    key_store: KeyStore
 
-    control_key: Key
+    _control_key: Key
     did_doc: dict
     members_list: list | None
 
-    @classmethod
-    def load_from_blockchain(
-        cls: Type[_DidManager], blockchain: Blockchain, crypt: Crypt = None
-    ) -> _DidManager:
+    def __init__(
+        self,
+        blockchain: Blockchain | str,
+        key_store: KeyStore
+    ):
         """Load a DidManager from a Walytis blockchain."""
-        if not isinstance(blockchain, Blockchain):
+        if isinstance(blockchain, str):
             blockchain = Blockchain(blockchain)
 
-        control_key = get_latest_control_key(blockchain)
-        did_doc = get_latest_did_doc(blockchain)
-        members_list = get_latest_members_list(blockchain)
+        self.blockchain = blockchain
+        self.key_store = key_store
 
-        if not did_doc:
+        self._control_key = get_latest_control_key(blockchain)
+        self.did_doc = get_latest_did_doc(blockchain)
+        if not self.did_doc:
             raise NotValidDidBlockchainError()
-
-        return cls(
-            blockchain=blockchain,
-            crypt=crypt,
-            control_key=control_key,
-            did_doc=did_doc,
-            members_list=members_list
-        )
+        self.members_list = get_latest_members_list(blockchain)
+        self._crypt = self.key_store.get_key(self.get_control_key().key_id)
 
     @classmethod
-    def create(cls: Type[_DidManager]) -> _DidManager:
+    def create(cls: Type[_DidManager], key_store: KeyStore) -> _DidManager:
         """Create a new DID-Manager."""
         # create crypto keys
         crypt = Crypt.new(CRYPTO_FAMILY)
-
+        key_store.add_key(bytes_to_string(crypt.public_key), crypt)
         # create blockchain
         blockchain = Blockchain.create(
             blockchain_name=f"waco-{crypt.public_key}"
@@ -97,8 +95,7 @@ class DidManager:
             topics=DidDocBlock.walytis_block_topic
         )
 
-        did_manager = cls.load_from_blockchain(blockchain, crypt=crypt)
-        did_manager.crypt = crypt
+        did_manager = cls(blockchain, key_store=key_store)
         blockchain.terminate()
         return did_manager
 
@@ -109,35 +106,41 @@ class DidManager:
     def renew_control_key(self) -> None:
         """Change the control key to an automatically generated new one."""
         # create new crypto keys
+
+        old_crypt = self.get_crypt()
         new_crypt = Crypt.new(CRYPTO_FAMILY)
+        self.key_store.add_key(bytes_to_string(new_crypt.public_key), new_crypt)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
         keyblock = ControlKeyBlock.new(
-            old_key_type=self.crypt.family,
-            old_key=self.crypt.public_key,
+            old_key_type=old_crypt.family,
+            old_key=old_crypt.public_key,
             new_key_type=new_crypt.family,
             new_key=new_crypt.public_key
         )
-        keyblock.sign(self.crypt)
+        keyblock.sign(old_crypt)
 
         self.blockchain.add_block(
             keyblock.generate_block_content(),
             topics="control_key"
         )
 
-        self.crypt = new_crypt
-        self.control_key = keyblock.get_new_key()
+        self._control_key = keyblock.get_new_key()
 
     def get_control_key(self) -> Key:
         """Get the current control key."""
-        if not self.control_key:
-            self.control_key = get_latest_control_key(self.blockchain)
-        return self.control_key
+        if not self._control_key:
+            self._control_key = get_latest_control_key(self.blockchain)
+        return self._control_key
+
+    def get_crypt(self) -> Crypt:
+        """Get the Crypt object for the current control key."""
+        return self.key_store.get_key(self.get_control_key().key_id)
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
         did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(self.crypt)
+        did_doc_block.sign(self.get_crypt())
         self.blockchain.add_block(
             did_doc_block.generate_block_content(),
             topics=DidDocBlock.walytis_block_topic
@@ -154,7 +157,7 @@ class DidManager:
     def update_members_list(self, members_list: list) -> None:
         """Publish a new list of members to replace the current one."""
         members_block = MembersListBlock.new(members_list)
-        members_block.sign(self.crypt)
+        members_block.sign(self.get_crypt())
         self.blockchain.add_block(
             members_block.generate_block_content(),
             topics=MembersListBlock.walytis_block_topic
