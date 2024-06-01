@@ -1,15 +1,16 @@
-from .did_objects import Key, Service
-from multi_crypt import Crypt
-import walytis_beta_api as walytis_api
-from walytis_beta_api import Blockchain, delete_blockchain
-import rfc3987
-import json
 from dataclasses import dataclass
-from typing import Union
-from .utils import validate_did_doc,  bytes_to_string, bytes_from_string
+
+from multi_crypt import Crypt
+from walytis_beta_api import Blockchain, delete_blockchain
+
+from .did_objects import Key
 from .member_blocks import (
-    ControlKeyBlock, DidDocBlock, MembersListBlock,
-    get_latest_control_key, get_latest_did_doc, get_latest_members_list
+    ControlKeyBlock,
+    DidDocBlock,
+    MembersListBlock,
+    get_latest_control_key,
+    get_latest_did_doc,
+    get_latest_members_list,
 )
 
 DID_METHOD_NAME = "wlaytis-contacts"
@@ -20,10 +21,13 @@ CRYPTO_FAMILY = "EC-secp256k1"
 
 @dataclass
 class DidManager:
-    """
-    Uses a Walytis Blockchain to publish DID documents, secured by an updatable
+    """Manage DID documents using a Walytis blockchain.
+
+    Publishes DID documents on a blockchain, secured by an updatable
     control key system.
+    DOESN'T create ID documents.
     """
+
     blockchain: Blockchain
     crypt: Crypt
 
@@ -128,7 +132,7 @@ class DidManager:
 
         self.members_list = members_list
 
-    def get_members_list(self):
+    def get_members(self):
         if not self.members_list:
             self.members_list = get_latest_members_list(self.blockchain)
         return self.members_list

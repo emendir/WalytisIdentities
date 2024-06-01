@@ -105,7 +105,7 @@ def test_update_members_list():
     ]
     pytest.did_manager.update_members_list(pytest.members_list)
     mark(
-        pytest.did_manager.get_members_list() == pytest.members_list,
+        pytest.did_manager.get_members() == pytest.members_list,
         "Update Members List"
     )
 
@@ -116,7 +116,7 @@ def test_reload_did_manager():
     mark((
         did_manager_copy.get_control_key().public_key == pytest.new_control_key.public_key
         and did_manager_copy.get_did_doc() == pytest.did_doc
-        and did_manager_copy.get_members_list() == pytest.members_list
+        and did_manager_copy.get_members() == pytest.members_list
     ),
         "Reload DID Manager"
     )

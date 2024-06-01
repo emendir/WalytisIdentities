@@ -56,6 +56,11 @@ def test_create_identity():
     )
     did = pytest.me1.get_did()
     mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
+    devices = pytest.me1.get_members()
+    mark(
+        len(devices) == 1 and devices[0]["did"] == pytest.device1.get_did(),
+        "person identity has device identity"
+    )
 
 
 def test_create_contacts_manager():

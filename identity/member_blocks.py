@@ -128,7 +128,7 @@ class DidDocBlock(InfoBlock):
 class MembersListBlock(InfoBlock):
     walytis_block_topic = 'members_list'
 
-    def get_members(self):
+    def get_members(self) -> list:
         return self.info_content
 
 
@@ -237,9 +237,8 @@ def get_latest_block(blockchain: Blockchain, topic: str) -> InfoBlock | None:
     # return the DID-document of the last valid DID-Doc block
     if last_info_block:
         return last_info_block
-    else:
-        print("No valid blocks found")
-        return None
+    # print("No valid blocks found")
+    return None
 
 
 def get_latest_did_doc(blockchain: Blockchain) -> dict | None:

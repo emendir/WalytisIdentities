@@ -112,7 +112,14 @@ class PersonIdentityAccess(IdentityAccess):
 
         # set its device_identity_access
         person_id_acc.device_identity_access = device_identity_access
+
+        person_id_acc.did_manager.update_members_list([
+            {"did": device_identity_access.get_did()}
+        ])
         return person_id_acc
+
+    def get_members(self) -> list:
+        return self.did_manager.get_members()
 
     def generate_did_doc(self):
         did_doc = {
@@ -123,7 +130,7 @@ class PersonIdentityAccess(IdentityAccess):
             "service": [
                 service.generate_service_spec() for service in self.services
             ],
-            "members": self.members
+            "members": self.get_members()
         }
 
         # check that components produce valid URIs
@@ -142,4 +149,4 @@ class PersonIdentityAccess(IdentityAccess):
 def blockchain_id_from_did(did: str):
     if not (did.startswith("did:") and did.count(":") == 2):
         raise ValueError("Wrong DID format!")
-    return did[:4].index()
+    return did[:4]
