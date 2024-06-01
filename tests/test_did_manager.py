@@ -46,7 +46,7 @@ def pytest_configure():
 
 def test_create_did_manager():
     pytest.did_manager = DidManager.create()
-    blockchain_id = pytest.did_manager.blockchain.id
+    blockchain_id = pytest.did_manager.blockchain.blockchain_id
 
     mark(
         (
@@ -58,7 +58,7 @@ def test_create_did_manager():
 
 
 def test_delete_did_manager():
-    blockchain_id = pytest.did_manager.blockchain.id
+    blockchain_id = pytest.did_manager.blockchain.blockchain_id
     pytest.did_manager.delete()
     mark(
         blockchain_id not in walytis_api.list_blockchain_ids(),
@@ -111,7 +111,7 @@ def test_update_members_list():
 
 
 def test_reload_did_manager():
-    did_manager_copy = DidManager.load_from_blockchain(pytest.did_manager.blockchain.id)
+    did_manager_copy = DidManager.load_from_blockchain(pytest.did_manager.blockchain.blockchain_id)
 
     mark((
         did_manager_copy.get_control_key().public_key == pytest.new_control_key.public_key

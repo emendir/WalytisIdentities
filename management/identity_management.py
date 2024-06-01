@@ -1,8 +1,12 @@
-from identity.identity import IdentityAccess
+from identity.identity import PersonIdentityAccess, DeviceIdentityAccess
 
 
-def create_identity():
-    return IdentityAccess.create()
+def create_device_identity() -> DeviceIdentityAccess:
+    return DeviceIdentityAccess.create()
+
+
+def create_person_identity(device_identity: DeviceIdentityAccess) -> PersonIdentityAccess:
+    return PersonIdentityAccess.create(device_identity)
 
 
 def update_identity():

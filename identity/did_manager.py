@@ -74,7 +74,7 @@ class DidManager:
         return did_manager
 
     def get_did(self):
-        return f"did:{DID_METHOD_NAME}:{self.blockchain.id}"
+        return f"did:{DID_METHOD_NAME}:{self.blockchain.blockchain_id}"
 
     def update_control_key(self):
 
@@ -135,7 +135,7 @@ class DidManager:
 
     def delete(self):
         self.blockchain.terminate()
-        delete_blockchain(self.blockchain.id)
+        delete_blockchain(self.blockchain.blockchain_id)
 
     def terminate(self):
         self.blockchain.terminate()
@@ -147,4 +147,4 @@ class DidManager:
 def blockchain_id_from_did(did: str):
     if not (did.startswith("did:") and did.count(":") == 2):
         raise ValueError("Wrong DID format!")
-    return did[:4].index()
+    return did[:4]

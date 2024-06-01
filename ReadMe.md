@@ -9,7 +9,7 @@ meaning that WalytisFriends is a system for creating DIDs and managing DID-Docum
 # Basic Functionality
 ## Communication With a WalytisFriends Identity
 - A WaltyisFriends identity is served by a Walytis blockchain.
-- The blockchain is used to publish DID-documents, which essentially contain cryptographic public keys.
+- The blockchain is used to publish DID-documents, which contain cryptographic public keys.
 - Other parties can join a WalytisFriends identity's blockchain, get the currently valid DID document, and use the cryptographic keys therein for authentication and encryption when communicating with that identity.
 
 ## Security of DID-Document Publishing

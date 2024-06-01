@@ -48,12 +48,13 @@ def pytest_configure():
 
 def test_create_identity():
     print("Creating identity...")
-    pytest.me1 = identity_management.create_identity()
+    pytest.device1 = identity_management.create_device_identity()
+    pytest.me1 = identity_management.create_person_identity(pytest.device1)
     keys = (
         pytest.me1.did_manager.crypt.public_key,
         pytest.me1.did_manager.crypt.private_key
     )
-    id = pytest.me1.get_did()
+    did = pytest.me1.get_did()
     mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
 
 
@@ -66,7 +67,8 @@ def test_create_contacts_manager():
 
 def test_befriend():
     print("Creating identity...")
-    pytest.me2 = identity_management.create_identity()
+    pytest.device2 = identity_management.create_device_identity()
+    pytest.me2 = identity_management.create_person_identity(pytest.device2)
     print("Befriending...")
     pytest.contacts_manager.befriend(pytest.me2)
     mark(pytest.me2 in pytest.contacts_manager.get_friends(), "befriend")

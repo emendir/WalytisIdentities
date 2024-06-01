@@ -55,15 +55,15 @@ class ControlKeyBlock:
 
     def get_old_key(self):
         return Key(
-            id=None,
+            key_id=None,
             type=self.old_key_type,
             public_key=self.old_key,
             private_key=None
         )
 
-    def get_new_key(self):
+    def get_new_key(self) -> Key:
         return Key(
-            id=None,
+            key_id=None,
             type=self.new_key_type,
             public_key=self.new_key,
             private_key=None
@@ -181,7 +181,7 @@ def get_latest_control_key(blockchain: Blockchain):
     return control_key
 
 
-def get_latest_block(blockchain: Blockchain, topic: str) -> dict:
+def get_latest_block(blockchain: Blockchain, topic: str) -> InfoBlock | None:
     """Iterates through the blockchain's blocks to find the latest valid
     block of the given topic, except for control-key blocks
     (use get_latest_control_key for control-key blocks).
@@ -228,7 +228,7 @@ def get_latest_block(blockchain: Blockchain, topic: str) -> dict:
                 blockchain.get_block(block_id).content
             )
             # if its signature is validated by the last ctrl key
-            if info_block.verify_signature(last_key_block.get_new_key()):
+            if last_key_block and info_block.verify_signature(last_key_block.get_new_key()):
                 # set this to the latest info-block
                 last_info_block = info_block
             else:
@@ -239,9 +239,10 @@ def get_latest_block(blockchain: Blockchain, topic: str) -> dict:
         return last_info_block
     else:
         print("No valid blocks found")
+        return None
 
 
-def get_latest_did_doc(blockchain: Blockchain) -> dict:
+def get_latest_did_doc(blockchain: Blockchain) -> dict | None:
     """Iterates through the blockchain's blocks to find the latest valid
     DID-document.
     This function lookss so complex because it has to work even if the latest
@@ -259,9 +260,10 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
     )
     if latest_block:
         return latest_block.info_content
+    return None
 
 
-def get_latest_members_list(blockchain: Blockchain) -> dict:
+def get_latest_members_list(blockchain: Blockchain) -> dict | None:
     """Iterates through the blockchain's blocks to find the latest valid
     DID-document.
     This function lookss so complex because it has to work even if the latest
@@ -279,3 +281,5 @@ def get_latest_members_list(blockchain: Blockchain) -> dict:
     )
     if latest_block:
         return latest_block.info_content
+
+    return None

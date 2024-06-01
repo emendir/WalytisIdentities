@@ -66,8 +66,8 @@ def test_create_person_identity():
 
 
 def test_delete_person_identity():
-    person_blockchain = pytest.person_identity_access.did_manager.blockchain.id
-    device_blockchain = pytest.device_identity_access.did_manager.blockchain.id
+    person_blockchain = pytest.person_identity_access.did_manager.blockchain.blockchain_id
+    device_blockchain = pytest.device_identity_access.did_manager.blockchain.blockchain_id
     pytest.person_identity_access.delete()
 
     # ensure the blockchains of both the person and the device identities
