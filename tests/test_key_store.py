@@ -21,7 +21,7 @@ if True:
 
 def test_preparations():
     pytest.tempdir = tempfile.mkdtemp()
-    pytest.keystore_path = os.path.join(pytest.tempdir, "keystore.json")
+    pytest.key_store_path = os.path.join(pytest.tempdir, "keystore.json")
 
     pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
     pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
@@ -31,7 +31,7 @@ def test_add_get_key():
     pytest.crypt1 = Crypt.new(pytest.CRYPTO_FAMILY)
     pytest.crypt2 = Crypt.new(pytest.CRYPTO_FAMILY)
 
-    pytest.keystore = KeyStore(pytest.keystore_path, pytest.CRYPT)
+    pytest.keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
 
     pytest.keystore.add_key("crypt1", pytest.crypt1)
     pytest.keystore.add_key("crypt2", pytest.crypt2)
@@ -51,7 +51,7 @@ def test_add_get_key():
 
 
 def test_reopen_keystore():
-    pytest.keystore = KeyStore(pytest.keystore_path, pytest.CRYPT)
+    pytest.keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
 
     c1 = pytest.keystore.get_key("crypt1")
     c2 = pytest.keystore.get_key("crypt2")

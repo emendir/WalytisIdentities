@@ -6,18 +6,18 @@ import os
 class KeyStore:
     keys: dict[Crypt]
 
-    def __init__(self, keystore_path: str, crypt: Crypt):
-        self.keystore_path = keystore_path
+    def __init__(self, key_store_path: str, crypt: Crypt):
+        self.key_store_path = key_store_path
         self.crypt = crypt
         self._load_appdata()
 
     def _load_appdata(self):
-        if not os.path.exists(os.path.dirname(self.keystore_path)):
+        if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError("The directory of the keystore path doesn't exist.")
-        if not os.path.exists(self.keystore_path):
+        if not os.path.exists(self.key_store_path):
             self.keys = {}
             return
-        with open(self.keystore_path, "r") as file:
+        with open(self.key_store_path, "r") as file:
             data = json.loads(file.read())
         appdata_encryption_public_key = data["appdata_encryption_public_key"]
         encrypted_keys = data["keys"]
@@ -59,7 +59,7 @@ class KeyStore:
             "keys": encrypted_keys
         }
 
-        with open(self.keystore_path, "w+") as file:
+        with open(self.key_store_path, "w+") as file:
             file.write(json.dumps(data))
 
     def add_key(self, key_id: str, crypt: Crypt):

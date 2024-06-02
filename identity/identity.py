@@ -1,5 +1,6 @@
 """Classes for managing Person and Device identities."""
 
+import os
 import json
 from multi_crypt import Crypt
 from abc import ABC, abstractmethod
@@ -30,9 +31,6 @@ class IdentityAccess(ABC):
     services: list
     properties: dict
 
-    def __init__(self, did_manager: DidManager):
-        self.did_manager = did_manager
-
     @abstractmethod
     def generate_did_doc(self) -> dict:
         """Generate a DID-document."""
@@ -41,6 +39,9 @@ class IdentityAccess(ABC):
     def get_did(self) -> str:
         """Get our DID."""
         return self.did_manager.get_did()
+
+    def get_blockchain_id(self) -> str:
+        return self.did_manager.blockchain.blockchain_id
 
     def sign(self, data: bytes | bytearray):
         # get current DID-Doc
@@ -76,24 +77,92 @@ class IdentityAccess(ABC):
         self.terminate()
 
 
-_DeviceIdentityAccess = TypeVar('_DeviceIdentityAccess', bound='DeviceIdentityAccess')
+_DeviceIdentityAccess = TypeVar(
+    '_DeviceIdentityAccess', bound='DeviceIdentityAccess')
 
 
 class DeviceIdentityAccess(IdentityAccess):
     """Class for managing a device' identity."""
 
-    def __init__(self, did_manager: DidManager):
+    def __init__(
+        self,
+        did_manager: DidManager,
+        config_dir: str,
+        crypt: Crypt,
+        config_file: str,
+        did_keystore_file: str,
+    ):
+        self.config_dir = config_dir
+        self.crypt = crypt
+        self.config_file = config_file
+        self.did_keystore_file = did_keystore_file
         self.did_manager = did_manager
+
+    @classmethod
+    def create(
+        cls: Type[_DeviceIdentityAccess],
+        config_dir: str,
+        crypt: Crypt,
+    ) -> _DeviceIdentityAccess:
+        """Create a new PersonIdentityAccess object."""
+        # create PersonIdentityAccess object and
+        # run it's IdentityAccess initialiser
+        config_file = os.path.join(config_dir, "device_id.json")
+        did_keystore_file = os.path.join(config_dir, "device_id_keys.json")
+        key_store = KeyStore(did_keystore_file, crypt)
+        did_manager = DidManager.create(key_store)
+
+        person_id_acc = cls(
+            did_manager,
+            config_dir,
+            crypt,
+            config_file,
+            did_keystore_file,
+        )
+        person_id_acc.save_appdata()
+        return person_id_acc
+
+    @classmethod
+    def load_from_appdata(
+        cls: Type[_DeviceIdentityAccess],
+        config_dir: str,
+        crypt: Crypt,
+    ) -> _DeviceIdentityAccess:
+
+        config_file = os.path.join(config_dir, "device_id.json")
+        did_keystore_file = os.path.join(config_dir, "device_id_keys.json")
+
+        with open(config_file, "r") as file:
+            data = json.loads(file.read())
+
+        did_manager = DidManager(
+            blockchain=data["did_blockchain"],
+            key_store=KeyStore(did_keystore_file, crypt),
+        )
+        return cls(
+            did_manager,
+            config_dir,
+            crypt,
+            config_file,
+            did_keystore_file,
+        )
+
+    def serialise(self) -> dict:
+        return {
+            "did_blockchain": self.did_manager.blockchain.blockchain_id,
+        }
+
+    def save_appdata(self):
+        data = json.dumps(self.serialise())
+        with open(self.config_file, "w+") as file:
+            file.write(data)
 
     @property
     def ipfs_peer_id(self) -> str:
         return ipfs_api.my_id()
 
-    @classmethod
-    def create(cls: Type[_DeviceIdentityAccess]) -> _DeviceIdentityAccess:
-        """Create a new DeviceIdentityAccess object."""
-        did_manager = DidManager.create()
-        return cls(did_manager)
+    def get_members(self) -> list[str]:
+        return self.did_manager.get_members()
 
     def generate_did_doc(self) -> dict:
         """Generate a DID-document."""
@@ -127,67 +196,81 @@ class PersonIdentityAccess(IdentityAccess):
         self,
         did_manager: DidManager,
         device_identity_access: DeviceIdentityAccess,
+        config_dir: str,
         crypt: Crypt,
-        config_file: str
+        config_file: str,
+        did_keystore_file: str,
     ):
-        super().__init__(did_manager)
         self.device_identity_access = device_identity_access
+        self.config_dir = config_dir
         self.crypt = crypt
         self.config_file = config_file
-
-    @classmethod
-    def load_from_appdata(cls, cryp: Crypt, config_file: str):
-        with open(config_file, "r") as file:
-            data = json.loads(file.read())
-        return serialise(data)
-
-    def save_appdata(self):
-        data = json.dumps(self.serialise())
-        with open(self.config_file, "w+") as file:
-            file.write(data)
-
-    @classmethod
-    def deserialise(cls, data: dict, key_store: KeyStore):
-        return cls(
-            did_manager=DidManager(
-                data["blockchain"],
-                key_store=key_store
-            )
-
-        )
-
-    def serialise(self) -> dict:
-        return {
-            "blockchain_id": self.did_manager.blockchain.blockchain_id,
-            "key_store_path": self.key_store,
-
-        }
+        self.did_keystore_file = did_keystore_file
+        self.did_manager = did_manager
 
     @classmethod
     def create(
         cls: Type[_PersonIdentityAccess],
         device_identity_access: DeviceIdentityAccess,
+        config_dir: str,
         crypt: Crypt,
-        config_file: str
     ) -> _PersonIdentityAccess:
         """Create a new PersonIdentityAccess object."""
         # create PersonIdentityAccess object and
         # run it's IdentityAccess initialiser
-        did_manager = DidManager.create()
-        person_id_acc = cls(
-            did_manager=did_manager,
-            device_identity_access=device_identity_access,
-            crypt=crypt,
-            config_file=config_file
-        )
-
-        # set its device_identity_access
-        person_id_acc.device_identity_access = device_identity_access
-
-        person_id_acc.did_manager.update_members_list([
+        config_file = os.path.join(config_dir, "person_id.json")
+        did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+        key_store = KeyStore(did_keystore_file, crypt)
+        did_manager = DidManager.create(key_store)
+        did_manager.update_members_list([
             {"did": device_identity_access.get_did()}
         ])
+        person_id_acc = cls(
+            did_manager,
+            device_identity_access,
+            config_dir,
+            crypt,
+            config_file,
+            did_keystore_file,
+        )
+        person_id_acc.save_appdata()
         return person_id_acc
+
+    @classmethod
+    def load_from_appdata(
+        cls: Type[_PersonIdentityAccess],
+        device_identity_access: DeviceIdentityAccess,
+        config_dir: str,
+        crypt: Crypt,
+    ) -> _PersonIdentityAccess:
+        config_file = os.path.join(config_dir, "person_id.json")
+        did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+
+        with open(config_file, "r") as file:
+            data = json.loads(file.read())
+
+        did_manager = DidManager(
+            blockchain=data["did_blockchain"],
+            key_store=KeyStore(did_keystore_file, crypt),
+        )
+        return cls(
+            did_manager,
+            device_identity_access,
+            config_dir,
+            crypt,
+            config_file,
+            did_keystore_file,
+        )
+
+    def serialise(self) -> dict:
+        return {
+            "did_blockchain": self.did_manager.blockchain.blockchain_id,
+        }
+
+    def save_appdata(self):
+        data = json.dumps(self.serialise())
+        with open(self.config_file, "w+") as file:
+            file.write(data)
 
     def get_members(self) -> list | None:
         """Get the current list of member-devices."""

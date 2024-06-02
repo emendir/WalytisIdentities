@@ -23,7 +23,7 @@ PYTEST = True  # whether or not this script is being run by pytest
 
 def pytest_configure():
     pytest.tempdir = tempfile.mkdtemp()
-    pytest.keystore_path = os.path.join(pytest.tempdir, "keystore.json")
+    pytest.key_store_path = os.path.join(pytest.tempdir, "keystore.json")
 
     pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
     pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
@@ -35,7 +35,7 @@ def pytest_unconfigure():
 
 
 def test_create_did_manager():
-    pytest.keystore = KeyStore(pytest.keystore_path, pytest.CRYPT)
+    pytest.keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
     pytest.did_manager = DidManager.create(pytest.keystore)
     blockchain_id = pytest.did_manager.blockchain.blockchain_id
 

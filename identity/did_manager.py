@@ -60,27 +60,27 @@ class DidManager:
         if not self.did_doc:
             raise NotValidDidBlockchainError()
         self.members_list = get_latest_members_list(blockchain)
-        self._crypt = self.key_store.get_key(self.get_control_key().key_id)
+        self._ctrl_key_crypt = self.key_store.get_key(self.get_control_key().key_id)
 
     @classmethod
     def create(cls: Type[_DidManager], key_store: KeyStore) -> _DidManager:
         """Create a new DID-Manager."""
         # create crypto keys
-        crypt = Crypt.new(CRYPTO_FAMILY)
-        key_store.add_key(bytes_to_string(crypt.public_key), crypt)
+        ctrl_key_crypt = Crypt.new(CRYPTO_FAMILY)
+        key_store.add_key(bytes_to_string(ctrl_key_crypt.public_key), ctrl_key_crypt)
         # create blockchain
         blockchain = Blockchain.create(
-            blockchain_name=f"waco-{crypt.public_key}"
+            blockchain_name=f"waco-{ctrl_key_crypt.public_key}"
         )
 
         # publish first key on blockchain
         keyblock = ControlKeyBlock.new(
-            old_key_type=crypt.family,
-            old_key=crypt.public_key,
-            new_key_type=crypt.family,
-            new_key=crypt.public_key
+            old_key_type=ctrl_key_crypt.family,
+            old_key=ctrl_key_crypt.public_key,
+            new_key_type=ctrl_key_crypt.family,
+            new_key=ctrl_key_crypt.public_key
         )
-        keyblock.sign(crypt)
+        keyblock.sign(ctrl_key_crypt)
         blockchain.add_block(
             keyblock.generate_block_content(),
             topics="control_key"
@@ -89,7 +89,7 @@ class DidManager:
 
         did_doc = {"id": did}
         did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(crypt)
+        did_doc_block.sign(ctrl_key_crypt)
         blockchain.add_block(
             did_doc_block.generate_block_content(),
             topics=DidDocBlock.walytis_block_topic
@@ -107,18 +107,18 @@ class DidManager:
         """Change the control key to an automatically generated new one."""
         # create new crypto keys
 
-        old_crypt = self.get_crypt()
-        new_crypt = Crypt.new(CRYPTO_FAMILY)
-        self.key_store.add_key(bytes_to_string(new_crypt.public_key), new_crypt)
+        old_ctrl_key_crypt = self.get_ctrl_key_crypt()
+        new_ctrl_key_crypt = Crypt.new(CRYPTO_FAMILY)
+        self.key_store.add_key(bytes_to_string(new_ctrl_key_crypt.public_key), new_ctrl_key_crypt)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
         keyblock = ControlKeyBlock.new(
-            old_key_type=old_crypt.family,
-            old_key=old_crypt.public_key,
-            new_key_type=new_crypt.family,
-            new_key=new_crypt.public_key
+            old_key_type=old_ctrl_key_crypt.family,
+            old_key=old_ctrl_key_crypt.public_key,
+            new_key_type=new_ctrl_key_crypt.family,
+            new_key=new_ctrl_key_crypt.public_key
         )
-        keyblock.sign(old_crypt)
+        keyblock.sign(old_ctrl_key_crypt)
 
         self.blockchain.add_block(
             keyblock.generate_block_content(),
@@ -133,14 +133,14 @@ class DidManager:
             self._control_key = get_latest_control_key(self.blockchain)
         return self._control_key
 
-    def get_crypt(self) -> Crypt:
+    def get_ctrl_key_crypt(self) -> Crypt:
         """Get the Crypt object for the current control key."""
         return self.key_store.get_key(self.get_control_key().key_id)
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
         did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(self.get_crypt())
+        did_doc_block.sign(self.get_ctrl_key_crypt())
         self.blockchain.add_block(
             did_doc_block.generate_block_content(),
             topics=DidDocBlock.walytis_block_topic
@@ -157,7 +157,7 @@ class DidManager:
     def update_members_list(self, members_list: list) -> None:
         """Publish a new list of members to replace the current one."""
         members_block = MembersListBlock.new(members_list)
-        members_block.sign(self.get_crypt())
+        members_block.sign(self.get_ctrl_key_crypt())
         self.blockchain.add_block(
             members_block.generate_block_content(),
             topics=MembersListBlock.walytis_block_topic
@@ -165,10 +165,13 @@ class DidManager:
 
         self.members_list = members_list
 
-    def get_members(self) -> list | None:
+    def get_members(self) -> list:
         """Get the current list of member-devices."""
         if not self.members_list:
             self.members_list = get_latest_members_list(self.blockchain)
+            if self.members_list is None:
+                return []
+
         return self.members_list
 
     def delete(self) -> None:
