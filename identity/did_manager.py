@@ -1,8 +1,11 @@
 """Machinery for managing DID-Documents, i.e. identities' cryptography keys."""
 
+from strict_typing import strictly_typed
+from decorate_all import decorate_all_functions
 from dataclasses import dataclass
 from typing import Type, TypeVar
 
+from brenthy_tools_beta.utils import time_to_string
 from multi_crypt import Crypt
 from walytis_beta_api import Blockchain, delete_blockchain
 
@@ -60,27 +63,25 @@ class DidManager:
         if not self.did_doc:
             raise NotValidDidBlockchainError()
         self.members_list = get_latest_members_list(blockchain)
-        self._ctrl_key_crypt = self.key_store.get_key(self.get_control_key().key_id)
+        self._ctrl_key_crypt = self.key_store.get_key(self.get_control_key().get_key_id())
 
     @classmethod
     def create(cls: Type[_DidManager], key_store: KeyStore) -> _DidManager:
         """Create a new DID-Manager."""
         # create crypto keys
-        ctrl_key_crypt = Crypt.new(CRYPTO_FAMILY)
-        key_store.add_key(bytes_to_string(ctrl_key_crypt.public_key), ctrl_key_crypt)
+        ctrl_key = Key.create(CRYPTO_FAMILY)
+        key_store.add_key(ctrl_key)
         # create blockchain
         blockchain = Blockchain.create(
-            blockchain_name=f"waco-{ctrl_key_crypt.public_key}"
+            blockchain_name=f"waco-{ctrl_key.public_key}"
         )
 
         # publish first key on blockchain
         keyblock = ControlKeyBlock.new(
-            old_key_type=ctrl_key_crypt.family,
-            old_key=ctrl_key_crypt.public_key,
-            new_key_type=ctrl_key_crypt.family,
-            new_key=ctrl_key_crypt.public_key
+            old_key=ctrl_key,
+            new_key=ctrl_key,
         )
-        keyblock.sign(ctrl_key_crypt)
+        keyblock.sign(ctrl_key)
         blockchain.add_block(
             keyblock.generate_block_content(),
             topics="control_key"
@@ -89,7 +90,7 @@ class DidManager:
 
         did_doc = {"id": did}
         did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(ctrl_key_crypt)
+        did_doc_block.sign(ctrl_key)
         blockchain.add_block(
             did_doc_block.generate_block_content(),
             topics=DidDocBlock.walytis_block_topic
@@ -103,22 +104,21 @@ class DidManager:
         """Get this DID-Manager's DID."""
         return did_from_blockchain_id(self.blockchain.blockchain_id)
 
-    def renew_control_key(self) -> None:
+    def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
         """Change the control key to an automatically generated new one."""
-        # create new crypto keys
+        # create new control key if the user hasn't provided one
+        if not new_ctrl_key:
+            new_ctrl_key = Key.create(CRYPTO_FAMILY)
 
-        old_ctrl_key_crypt = self.get_ctrl_key_crypt()
-        new_ctrl_key_crypt = Crypt.new(CRYPTO_FAMILY)
-        self.key_store.add_key(bytes_to_string(new_ctrl_key_crypt.public_key), new_ctrl_key_crypt)
+        old_ctrl_key = self.get_ctrl_key_crypt()
+        self.key_store.add_key(new_ctrl_key)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
         keyblock = ControlKeyBlock.new(
-            old_key_type=old_ctrl_key_crypt.family,
-            old_key=old_ctrl_key_crypt.public_key,
-            new_key_type=new_ctrl_key_crypt.family,
-            new_key=new_ctrl_key_crypt.public_key
+            old_key=old_ctrl_key,
+            new_key=new_ctrl_key,
         )
-        keyblock.sign(old_ctrl_key_crypt)
+        keyblock.sign(old_ctrl_key)
 
         self.blockchain.add_block(
             keyblock.generate_block_content(),
@@ -135,7 +135,7 @@ class DidManager:
 
     def get_ctrl_key_crypt(self) -> Crypt:
         """Get the Crypt object for the current control key."""
-        return self.key_store.get_key(self.get_control_key().key_id)
+        return self.key_store.get_key(self.get_control_key().get_key_id())
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
@@ -203,3 +203,6 @@ def blockchain_id_from_did(did: str) -> str:
 def did_from_blockchain_id(blockchain_id: str) -> str:
     """Convert a Walytis blockchain ID to a DID."""
     return f"did:{DID_METHOD_NAME}:{blockchain_id}"
+
+
+decorate_all_functions(strictly_typed, __name__)

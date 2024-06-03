@@ -1,17 +1,20 @@
 """Classes for managing Person and Device identities."""
 
-import os
+from strict_typing import strictly_typed
+from decorate_all import decorate_all_functions
 import json
-from multi_crypt import Crypt
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Type, TypeVar
 
 import ipfs_api
+from brenthy_tools_beta.utils import bytes_to_string
 
+from .did_objects import Key
 from .did_manager import DidManager
-from .utils import validate_did_doc
 from .key_store import KeyStore
+from .utils import validate_did_doc
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -88,12 +91,12 @@ class DeviceIdentityAccess(IdentityAccess):
         self,
         did_manager: DidManager,
         config_dir: str,
-        crypt: Crypt,
+        key: Key,
         config_file: str,
         did_keystore_file: str,
     ):
         self.config_dir = config_dir
-        self.crypt = crypt
+        self.key = key
         self.config_file = config_file
         self.did_keystore_file = did_keystore_file
         self.did_manager = did_manager
@@ -102,20 +105,20 @@ class DeviceIdentityAccess(IdentityAccess):
     def create(
         cls: Type[_DeviceIdentityAccess],
         config_dir: str,
-        crypt: Crypt,
+        key: Key,
     ) -> _DeviceIdentityAccess:
         """Create a new PersonIdentityAccess object."""
         # create PersonIdentityAccess object and
         # run it's IdentityAccess initialiser
         config_file = os.path.join(config_dir, "device_id.json")
         did_keystore_file = os.path.join(config_dir, "device_id_keys.json")
-        key_store = KeyStore(did_keystore_file, crypt)
+        key_store = KeyStore(did_keystore_file, key)
         did_manager = DidManager.create(key_store)
 
         person_id_acc = cls(
             did_manager,
             config_dir,
-            crypt,
+            key,
             config_file,
             did_keystore_file,
         )
@@ -126,7 +129,7 @@ class DeviceIdentityAccess(IdentityAccess):
     def load_from_appdata(
         cls: Type[_DeviceIdentityAccess],
         config_dir: str,
-        crypt: Crypt,
+        key: Key,
     ) -> _DeviceIdentityAccess:
 
         config_file = os.path.join(config_dir, "device_id.json")
@@ -137,12 +140,12 @@ class DeviceIdentityAccess(IdentityAccess):
 
         did_manager = DidManager(
             blockchain=data["did_blockchain"],
-            key_store=KeyStore(did_keystore_file, crypt),
+            key_store=KeyStore(did_keystore_file, key),
         )
         return cls(
             did_manager,
             config_dir,
-            crypt,
+            key,
             config_file,
             did_keystore_file,
         )
@@ -197,35 +200,36 @@ class PersonIdentityAccess(IdentityAccess):
         did_manager: DidManager,
         device_identity_access: DeviceIdentityAccess,
         config_dir: str,
-        crypt: Crypt,
+        key: Key,
         config_file: str,
         did_keystore_file: str,
+        candidate_keys: list,
     ):
         self.device_identity_access = device_identity_access
         self.config_dir = config_dir
-        self.crypt = crypt
+        self.key = key
         self.config_file = config_file
         self.did_keystore_file = did_keystore_file
         self.did_manager = did_manager
+        self.candidate_keys = candidate_keys
 
     @classmethod
     def create(
         cls: Type[_PersonIdentityAccess],
         config_dir: str,
-        crypt: Crypt,
+        key: Key,
     ) -> _PersonIdentityAccess:
         """Create a new PersonIdentityAccess object."""
-
         # create DeviceIdentityAccess object
         device_identity_access = DeviceIdentityAccess.create(
             config_dir,
-            crypt
+            key
         )
         # create PersonIdentityAccess object and
         # run it's IdentityAccess initialiser
         config_file = os.path.join(config_dir, "person_id.json")
         did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
-        key_store = KeyStore(did_keystore_file, crypt)
+        key_store = KeyStore(did_keystore_file, key)
         did_manager = DidManager.create(key_store)
 
         did_manager.update_members_list([
@@ -235,9 +239,10 @@ class PersonIdentityAccess(IdentityAccess):
             did_manager,
             device_identity_access,
             config_dir,
-            crypt,
+            key,
             config_file,
             did_keystore_file,
+            [],
         )
         person_id_acc.save_appdata()
         return person_id_acc
@@ -246,8 +251,9 @@ class PersonIdentityAccess(IdentityAccess):
     def load_from_appdata(
         cls: Type[_PersonIdentityAccess],
         config_dir: str,
-        crypt: Crypt,
+        key: Key,
     ) -> _PersonIdentityAccess:
+        """Load a saved PersonIdentityAccess object from appdata."""
         config_file = os.path.join(config_dir, "person_id.json")
         did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
 
@@ -256,24 +262,27 @@ class PersonIdentityAccess(IdentityAccess):
 
         did_manager = DidManager(
             blockchain=data["did_blockchain"],
-            key_store=KeyStore(did_keystore_file, crypt),
+            key_store=KeyStore(did_keystore_file, key),
         )
+        candidate_keys = data["candidate_keys"]
 
         device_identity_access = DeviceIdentityAccess.load_from_appdata(
-            config_dir, crypt
+            config_dir, key
         )
         return cls(
             did_manager,
             device_identity_access,
             config_dir,
-            crypt,
+            key,
             config_file,
             did_keystore_file,
+            candidate_keys,
         )
 
     def serialise(self) -> dict:
         return {
             "did_blockchain": self.did_manager.blockchain.blockchain_id,
+            "candidate_keys": self.candidate_keys
         }
 
     def save_appdata(self):
@@ -315,3 +324,40 @@ class PersonIdentityAccess(IdentityAccess):
     def __del__(self):
         """Stop this Identity object, cleaning up resources."""
         self.terminate()
+
+    def check_prepare_control_key_update(self) -> bool:
+        """Check if we should prepare to renew our DID-manager's control key.
+
+        Generates new control key and shares it with other devices,
+        doesn't update the DID-Manager though
+        """
+        # TODO: check if we should generate and share a new control key
+        # for our DID manager
+        renew_control_key = True
+        if not renew_control_key:
+            return False
+
+        key = Key.create(CRYPTO_FAMILY)
+        self.did_manager.key_store.add_key(key)
+        self.candidate_keys.append(key.get_key_id())
+
+        # TODO: share candidate key with others
+        return True
+
+    def check_apply_control_key_update(self) -> bool:
+        """Check if we should renew our DID-manager's control key."""
+        # TODO check if enough of our brothers have the candidate new key
+        # or urgency is high
+        # TODO: choose control key from candidates
+        if not self.candidate_keys:
+            return False
+        new_control_key = self.candidate_keys[0]
+        renew_control_key = True
+        if not renew_control_key:
+            return False
+
+        self.did_manager.renew_control_key(new_control_key)
+        return True
+
+
+decorate_all_functions(strictly_typed, __name__)

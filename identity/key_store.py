@@ -1,14 +1,16 @@
-from multi_crypt import Crypt
+from strict_typing import strictly_typed
+from decorate_all import decorate_all_functions
+from .did_objects import Key
 import json
 import os
 
 
 class KeyStore:
-    keys: dict[Crypt]
+    keys: dict[Key]
 
-    def __init__(self, key_store_path: str, crypt: Crypt):
+    def __init__(self, key_store_path: str, key: Key):
         self.key_store_path = key_store_path
-        self.crypt = crypt
+        self.key = key
         self._load_appdata()
 
     def _load_appdata(self):
@@ -22,49 +24,34 @@ class KeyStore:
         appdata_encryption_public_key = data["appdata_encryption_public_key"]
         encrypted_keys = data["keys"]
 
-        if appdata_encryption_public_key != self.crypt.public_key.hex():
+        if appdata_encryption_public_key != self.key.public_key.hex():
             raise ValueError("Wrong cryptographic key for unlocking keystore.")
 
         keys = {}
-        for key_id, encrypted_key in list(encrypted_keys.items()):
-            crypt = Crypt.deserialise(
-                json.loads(
-                    bytes.decode(
-                        self.crypt.decrypt(
-                            bytes.fromhex(
-                                encrypted_key
-                            )
-                        )
-                    )
-                )
-            )
-            keys.update({key_id: crypt})
+        for encrypted_key in encrypted_keys:
+            key = Key.deserialise(encrypted_key, self.key)
+            keys.update({key.get_key_id(): key})
         self.keys = keys
 
     def save_appdata(self):
-        encrypted_keys = {}
+        encrypted_keys = []
         for key_id, key in list(self.keys.items()):
-            encrypted_serialised_key = bytes.hex(bytes(
-                self.crypt.encrypt(
-                    str.encode(
-                        json.dumps(
-                            key.serialise()
-                        )
-                    )
-                )
-            ))
-            encrypted_keys.update({key_id: encrypted_serialised_key})
+            encrypted_serialised_key = key.serialise(self.key)
+            encrypted_keys.append(encrypted_serialised_key)
         data = {
-            "appdata_encryption_public_key": self.crypt.public_key.hex(),
+            "appdata_encryption_public_key": self.key.public_key.hex(),
             "keys": encrypted_keys
         }
 
         with open(self.key_store_path, "w+") as file:
             file.write(json.dumps(data))
 
-    def add_key(self, key_id: str, crypt: Crypt):
-        self.keys.update({key_id: crypt})
+    def add_key(self, key: Key):
+        self.keys.update({key.get_key_id(): key})
         self.save_appdata()
 
-    def get_key(self, key_id: str) -> Crypt:
+    def get_key(self, key_id: str) -> Key:
         return self.keys[key_id]
+
+
+decorate_all_functions(strictly_typed, __name__)

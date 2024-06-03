@@ -1,9 +1,12 @@
 """Machinery for working with Walytis blocks for the DID-Manager."""
+from decorate_all import decorate_all_functions
+from strict_typing import strictly_typed
 import json
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Type, TypeVar
-
+from datetime import datetime
+from brenthy_tools_beta.utils import time_to_string, string_to_time
 import walytis_beta_api as walytis_api
 from multi_crypt import Crypt, verify_signature
 from walytis_beta_api import Blockchain
@@ -18,32 +21,35 @@ PRIBLOCKS_VERSION = (0, 0, 1)
 _ControlKeyBlock = TypeVar('_ControlKeyBlock', bound='ControlKeyBlock')
 
 
+@strictly_typed
 @dataclass
 class ControlKeyBlock:
     """Representation of a block that publishes a control key update."""
 
     old_key: str
     old_key_type: str
+    old_key_timestamp: str
     new_key: str
     new_key_type: str
+    new_key_timestamp: str
     signature: str
 
-    priblocks_version: tuple
+    priblocks_version: tuple | list
 
     @classmethod
     def new(
         cls: Type[_ControlKeyBlock],
-        old_key: str,
-        old_key_type: str,
-        new_key: str,
-        new_key_type: str
+        old_key: Key,
+        new_key: Key,
     ) -> _ControlKeyBlock:
         """Prepare a control-key-update block (not yet signed)."""
         return cls(
-            old_key=bytes_to_string(old_key),
-            old_key_type=bytes_to_string(old_key_type),
-            new_key=bytes_to_string(new_key),
-            new_key_type=bytes_to_string(new_key_type),
+            old_key=bytes_to_string(old_key.public_key),
+            old_key_type=old_key.family,
+            old_key_timestamp=time_to_string(old_key.creation_time),
+            new_key=bytes_to_string(new_key.public_key),
+            new_key_type=new_key.family,
+            new_key_timestamp=time_to_string(new_key.creation_time),
             priblocks_version=PRIBLOCKS_VERSION,
             signature=""
         )
@@ -73,25 +79,26 @@ class ControlKeyBlock:
     def get_old_key(self) -> Key:
         """Get this control-key-update's old key."""
         return Key(
-            key_id=self.old_key,
-            type=self.old_key_type,
-            public_key=self.old_key,
-            private_key=None
+            family=self.old_key_type,
+            public_key=bytes_from_string(self.old_key),
+            private_key=None,
+            creation_time=string_to_time(self.old_key_timestamp),
         )
 
     def get_new_key(self) -> Key:
         """Get this control-key-update's new key."""
         return Key(
-            key_id=self.new_key,
-            type=self.new_key_type,
-            public_key=self.new_key,
-            private_key=None
+            family=self.new_key_type,
+            public_key=bytes_from_string(self.new_key),
+            private_key=None,
+            creation_time=string_to_time(self.new_key_timestamp),
         )
 
 
 _InfoBlock = TypeVar('_InfoBlock', bound='InfoBlock')
 
 
+# @strictly_typed
 @dataclass
 class InfoBlock(ABC):
     """Base class for representing blocks other than the control-key blocks.
@@ -103,7 +110,7 @@ class InfoBlock(ABC):
     # essential content of this block from the perspective of the DidManager
     info_content: dict | list
     signature: str
-    priblocks_version: tuple
+    priblocks_version: tuple | list
 
     @property
     @abstractmethod
@@ -149,14 +156,15 @@ class InfoBlock(ABC):
     def verify_signature(self, key: Key) -> bool:
         """Verify this block's signature."""
         return verify_signature(
-            key.type,
+            key.family,
             bytes_from_string(self.signature),
             self.get_signature_data(),
             bytes_from_string(key.public_key)
         )
 
 
-@dataclass
+@strictly_typed
+# @dataclass
 class DidDocBlock(InfoBlock):
     """A block containing a DID document."""
 
@@ -168,7 +176,8 @@ class DidDocBlock(InfoBlock):
         return self.info_content
 
 
-@dataclass
+@strictly_typed
+# @dataclass
 class MembersListBlock(InfoBlock):
     """Representation of a block publishing this DID's member-devices."""
 
@@ -365,3 +374,6 @@ def get_latest_members_list(blockchain: Blockchain) -> list | None:
             f"not {type(latest_block)}"
         )
     return latest_block.info_content
+
+
+# decorate_all_functions(strictly_typed, __name__)

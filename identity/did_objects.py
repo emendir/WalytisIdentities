@@ -1,6 +1,13 @@
+from brenthy_tools_beta.utils import (
+    bytes_to_string, time_to_string, string_to_time
+)
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Type, TypeVar
 from multi_crypt import Crypt
+from decorate_all import decorate_all_functions
+from strict_typing import strictly_typed
+
 _Service = TypeVar('_Service', bound='Service')
 
 
@@ -13,7 +20,7 @@ class Service:
     """
 
     service_id: str
-    type: str
+    family: str
     # example: 'messenger://user_id/chatroom'
     service_endpoint: str | list | dict
 
@@ -22,7 +29,7 @@ class Service:
         """Initialise a Service from a DID service spec from a DID document."""
         return cls(
             service_id=service_spec['id'].strip("#"),
-            type=service_spec['type'],
+            family=service_spec['family'],
             service_endpoint=['serviceEndpoint']
         )
 
@@ -30,7 +37,7 @@ class Service:
         """Generate a service spec for a DID document."""
         return {
             "id": f"#{self.service_id}",
-            "type": self.type,
+            "family": self.family,
             "serviceEndpoint": self.service_endpoint
         }
 
@@ -39,53 +46,117 @@ _Key = TypeVar('_Key', bound='Key')
 
 
 @dataclass
-class Key:
+class Key(Crypt):
     """Represents a set of cryptographic keys, compatible with DID specs."""
 
-    key_id: str
-    type: str
-    public_key: str
-    private_key: str | None
+    family: str
+    public_key: bytearray
+    private_key: bytearray | None
+    creation_time: datetime
+
+    def __init__(
+        self,
+        family: str,
+        public_key: bytearray | str,
+        private_key: bytearray | str | None,
+        creation_time: datetime,
+    ):
+        """Create a Key object."""
+        if isinstance(public_key, str):
+            public_key = bytes.fromhex(public_key)
+
+        if isinstance(private_key, str):
+            public_key = bytes.fromhex(private_key)
+        self.family = family
+        self.public_key = public_key
+        self.private_key = private_key
+        self.creation_time = creation_time
+        super().__init__(self.family, self.private_key, self.public_key)
+
+    @classmethod
+    def create(cls: Type[_Key], family: str) -> _Key:
+        """Initialise a Key from a DID key spec from a DID document."""
+        crypt = Crypt.new(family)
+
+        return cls(
+            family=crypt.family,
+            public_key=crypt.public_key,
+            private_key=crypt.private_key,
+            creation_time=datetime.utcnow()
+        )
+
+    @classmethod
+    def from_crypt(
+        cls: Type[_Key],
+        crypt: Crypt,
+        creation_time: datetime
+    ) -> _Key:
+        """Create a Key object from a Crypt object."""
+        return cls(
+            family=crypt.family,
+            public_key=crypt.public_key,
+            private_key=crypt.private_key,
+            creation_time=creation_time,
+        )
 
     @classmethod
     def from_key_spec(cls: Type[_Key], key_spec: dict) -> _Key:
         """Initialise a Key from a DID key spec from a DID document."""
-        return cls(
-            key_id=key_spec['id'].strip("#"),
-            type=key_spec['type'],
+        key = cls(
+            family=key_spec['type'],
             public_key=key_spec['publicKeyMultibase'],
-            private_key=None
+            private_key=None,
+            creation_time=string_to_time(key_spec['creation_time']),
         )
+        if key_spec['id'].strip("#") != key.get_key_id():
+            raise ValueError(
+                "The key-spec's key ID doesn't match our convention"
+            )
 
     def generate_key_spec(self, controller: str) -> dict:
         """Generate a key spec for a DID document."""
         return {
-            "id": f"#{self.key_id}",
-            "type": self.type,
-            "publicKeyMultibase": self.public_key,
-            "controller": controller
+            "id": f"#{self.get_key_id()}",
+            "type": self.family,
+            "publicKeyMultibase": self.public_key.hex(),
+            "creation_time": time_to_string(self.creation_time),
+            "controller": controller,
         }
 
-    def serialise(self, crypt: Crypt) -> str:
+    def serialise(self, crypt: Crypt) -> dict:
         """Serialise this key's data, including the private key encrypted."""
-        if not (self.key_id and self.type
-                and self.public_key and self.private_key):
+        if not (self.family and self.public_key and self.private_key
+                and self.creation_time):
             raise ValueError("Not all of this objects' fields are set.")
 
         return {
-            "key_id": self.key_id,
-            "type": self.type,
-            "public_key": self.public_key,
-            "private_key": Crypt.encrypt(self.private_key.encode()).hex(),
+            "family": self.family,
+            "public_key": self.public_key.hex(),
+            "private_key": crypt.encrypt(self.private_key).hex(),
+            "creation_time": time_to_string(self.creation_time),
         }
 
     @classmethod
     def deserialise(cls: Type[_Key], data: dict, crypt: Crypt) -> _Key:
         """Deserialise data with encrypted private key."""
-        private_key = crypt.decrypt(bytes.fromhex(data["private_key"])).decode()
+        private_key = crypt.decrypt(bytes.fromhex(data["private_key"]))
         return cls(
-            key_id=data["key_id"],
-            type=data["type"],
+            family=data["family"],
             public_key=data["public_key"],
             private_key=private_key,
+            creation_time=string_to_time(data["creation_time"])
         )
+
+    def get_public_key(self) -> str:
+        return self.public_key.hex()
+
+    def get_private_key(self) -> str:
+        return self.private_key.hex()
+
+    def get_key_id(self) -> str:
+        if not (self.family and self.public_key and self.creation_time):
+            raise ValueError("Not all of this objects' fields are set.")
+        return f"{time_to_string(self.creation_time)}-{self.family}-{self.get_public_key()}"
+
+
+decorate_all_functions(strictly_typed, __name__)

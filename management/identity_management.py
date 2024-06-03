@@ -1,3 +1,5 @@
+from decorate_all import decorate_all_functions
+from strict_typing import strictly_typed
 from identity.identity import PersonIdentityAccess, DeviceIdentityAccess
 from multi_crypt import Crypt
 
@@ -12,3 +14,6 @@ def update_identity():
 
 def delete_identity():
     pass
+
+
+decorate_all_functions(strictly_typed, __name__)

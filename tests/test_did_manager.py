@@ -26,7 +26,7 @@ def pytest_configure():
     pytest.key_store_path = os.path.join(pytest.tempdir, "keystore.json")
 
     pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
-    pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
+    pytest.CRYPT = Key.create(pytest.CRYPTO_FAMILY)
 
 
 def pytest_unconfigure():

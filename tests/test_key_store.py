@@ -27,17 +27,25 @@ def test_preparations():
     pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
 
 
+def test_key_serialisation():
+    key = Key.create(pytest.CRYPTO_FAMILY)
+    mark(
+        key.decrypt(bytes.fromhex(key.serialise(key)["private_key"])) == key.private_key,
+        "Serialisation encrypt private key."
+    )
+
+
 def test_add_get_key():
-    pytest.crypt1 = Crypt.new(pytest.CRYPTO_FAMILY)
-    pytest.crypt2 = Crypt.new(pytest.CRYPTO_FAMILY)
+    pytest.crypt1 = Key.create(pytest.CRYPTO_FAMILY)
+    pytest.crypt2 = Key.create(pytest.CRYPTO_FAMILY)
 
     pytest.keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
 
-    pytest.keystore.add_key("crypt1", pytest.crypt1)
-    pytest.keystore.add_key("crypt2", pytest.crypt2)
+    pytest.keystore.add_key(pytest.crypt1)
+    pytest.keystore.add_key(pytest.crypt2)
 
-    c1 = pytest.keystore.get_key("crypt1")
-    c2 = pytest.keystore.get_key("crypt2")
+    c1 = pytest.keystore.get_key(pytest.crypt1.get_key_id())
+    c2 = pytest.keystore.get_key(pytest.crypt2.get_key_id())
 
     mark(
         c1.public_key == pytest.crypt1.public_key
@@ -53,8 +61,8 @@ def test_add_get_key():
 def test_reopen_keystore():
     pytest.keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
 
-    c1 = pytest.keystore.get_key("crypt1")
-    c2 = pytest.keystore.get_key("crypt2")
+    c1 = pytest.keystore.get_key(pytest.crypt1.get_key_id())
+    c2 = pytest.keystore.get_key(pytest.crypt2.get_key_id())
 
     mark(
         c1.public_key == pytest.crypt1.public_key
@@ -73,6 +81,7 @@ def cleanup():
 
 def run_tests():
     test_preparations()
+    test_key_serialisation()
     test_add_get_key()
     test_reopen_keystore()
     cleanup()
