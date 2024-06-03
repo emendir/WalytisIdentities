@@ -1,12 +1,9 @@
 from identity.identity import PersonIdentityAccess, DeviceIdentityAccess
+from multi_crypt import Crypt
 
 
-def create_device_identity() -> DeviceIdentityAccess:
-    return DeviceIdentityAccess.create()
-
-
-def create_person_identity(device_identity: DeviceIdentityAccess) -> PersonIdentityAccess:
-    return PersonIdentityAccess.create(device_identity)
+def create_person_identity(config_dir: str, crypt: Crypt) -> PersonIdentityAccess:
+    return PersonIdentityAccess.create(config_dir, crypt)
 
 
 def update_identity():

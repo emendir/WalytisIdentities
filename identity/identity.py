@@ -211,17 +211,23 @@ class PersonIdentityAccess(IdentityAccess):
     @classmethod
     def create(
         cls: Type[_PersonIdentityAccess],
-        device_identity_access: DeviceIdentityAccess,
         config_dir: str,
         crypt: Crypt,
     ) -> _PersonIdentityAccess:
         """Create a new PersonIdentityAccess object."""
+
+        # create DeviceIdentityAccess object
+        device_identity_access = DeviceIdentityAccess.create(
+            config_dir,
+            crypt
+        )
         # create PersonIdentityAccess object and
         # run it's IdentityAccess initialiser
         config_file = os.path.join(config_dir, "person_id.json")
         did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
         key_store = KeyStore(did_keystore_file, crypt)
         did_manager = DidManager.create(key_store)
+
         did_manager.update_members_list([
             {"did": device_identity_access.get_did()}
         ])
@@ -239,7 +245,6 @@ class PersonIdentityAccess(IdentityAccess):
     @classmethod
     def load_from_appdata(
         cls: Type[_PersonIdentityAccess],
-        device_identity_access: DeviceIdentityAccess,
         config_dir: str,
         crypt: Crypt,
     ) -> _PersonIdentityAccess:
@@ -252,6 +257,10 @@ class PersonIdentityAccess(IdentityAccess):
         did_manager = DidManager(
             blockchain=data["did_blockchain"],
             key_store=KeyStore(did_keystore_file, crypt),
+        )
+
+        device_identity_access = DeviceIdentityAccess.load_from_appdata(
+            config_dir, crypt
         )
         return cls(
             did_manager,

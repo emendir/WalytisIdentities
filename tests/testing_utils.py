@@ -22,15 +22,17 @@ def mark(success: bool, message: str, error: Exception | None = None) -> None:
         mark = coloured("✓", "green")
     else:
         mark = coloured("✗", "red")
+
+    print(mark, message)
+    if not success:
+        if PYTEST:
+            if error:
+                raise error
+            raise Exception(f'Failed at test: {message}')
         if error:
             print(str(error))
         if BREAKPOINTS:
             breakpoint()
-    print(mark, message)
-    if PYTEST and not success:
-        if error:
-            raise error
-        raise Exception(f'Failed at test: {message}')
 
 
 def test_threads_cleanup() -> None:

@@ -2,6 +2,9 @@ import sys
 import os
 import shutil
 import os
+import testing_utils
+from testing_utils import mark
+from multi_crypt import Crypt
 import pytest
 from termcolor import colored as coloured
 
@@ -15,50 +18,37 @@ BREAKPOINTS = True
 PYTEST = True  # whether or not this script is being run by pytest
 
 
-def mark(success, message, error_info=""):
-    """Prints a check or cross and message depending on the given success.
-    If pytest is running this test, an exception is thrown if success is False.
-
-    Parameters:
-            success (bool): whether or not the test succeeded
-            message (str): short description of the test to print
-            error_info (str): message to print in case of failure
-    """
-    if success:
-        mark = coloured("✓", "green")
-    else:
-        mark = coloured("✗", "red")
-        if error_info:
-            print(error_info)
-        if BREAKPOINTS:
-            breakpoint()
-    print(mark, message)
-    if PYTEST and not success:
-        raise Exception(f'Failed {message}')
-    return success
-
-
 def pytest_configure():
     """Setup resources in preparation for tests."""
     # declare 'global' variables
+    pytest.d_id_access = None
+    pytest.person1_config_dir = tempfile.mkdtemp()
+    pytest.person2_config_dir = tempfile.mkdtemp()
     pytest.contacts_manager = None
     pytest.me2 = None
     pytest.tempdir = tempfile.mkdtemp()
+    # the cryptographic family to use for the tests
+    pytest.CRYPTO_FAMILY = "EC-secp256k1"
+    pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
+
+
+def pytest_unconfigure():
+    """Clean up resources used during tests."""
+    shutil.rmtree(pytest.person1_config_dir)
+    shutil.rmtree(pytest.person2_config_dir)
+    shutil.rmtree(pytest.tempdir)
 
 
 def test_create_identity():
     print("Creating identity...")
-    pytest.device1 = identity_management.create_device_identity()
-    pytest.me1 = identity_management.create_person_identity(pytest.device1)
-    keys = (
-        pytest.me1.did_manager.crypt.public_key,
-        pytest.me1.did_manager.crypt.private_key
+    pytest.me1 = identity_management.create_person_identity(
+        pytest.person1_config_dir, pytest.CRYPT
     )
-    did = pytest.me1.get_did()
+
     mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
     devices = pytest.me1.get_members()
     mark(
-        len(devices) == 1 and devices[0]["did"] == pytest.device1.get_did(),
+        len(devices) == 1 and devices[0]["did"] == pytest.me1.device_identity_access.get_did(),
         "person identity has device identity"
     )
 
@@ -72,8 +62,9 @@ def test_create_contacts_manager():
 
 def test_befriend():
     print("Creating identity...")
-    pytest.device2 = identity_management.create_device_identity()
-    pytest.me2 = identity_management.create_person_identity(pytest.device2)
+    pytest.me2 = identity_management.create_person_identity(
+        pytest.person1_config_dir, pytest.CRYPT
+    )
     print("Befriending...")
     pytest.contacts_manager.befriend(pytest.me2)
     mark(pytest.me2 in pytest.contacts_manager.get_friends(), "befriend")
@@ -84,12 +75,6 @@ def test_deletion():
     pytest.me1.delete()
     pytest.contacts_manager.forget(pytest.me2)
     mark(pytest.me2 not in pytest.contacts_manager.get_friends(), "forget")
-
-
-def pytest_unconfigure():
-    """Clean up resources used during tests."""
-    print("Cleaning up...")
-    shutil.rmtree(pytest.tempdir)
 
 
 def run_tests():
