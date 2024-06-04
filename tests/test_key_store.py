@@ -80,6 +80,7 @@ def cleanup():
 
 
 def run_tests():
+    print("\nRunning tests for KeyStore:")
     test_preparations()
     test_key_serialisation()
     test_add_get_key()

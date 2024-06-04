@@ -1,3 +1,4 @@
+import testing_utils
 import os
 import shutil
 import sys
@@ -16,9 +17,6 @@ if True:
     from identity.did_manager import DidManager
     from identity.did_objects import Key
     from identity.key_store import KeyStore
-
-BREAKPOINTS = True
-PYTEST = True  # whether or not this script is being run by pytest
 
 
 def pytest_configure():
@@ -112,8 +110,8 @@ def test_reload_did_manager():
 
 
 def run_tests():
-    global PYTEST
-    PYTEST = False
+    print("\nRunning tests for DidManager:")
+    testing_utils.PYTEST = False
     pytest_configure()  # run test preparations
 
     # run tests
@@ -127,4 +125,5 @@ def run_tests():
     pytest_unconfigure()  # run test cleanup
 
 
-run_tests()
+if __name__ == "__main__":
+    run_tests()

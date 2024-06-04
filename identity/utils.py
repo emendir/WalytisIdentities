@@ -1,6 +1,10 @@
 from base64 import urlsafe_b64encode
 from base64 import urlsafe_b64decode
 import rfc3987
+from loguru import logger
+import sys
+logger.remove(0)
+logger.add(sys.stdout, format="<level>{message}</level>")
 
 
 def is_valid_uri(uri):

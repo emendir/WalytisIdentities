@@ -78,8 +78,8 @@ def test_deletion():
 
 
 def run_tests():
-    global PYTEST
-    PYTEST = False
+    print("\nRunning tests for IdentityManager:")
+    testing_utils.PYTEST = False
 
     pytest_configure()
     test_create_identity()
@@ -89,4 +89,5 @@ def run_tests():
     pytest_unconfigure()
 
 
-run_tests()
+if __name__ == "__main__":
+    run_tests()

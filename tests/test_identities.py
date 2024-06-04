@@ -120,6 +120,7 @@ def test_delete_person_identity():
 
 
 def run_tests():
+    print("\nRunning tests for Identities:")
     testing_utils.PYTEST = False
     pytest_configure()  # run test preparations
 
@@ -133,4 +134,5 @@ def run_tests():
     pytest_unconfigure()  # run test cleanup
 
 
-run_tests()
+if __name__ == "__main__":
+    run_tests()

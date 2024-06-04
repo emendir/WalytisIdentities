@@ -1,3 +1,4 @@
+from typing import Any
 from strict_typing import strictly_typed
 from decorate_all import decorate_all_functions
 from .did_objects import Key
@@ -6,18 +7,19 @@ import os
 
 
 class KeyStore:
-    keys: dict[Key]
+    keys: dict[str, Key]  # key_id: Key object
 
     def __init__(self, key_store_path: str, key: Key):
         self.key_store_path = key_store_path
         self.key = key
+        self.keys: dict[str, Key] = {}
         self._load_appdata()
 
     def _load_appdata(self):
         if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError("The directory of the keystore path doesn't exist.")
         if not os.path.exists(self.key_store_path):
-            self.keys = {}
+            self.keys: dict[str, Key] = {}
             return
         with open(self.key_store_path, "r") as file:
             data = json.loads(file.read())

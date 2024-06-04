@@ -1,17 +1,17 @@
 """Machinery for managing DID-Documents, i.e. identities' cryptography keys."""
 
-from strict_typing import strictly_typed
-from decorate_all import decorate_all_functions
 from dataclasses import dataclass
 from typing import Type, TypeVar
 
-from brenthy_tools_beta.utils import time_to_string
+from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
+from strict_typing import strictly_typed
 from walytis_beta_api import Blockchain, delete_blockchain
 
 from .did_manager_blocks import (
     ControlKeyBlock,
     DidDocBlock,
+    InfoBlock,
     MembersListBlock,
     get_latest_control_key,
     get_latest_did_doc,
@@ -20,7 +20,6 @@ from .did_manager_blocks import (
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .key_store import KeyStore
-from .utils import bytes_to_string
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -93,7 +92,7 @@ class DidManager:
         did_doc_block.sign(ctrl_key)
         blockchain.add_block(
             did_doc_block.generate_block_content(),
-            topics=DidDocBlock.walytis_block_topic
+            did_doc_block.walytis_block_topic
         )
 
         did_manager = cls(blockchain, key_store=key_store)
@@ -110,7 +109,7 @@ class DidManager:
         if not new_ctrl_key:
             new_ctrl_key = Key.create(CRYPTO_FAMILY)
 
-        old_ctrl_key = self.get_ctrl_key_crypt()
+        old_ctrl_key = self.get_control_key()
         self.key_store.add_key(new_ctrl_key)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
@@ -127,24 +126,28 @@ class DidManager:
 
         self._control_key = keyblock.get_new_key()
 
+    def add_info_block(self, block: InfoBlock) -> None:
+        """Add an InfoBlock type block to this DID-Block's blockchain."""
+        if not block.signature:
+            block.sign(self.get_control_key())
+        self.blockchain.add_block(
+            block.generate_block_content(), block.walytis_block_topic
+        )
+
     def get_control_key(self) -> Key:
         """Get the current control key."""
         if not self._control_key:
             self._control_key = get_latest_control_key(self.blockchain)
+        if not self._control_key.private_key:
+            self._control_key = self.key_store.get_key(
+                self._control_key.get_key_id()
+            )
         return self._control_key
-
-    def get_ctrl_key_crypt(self) -> Crypt:
-        """Get the Crypt object for the current control key."""
-        return self.key_store.get_key(self.get_control_key().get_key_id())
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
         did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(self.get_ctrl_key_crypt())
-        self.blockchain.add_block(
-            did_doc_block.generate_block_content(),
-            topics=DidDocBlock.walytis_block_topic
-        )
+        self.add_info_block(did_doc_block)
 
         self.did_doc = did_doc
 
@@ -157,11 +160,7 @@ class DidManager:
     def update_members_list(self, members_list: list) -> None:
         """Publish a new list of members to replace the current one."""
         members_block = MembersListBlock.new(members_list)
-        members_block.sign(self.get_ctrl_key_crypt())
-        self.blockchain.add_block(
-            members_block.generate_block_content(),
-            topics=MembersListBlock.walytis_block_topic
-        )
+        self.add_info_block(members_block)
 
         self.members_list = members_list
 

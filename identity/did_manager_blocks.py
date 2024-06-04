@@ -189,6 +189,19 @@ class MembersListBlock(InfoBlock):
         return self.info_content
 
 
+@strictly_typed
+# @dataclass
+class KeyOwnershipBlock(InfoBlock):
+    """Representation of a block publishing annoucing key ownership."""
+
+    walytis_block_topic = 'key_ownership'
+    info_content: list
+
+    def get_key_ownership(self) -> dict:
+        """Get the member devices published."""
+        return self.info_content
+
+
 def verify_control_key_update(
         key_block_1: ControlKeyBlock, key_block_2: ControlKeyBlock
 ) -> bool:
