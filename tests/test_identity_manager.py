@@ -1,19 +1,19 @@
-import sys
 import os
 import shutil
-import os
-import testing_utils
-from testing_utils import mark
-from multi_crypt import Crypt
+import sys
+
 import pytest
-from termcolor import colored as coloured
+import testing_utils
+import walytis_beta_api
+from multi_crypt import Crypt
+from testing_utils import mark
 
 if True:
     sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-    from management import friends_management
-    from management import identity_management
     from identity.identity import IdentityAccess
+    from management import friends_management, identity_management
 import tempfile
+
 BREAKPOINTS = True
 PYTEST = True  # whether or not this script is being run by pytest
 
@@ -48,7 +48,7 @@ def test_create_identity():
     mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
     devices = pytest.me1.get_members()
     mark(
-        len(devices) == 1 and devices[0]["did"] == pytest.me1.device_identity_access.get_did(),
+        len(devices) == 1 and devices[0]["did"] == pytest.me1.device_did_manager.get_did(),
         "person identity has device identity"
     )
 
@@ -74,7 +74,12 @@ def test_deletion():
     print("Deleting contacts...")
     pytest.me1.delete()
     pytest.contacts_manager.forget(pytest.me2)
-    mark(pytest.me2 not in pytest.contacts_manager.get_friends(), "forget")
+    me2_blockchain_id = pytest.me2.person_did_manager.blockchain.blockchain_id
+    mark(
+        pytest.me2 not in pytest.contacts_manager.get_friends()
+        and me2_blockchain_id not in walytis_beta_api.list_blockchain_ids(),
+        "forget"
+    )
 
 
 def run_tests():

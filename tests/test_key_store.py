@@ -11,10 +11,7 @@ import shutil
 
 if True:
     sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-    # from management import friends_management
-    # from management import identity_management
-    # from identity.identity import IdentityAccess
-    from identity.did_manager import DidManager
+
     from identity.did_objects import Key
     from identity.key_store import KeyStore
 

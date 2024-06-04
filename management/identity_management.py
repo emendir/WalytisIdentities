@@ -1,11 +1,11 @@
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
-from identity.identity import PersonIdentityAccess, DeviceIdentityAccess
+from identity.identity import IdentityAccess
 from multi_crypt import Crypt
 
 
-def create_person_identity(config_dir: str, crypt: Crypt) -> PersonIdentityAccess:
-    return PersonIdentityAccess.create(config_dir, crypt)
+def create_person_identity(config_dir: str, crypt: Crypt) -> IdentityAccess:
+    return IdentityAccess.create(config_dir, crypt)
 
 
 def update_identity():
