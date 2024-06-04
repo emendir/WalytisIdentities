@@ -1,5 +1,7 @@
 """Classes for managing Person and Device identities."""
 
+import time
+from threading import Thread
 import json
 import os
 from abc import ABC, abstractmethod
@@ -23,7 +25,7 @@ from .did_manager_blocks import (
     get_latest_did_doc,
 )
 from .did_objects import Key
-from .key_store import KeyStore
+from .key_store import KeyStore, UnknownKeyError
 from .settings import CTRL_KEY_MAX_RENEWAL_DUR_HR, CTRL_KEY_RENEWAL_AGE_HR
 from .utils import validate_did_doc
 
@@ -53,7 +55,7 @@ class IdentityAccess:
         self.key = key
         self.person_did_manager = person_did_manager
         self.config_file = os.path.join(config_dir, "person_id.json")
-        self.did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+        self.person_keystore_file = os.path.join(config_dir, "person_keys.json")
         self.device_keystore_file = os.path.join(config_dir, "device_keys.json")
         self.candidate_keys: dict[str, list[str]] = {}
         self.get_published_candidate_keys()
@@ -62,6 +64,40 @@ class IdentityAccess:
             f"{self.person_did_manager.get_did()}-KeyRequests",
             self.key_requests_handler
         )
+        self._terminate = False
+        self.control_key_manager_thr = Thread(
+            target=self.manage_control_key
+        )
+        self.control_key_manager_thr.start()
+
+    def assert_ownership(self):
+        """If we don't yet own the control key, get it."""
+        control_key = self.person_did_manager.get_control_key()
+        if control_key.private_key:
+            return
+        while not self._terminate:
+            for member in self.get_members():
+                if self._terminate:
+                    return
+                did = member["did"]
+                if did == self.device_did_manager.get_did():
+                    continue
+                try:
+                    peer_id = self.get_member_ipfs_id(did)
+                except IncompletePeerInfoError:
+                    continue
+                self.request_key(control_key.get_key_id(), peer_id)
+            time.sleep(1)
+
+        # log.debug("Got control key ownership!")
+
+    def manage_control_key(self):
+        self.assert_ownership()
+
+        while not self._terminate:
+            time.sleep(1)
+            self.check_prepare_control_key_update()
+            self.check_apply_control_key_update()
 
     @classmethod
     def create(
@@ -70,9 +106,9 @@ class IdentityAccess:
         key: Key,
     ) -> _IdentityAccess:
         """Create a new IdentityAccess object."""
-        did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+        person_keystore_file = os.path.join(config_dir, "person_keys.json")
         device_keystore_file = os.path.join(config_dir, "device_keys.json")
-        key_store = KeyStore(did_keystore_file, key)
+        key_store = KeyStore(person_keystore_file, key)
         person_did_manager = DidManager.create(key_store)
         device_keystore = KeyStore(device_keystore_file, key)
         device_did_manager = DidManager.create(device_keystore)
@@ -97,7 +133,7 @@ class IdentityAccess:
     ) -> _IdentityAccess:
         """Load a saved IdentityAccess object from appdata."""
         config_file = os.path.join(config_dir, "person_id.json")
-        did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+        person_keystore_file = os.path.join(config_dir, "person_keys.json")
         device_keystore_file = os.path.join(config_dir, "device_keys.json")
 
         with open(config_file, "r") as file:
@@ -105,7 +141,7 @@ class IdentityAccess:
 
         person_did_manager = DidManager(
             blockchain=data["person_blockchain"],
-            key_store=KeyStore(did_keystore_file, key),
+            key_store=KeyStore(person_keystore_file, key),
         )
         device_did_manager = DidManager(
             blockchain=data["device_blockchain"],
@@ -134,9 +170,9 @@ class IdentityAccess:
         except BlockchainAlreadyExistsError:
             blockchain = Blockchain(invitation["blockchain_id"])
 
-        did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+        person_keystore_file = os.path.join(config_dir, "person_keys.json")
         device_keystore_file = os.path.join(config_dir, "device_keys.json")
-        key_store = KeyStore(did_keystore_file, key)
+        key_store = KeyStore(person_keystore_file, key)
         person_did_manager = DidManager(
             blockchain,
             key_store
@@ -196,64 +232,6 @@ class IdentityAccess:
         validate_did_doc(did_doc)
         return did_doc
 
-    def delete(self) -> None:
-        """Delete this Identity."""
-        self.device_did_manager.delete()
-        self.person_did_manager.delete()
-
-    def terminate(self) -> None:
-        """Stop this Identity object, cleaning up resources."""
-        self.device_did_manager.terminate()
-        self.person_did_manager.terminate()
-        self.key_requests_listener.terminate()
-
-    def __del__(self):
-        """Stop this Identity object, cleaning up resources."""
-        self.terminate()
-
-    def check_prepare_control_key_update(self) -> bool:
-        """Check if we should prepare to renew our DID-manager's control key.
-
-        Generates new control key and shares it with other devices,
-        doesn't update the DID-Manager though
-
-        Returns:
-            Whether or not we are now prepared to renew control keys
-        """
-        ctrl_key_timestamp = self.person_did_manager.get_control_key().creation_time
-        ctrl_key_age_hr = (
-            datetime.utcnow() - ctrl_key_timestamp
-        ).total_seconds() / 60 / 60
-
-        # if control key isn't too old yet
-        if ctrl_key_age_hr < CTRL_KEY_RENEWAL_AGE_HR:
-            self.candidate_keys = {}
-            self.save_appdata()
-            return False
-
-        # refresh our list of published candidate_keys
-        self.get_published_candidate_keys()
-
-        # if we already have a control key candidate
-        if self.candidate_keys:
-            # try get the private keys of any candidate keys we don't yet own
-            for key_id, members in list(self.candidate_keys.items()):
-                if key_id not in self.person_did_manager.key_store.keys.keys():
-                    for member in members:
-                        if self.request_key(key_id, member):
-                            break
-            return True
-
-        key = Key.create(CRYPTO_FAMILY)
-        self.person_did_manager.key_store.add_key(key)
-        self.candidate_keys.update(
-            {key.get_key_id(): [self.device_did_manager.get_did()]}
-        )
-        self.save_appdata()
-
-        self.publish_key_ownership(key)
-        return True
-
     def publish_key_ownership(self, key: Key) -> None:
         """Publish a public key and proof that we have it's private key."""
         key_ownership = {
@@ -289,7 +267,7 @@ class IdentityAccess:
                 return
             try:
                 key = self.person_did_manager.key_store.get_key(key_id)
-            except IndexError:
+            except UnknownKeyError:
                 conv.say(json.dumps({
                     "error": "I don't own this key.",
                     "peer_public_key": peer_key.get_public_key()
@@ -309,13 +287,17 @@ class IdentityAccess:
 
     def get_member_ipfs_id(self, did: str) -> str:
         """Get the IPFS content ID of another member."""
-        if did not in self.get_members():
+        if did not in [member["did"] for member in self.get_members()]:
             raise Exception("This DID is not among our members.")
 
         blockchain = Blockchain(blockchain_id_from_did(did))
 
         did_doc = get_latest_did_doc(blockchain)
-        return did_doc["ipfs_peer_id"]
+
+        peer_id = did_doc.get("ipfs_peer_id", None)
+        if not peer_id:
+            raise IncompletePeerInfoError()
+        return peer_id
 
     def get_member_control_key(self, did: str) -> Key:
         """Get the DID control key of another member."""
@@ -395,8 +377,57 @@ class IdentityAccess:
         self.candidate_keys = candidate_keys
         return candidate_keys
 
+    def check_prepare_control_key_update(self) -> bool:
+        """Check if we should prepare to renew our DID-manager's control key.
+
+        Generates new control key and shares it with other devices,
+        doesn't update the DID-Manager though
+
+        Returns:
+            Whether or not we are now prepared to renew control keys
+        """
+        # logger.debug("Checking control key update preparation...")
+        ctrl_key_timestamp = self.person_did_manager.get_control_key().creation_time
+        ctrl_key_age_hr = (
+            datetime.utcnow() - ctrl_key_timestamp
+        ).total_seconds() / 60 / 60
+
+        # if control key isn't too old yet
+        if ctrl_key_age_hr < CTRL_KEY_RENEWAL_AGE_HR:
+            self.candidate_keys = {}
+            self.save_appdata()
+            return False
+
+        # refresh our list of published candidate_keys
+        self.get_published_candidate_keys()
+
+        # if we already have a control key candidate
+        if self.candidate_keys:
+            # try get the private keys of any candidate keys we don't yet own
+            for key_id, members in list(self.candidate_keys.items()):
+                if key_id not in self.person_did_manager.key_store.keys.keys():
+                    for member in members:
+                        if self._terminate:
+                            return True
+                        if member == self.device_did_manager.get_did():
+                            continue
+                        if self.request_key(key_id, member):
+                            break
+            return True
+
+        key = Key.create(CRYPTO_FAMILY)
+        self.person_did_manager.key_store.add_key(key)
+        self.candidate_keys.update(
+            {key.get_key_id(): [self.device_did_manager.get_did()]}
+        )
+        self.save_appdata()
+
+        self.publish_key_ownership(key)
+        return True
+
     def check_apply_control_key_update(self) -> bool:
         """Check if we should renew our DID-manager's control key."""
+        # logger.debug("Checking control key update application...")
         if not self.candidate_keys:
             return False
 
@@ -427,6 +458,30 @@ class IdentityAccess:
         self.candidate_keys = {}
         self.save_appdata()
         return True
+
+    def delete(self) -> None:
+        """Delete this Identity."""
+        self.terminate()
+        self.device_did_manager.delete()
+        self.person_did_manager.delete()
+
+    def terminate(self) -> None:
+        """Stop this Identity object, cleaning up resources."""
+        if not self._terminate:
+            self._terminate = True
+            self.device_did_manager.terminate()
+            self.person_did_manager.terminate()
+            self.key_requests_listener.terminate()
+
+            self.control_key_manager_thr.join()
+
+    def __del__(self):
+        """Stop this Identity object, cleaning up resources."""
+        self.terminate()
+
+
+class IncompletePeerInfoError(Exception):
+    """When a peer's DID document doesn't contain all the info we need."""
 
 
 decorate_all_functions(strictly_typed, __name__)

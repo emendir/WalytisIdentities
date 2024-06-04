@@ -29,11 +29,11 @@ def test_preparations():
 
 
 def cleanup():
+    pytest.device_2.terminate()
+    pytest.device_2.device_did_manager.delete()
+    pytest.device_1.delete()
     shutil.rmtree(pytest.device_1_config_dir)
     shutil.rmtree(pytest.device_2_config_dir)
-    pytest.device_1.delete()
-    pytest.device_2.device_did_manager.delete()
-    pytest.device_2.terminate()
 
 
 def test_create_identity():
@@ -70,6 +70,7 @@ def run_tests():
 
     test_create_identity()
     test_add_device_identity()
+
     cleanup()
 
 

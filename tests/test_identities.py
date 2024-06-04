@@ -26,6 +26,7 @@ def pytest_configure():
     """Setup resources in preparation for tests."""
     # declare 'global' variables
     pytest.person_config_dir = tempfile.mkdtemp()
+    pytest.person_config_dir2 = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(
         pytest.person_config_dir, "master_keystore.json")
 
@@ -37,6 +38,7 @@ def pytest_configure():
 def pytest_unconfigure():
     """Clean up resources used during tests."""
     shutil.rmtree(pytest.person_config_dir)
+    shutil.rmtree(pytest.person_config_dir2)
 
 
 def test_create_person_identity():
@@ -52,6 +54,7 @@ def test_create_person_identity():
         and pytest.p_id_access.device_did_manager.get_did() in members[0]["did"],
         "Create IdentityAccess"
     )
+    pytest.p_id_access.terminate()
 
 
 def test_load_person_identity():
@@ -59,14 +62,18 @@ def test_load_person_identity():
         pytest.person_config_dir,
         pytest.CRYPT
     )
+    device_did = pytest.p_id_access.device_did_manager.get_did()
+    person_did = pytest.p_id_access.person_did_manager.get_did()
     members = p_id_access.get_members()
     mark(
-        p_id_access.device_did_manager.get_did() == pytest.p_id_access.device_did_manager.get_did()
-        and p_id_access.person_did_manager.get_did() == pytest.p_id_access.person_did_manager.get_did()
+        p_id_access.device_did_manager.get_did() == device_did
+        and p_id_access.person_did_manager.get_did() == person_did
         and len(members) == 1
         and p_id_access.device_did_manager.get_did() in members[0]["did"],
         "Load IdentityAccess"
     )
+    # p_id_access.terminate()
+    pytest.p_id_access = p_id_access
 
 
 def test_delete_person_identity():
