@@ -19,7 +19,7 @@ from .did_manager_blocks import (
 )
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
-from .key_store import KeyStore
+from .key_store import KeyStore, UnknownKeyError
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -62,7 +62,6 @@ class DidManager:
         if not self.did_doc:
             raise NotValidDidBlockchainError()
         self.members_list = get_latest_members_list(blockchain)
-        self._ctrl_key_crypt = self.key_store.get_key(self.get_control_key().get_key_id())
 
     @classmethod
     def create(cls: Type[_DidManager], key_store: KeyStore) -> _DidManager:
@@ -105,6 +104,8 @@ class DidManager:
 
     def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
         """Change the control key to an automatically generated new one."""
+        if not self.get_control_key().private_key:
+            raise DidNotOwnedError()
         # create new control key if the user hasn't provided one
         if not new_ctrl_key:
             new_ctrl_key = Key.create(CRYPTO_FAMILY)
@@ -139,9 +140,12 @@ class DidManager:
         if not self._control_key:
             self._control_key = get_latest_control_key(self.blockchain)
         if not self._control_key.private_key:
-            self._control_key = self.key_store.get_key(
-                self._control_key.get_key_id()
-            )
+            try:
+                self._control_key = self.key_store.get_key(
+                    self._control_key.get_key_id()
+                )
+            except UnknownKeyError:
+                pass
         return self._control_key
 
     def update_did_doc(self, did_doc: dict) -> None:
@@ -202,6 +206,10 @@ def blockchain_id_from_did(did: str) -> str:
 def did_from_blockchain_id(blockchain_id: str) -> str:
     """Convert a Walytis blockchain ID to a DID."""
     return f"did:{DID_METHOD_NAME}:{blockchain_id}"
+
+
+class DidNotOwnedError(Exception):
+    """When we don't have the private key to a DID-Manager's control key."""
 
 
 decorate_all_functions(strictly_typed, __name__)

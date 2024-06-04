@@ -53,7 +53,14 @@ class KeyStore:
         self.save_appdata()
 
     def get_key(self, key_id: str) -> Key:
-        return self.keys[key_id]
+        key = self.keys.get(key_id, None)
+        if not key:
+            raise UnknownKeyError
+        return key
+
+
+class UnknownKeyError(Exception):
+    """When looking up a key we don't have."""
 
 
 decorate_all_functions(strictly_typed, __name__)

@@ -13,8 +13,9 @@ from decorate_all import decorate_all_functions
 from ipfs_datatransmission import Conversation, TransmissionListener
 from loguru import logger
 from strict_typing import strictly_typed
-from walytis_beta_api import Blockchain, decode_short_id
-
+from walytis_beta_api import (
+    Blockchain, decode_short_id, BlockchainAlreadyExistsError
+)
 from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
     KeyOwnershipBlock,
@@ -117,6 +118,45 @@ class IdentityAccess:
             config_dir,
             key,
         )
+
+    @classmethod
+    def join(
+        cls: Type[_IdentityAccess],
+        invitation: str | dict,
+        config_dir: str,
+        key: Key,
+    ) -> _IdentityAccess:
+        """Create a new IdentityAccess object."""
+        if isinstance(invitation, str):
+            invitation = json.loads(invitation)
+        try:
+            blockchain = Blockchain.join(invitation)
+        except BlockchainAlreadyExistsError:
+            blockchain = Blockchain(invitation["blockchain_id"])
+
+        did_keystore_file = os.path.join(config_dir, "person_id_keys.json")
+        device_keystore_file = os.path.join(config_dir, "device_keys.json")
+        key_store = KeyStore(did_keystore_file, key)
+        person_did_manager = DidManager(
+            blockchain,
+            key_store
+        )
+
+        device_keystore = KeyStore(device_keystore_file, key)
+        device_did_manager = DidManager.create(device_keystore)
+
+        person_id_acc = cls(
+            person_did_manager,
+            device_did_manager,
+            config_dir,
+            key,
+        )
+        person_id_acc.save_appdata()
+        return person_id_acc
+
+    def create_invitation(self) -> str:
+        """Genereate an invitation which another device can use to join."""
+        return self.person_did_manager.blockchain.create_invitation(True)
 
     def serialise(self) -> dict:
         """Generate this Identity's appdata."""
@@ -262,6 +302,10 @@ class IdentityAccess:
             }))
         except Exception:
             conv.terminate()
+
+    def add_member(self, did: str) -> None:
+        members = self.get_members()+[{"did": did}]
+        self.person_did_manager.update_members_list(members)
 
     def get_member_ipfs_id(self, did: str) -> str:
         """Get the IPFS content ID of another member."""

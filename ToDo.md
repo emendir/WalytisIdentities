@@ -10,3 +10,4 @@
 # Next Step:
 - key sharing
 - member management
+- invitation sharing across devices

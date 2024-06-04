@@ -25,7 +25,6 @@ testing_utils.BREAKPOINTS = True
 def pytest_configure():
     """Setup resources in preparation for tests."""
     # declare 'global' variables
-    pytest.d_id_access = None
     pytest.person_config_dir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(
         pytest.person_config_dir, "master_keystore.json")
