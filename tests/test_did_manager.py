@@ -9,8 +9,9 @@ import walytis_beta_api as walytis_api
 from testing_utils import mark
 
 if True:
-    sys.path.insert(0, os.path.abspath(
-        os.path.dirname(os.path.dirname(__file__))))
+    sys.path.insert(0, os.path.join(
+        os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "src"
+    ))
 
     from identity.did_manager import DidManager
     from identity.did_objects import Key

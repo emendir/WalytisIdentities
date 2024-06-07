@@ -61,7 +61,7 @@ class IdentityAccess:
         self.get_published_candidate_keys()
 
         self.key_requests_listener = TransmissionListener(
-            f"{self.person_did_manager.get_did()}-KeyRequests",
+            f"{self.device_did_manager.get_did()}-KeyRequests",
             self.key_requests_handler
         )
         self._terminate = False
@@ -75,6 +75,8 @@ class IdentityAccess:
         control_key = self.person_did_manager.get_control_key()
         if control_key.private_key:
             return
+
+        logger.debug("Not yet control key owner...")
         while not self._terminate:
             for member in self.get_members():
                 if self._terminate:
@@ -82,11 +84,21 @@ class IdentityAccess:
                 did = member["did"]
                 if did == self.device_did_manager.get_did():
                     continue
+                logger.debug(f"Requesting control key from {did}")
                 try:
-                    peer_id = self.get_member_ipfs_id(did)
+                    key = self.request_key(control_key.get_key_id(), did)
                 except IncompletePeerInfoError:
                     continue
-                self.request_key(control_key.get_key_id(), peer_id)
+                if key:
+                    self.person_did_manager.key_store.add_key(key)
+                    if self.person_did_manager.get_control_key().private_key:
+                        self.person_did_manager.update_did_doc(self.generate_did_doc())
+                        return
+                    else:
+                        logger.warning(
+                            "Strange, Control key hasn't unlocked after key reception."
+                        )
+                logger.warning("Request for control key failed.")
             time.sleep(1)
 
         # log.debug("Got control key ownership!")
@@ -123,6 +135,7 @@ class IdentityAccess:
             key,
         )
         person_id_acc.save_appdata()
+        person_id_acc.device_did_manager.update_did_doc(person_id_acc.generate_device_did_doc())
         return person_id_acc
 
     @classmethod
@@ -148,12 +161,14 @@ class IdentityAccess:
             key_store=KeyStore(device_keystore_file, key),
         )
 
-        return cls(
+        identity_access = cls(
             person_did_manager,
             device_did_manager,
             config_dir,
             key,
         )
+
+        return identity_access
 
     @classmethod
     def join(
@@ -188,6 +203,7 @@ class IdentityAccess:
             key,
         )
         person_id_acc.save_appdata()
+        person_id_acc.device_did_manager.update_did_doc(person_id_acc.generate_device_did_doc())
         return person_id_acc
 
     def create_invitation(self) -> str:
@@ -219,13 +235,34 @@ class IdentityAccess:
         did_doc = {
             "id": self.person_did_manager.get_did(),
             "verificationMethod": [
-                key.generate_key_spec(self.person_did_manager.get_did())
-                for key in self.keys
+                self.person_did_manager.get_control_key().generate_key_spec(self.person_did_manager.get_did())
+
+                # key.generate_key_spec(self.person_did_manager.get_did())
+                # for key in self.keys
             ],
-            "service": [
-                service.generate_service_spec() for service in self.services
-            ],
+            # "service": [
+            #     service.generate_service_spec() for service in self.services
+            # ],
             "members": self.get_members()
+        }
+
+        # check that components produce valid URIs
+        validate_did_doc(did_doc)
+        return did_doc
+
+    def generate_device_did_doc(self) -> dict:
+        """Generate a DID-document."""
+        did_doc = {
+            "id": self.device_did_manager.get_did(),
+            "verificationMethod": [
+                self.device_did_manager.get_control_key().generate_key_spec(self.device_did_manager.get_did())
+                # key.generate_key_spec(self.person_did_manager.get_did())
+                # for key in self.keys
+            ],
+            # "service": [
+            #     service.generate_service_spec() for service in self.services
+            # ],
+            "ipfs_peer_id": ipfs_api.my_id()
         }
 
         # check that components produce valid URIs
@@ -245,6 +282,7 @@ class IdentityAccess:
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
+        logger.debug("Getting key request!")
         conv = Conversation.join(
             conv_name,
             peer_id,
@@ -288,7 +326,8 @@ class IdentityAccess:
     def get_member_ipfs_id(self, did: str) -> str:
         """Get the IPFS content ID of another member."""
         if did not in [member["did"] for member in self.get_members()]:
-            raise Exception("This DID is not among our members.")
+            logger.debug([member["did"] for member in self.get_members()])
+            raise Exception(f"This DID is not among our members.\n{did}")
 
         blockchain = Blockchain(blockchain_id_from_did(did))
 
@@ -296,6 +335,8 @@ class IdentityAccess:
 
         peer_id = did_doc.get("ipfs_peer_id", None)
         if not peer_id:
+            logger.warning(f"Member has no full DID-Doc: {did}")
+            print(did_doc)
             raise IncompletePeerInfoError()
         return peer_id
 
@@ -313,9 +354,12 @@ class IdentityAccess:
         peer_id = self.get_member_ipfs_id(did)
 
         try:
-            conv = Conversation.start(
+            print(f"{did}-KeyRequests")
+            conv = Conversation()
+            conv.start(
                 conv_name=f"KeyRequest-{key_id}",
-                peer_id=peer_id
+                peer_id=peer_id,
+                others_req_listener=f"{did}-KeyRequests",
             )
             key = self.device_did_manager.get_control_key()
             message = {
@@ -325,7 +369,8 @@ class IdentityAccess:
             message.update({"signature": key.sign(json.dumps(message).encode())})
             response = json.loads(conv.say(json.dumps(message).encode()).decode())
 
-        except Exception:
+        except Exception as error:
+            logger.warning(error)
             conv.close()
             return None
 

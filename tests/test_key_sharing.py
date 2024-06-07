@@ -4,14 +4,17 @@ import walytis_beta_api as walytis_api
 import pytest
 import sys
 import os
-from testing_utils import mark
+from testing_utils import mark, polite_wait
+from walytis_auth_docker.walytis_auth_docker import ContactsDocker
 
 from multi_crypt import Crypt
 import shutil
 
 
 if True:
-    sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+    sys.path.insert(0, os.path.join(
+        os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "src"
+    ))
 
     from identity.did_objects import Key
     from identity.key_store import KeyStore
@@ -26,6 +29,11 @@ def test_preparations():
 
     pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
     pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
+
+    pytest.containers = list[ContactsDocker]
+
+    for i in range(3):
+        pytest.containers.append(ContactsDocker())
 
 
 def cleanup():
@@ -56,11 +64,20 @@ def test_add_device_identity():
     pytest.device_1.add_member(pytest.device_2.device_did_manager.get_did())
 
     members = pytest.device_1.get_members()
-    device_2_did = pytest.device_2.device_did_manager.get_did()
+    pytest.device_2_did = pytest.device_2.device_did_manager.get_did()
     mark(
-        {"did": device_2_did} in pytest.device_1.person_did_manager.get_members()
-        and {"did": device_2_did} in pytest.device_1.get_members(),
+        {"did": pytest.device_2_did} in pytest.device_1.person_did_manager.get_members()
+        and {"did": pytest.device_2_did} in pytest.device_1.get_members(),
         "Added member"
+    )
+
+
+def test_get_control_key():
+    pytest.device_1.add_member(pytest.device_2_did)
+    polite_wait(20)
+    mark(
+        pytest.device_2.person_did_manager.get_control_key().private_key,
+        "Got control key ownership"
     )
 
 
@@ -70,7 +87,7 @@ def run_tests():
 
     test_create_identity()
     test_add_device_identity()
-
+    test_get_control_key()
     cleanup()
 
 

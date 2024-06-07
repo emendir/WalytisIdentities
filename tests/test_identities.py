@@ -14,8 +14,9 @@ if True:
     if False:
         __file__ = "./test_identities.py"
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.insert(0, os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))
+    sys.path.insert(0, os.path.join(
+        os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "src"
+    ))
 
     from identity.identity import IdentityAccess
 
