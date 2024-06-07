@@ -1,0 +1,5 @@
+rfc3987
+walytis_beta_api
+decorate_all
+py_strict_typing
+loguru

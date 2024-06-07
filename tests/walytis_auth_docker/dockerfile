@@ -1,0 +1,14 @@
+FROM local/brenthy_testing:latest
+WORKDIR /opt/WalytisAuth
+COPY src/ /opt/WalytisAuth
+
+
+RUN mkdir /opt/WalytisAuth/MultiCrypt
+COPY tests/walytis_auth_docker/MultiCrypt /opt/WalytisAuth/MultiCrypt
+RUN pip install /opt/WalytisAuth/MultiCrypt
+
+
+
+RUN pip install -r /opt/WalytisAuth/requirements.txt
+## Run with:
+# docker run -it --privileged local/walytis_auth
