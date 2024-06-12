@@ -1,11 +1,14 @@
+import os
 import docker
 
 
 class ContactsDocker:
-    def __init__(self):
+    def __init__(self, auto_run: bool = True):
         self.image_name = "local/walytis_auth"
         self._docker_client = docker.from_env()
         self.container = self._docker_client.containers.create(self.image_name, privileged=True)
+        if auto_run:
+            self.start()
 
     def start(self) -> None:
         """Start this container."""
@@ -18,6 +21,10 @@ class ContactsDocker:
     def restart(self) -> None:
         """Restart this container."""
         self.container.restart()
+
+    def delete(self) -> None:
+        self.container.stop()
+        self.container.remove()
 
     def run_shell_command(self, command: str) -> str:
         """Run a shell command, returning its output."""
@@ -37,6 +44,25 @@ class ContactsDocker:
         return self.run_shell_command(python_command)
 
 
+def delete_containers() -> None:
+    """Delete all Brenthy docker containers."""
+    os.system(
+        "docker stop "
+        "$(docker ps --filter 'ancestor=local/walytis_auth' -aq) "
+        ">/dev/null 2>&1; "
+        "docker rm $(docker ps --filter 'ancestor=local/walytis_auth' -aq) "
+        ">/dev/null 2>&1"
+    )
+    os.system(
+        "docker stop $(docker ps  --filter 'name=*brenthy*' "
+        "--filter 'name= ^ brenthy' --filter 'name=brenthy$' -aq) "
+        ">/dev/null 2>&1; "
+        "docker rm $(docker ps --filter 'name=*brenthy*' "
+        "--filter 'name= ^ brenthy' --filter 'name=brenthy$' -aq) "
+        ">/dev/null 2>&1"
+    )
+
+
 class ContainerNotRunningError(Exception):
     """When the container isn't running."""
 
@@ -44,7 +70,7 @@ class ContainerNotRunningError(Exception):
 # Example usage:
 if __name__ == "__main__":
     # Create an instance of DockerContainer with the desired image
-    docker_container = DockerContainer("local/brenthy_testing")
+    docker_container = ContactsDocker(auto_run=False)
 
     # Start the container
     docker_container.start()

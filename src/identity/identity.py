@@ -332,7 +332,7 @@ class IdentityAccess:
         blockchain = Blockchain(blockchain_id_from_did(did))
 
         did_doc = get_latest_did_doc(blockchain)
-
+        blockchain.terminate()
         peer_id = did_doc.get("ipfs_peer_id", None)
         if not peer_id:
             logger.warning(f"Member has no full DID-Doc: {did}")
@@ -347,7 +347,9 @@ class IdentityAccess:
 
         blockchain = Blockchain(blockchain_id_from_did(did))
 
-        return get_latest_control_key(blockchain)
+        ctrl_key = get_latest_control_key(blockchain)
+        blockchain.terminate()
+        return ctrl_key
 
     def request_key(self, key_id: str, did: str) -> Key | None:
         """Request a key from another member."""

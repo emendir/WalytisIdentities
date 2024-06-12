@@ -5,8 +5,10 @@ import pytest
 import sys
 import os
 from testing_utils import mark, polite_wait
-from walytis_auth_docker.walytis_auth_docker import ContactsDocker
-
+from walytis_auth_docker.walytis_auth_docker import (
+    ContactsDocker, delete_containers
+)
+import json
 from multi_crypt import Crypt
 import shutil
 
@@ -21,8 +23,20 @@ if True:
     from identity.identity import IdentityAccess
     from identity.did_manager import DidManager
 
+REBUILD_DOCKER = True
+
+# automatically remove all docker containers after failed tests
+DELETE_ALL_BRENTHY_DOCKERS = True
+
 
 def test_preparations():
+    if DELETE_ALL_BRENTHY_DOCKERS:
+        delete_containers()
+
+    if REBUILD_DOCKER:
+        from walytis_auth_docker.build_docker import build_docker_image
+
+        build_docker_image(verbose=False)
     pytest.device_1_config_dir = tempfile.mkdtemp()
     pytest.device_2_config_dir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(pytest.device_1_config_dir, "keystore.json")
@@ -30,13 +44,19 @@ def test_preparations():
     pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
     pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
 
-    pytest.containers = list[ContactsDocker]
+    pytest.containers: list[ContactsDocker] = []
+    pytest.invitation = None
 
+
+def test_create_dockker_containers():
     for i in range(3):
         pytest.containers.append(ContactsDocker())
 
 
 def cleanup():
+    for container in pytest.containers:
+        container.delete()
+
     pytest.device_2.terminate()
     pytest.device_2.device_did_manager.delete()
     pytest.device_1.delete()
@@ -44,19 +64,42 @@ def cleanup():
     shutil.rmtree(pytest.device_2_config_dir)
 
 
-def test_create_identity():
+def create_identity_and_invitation():
     pytest.device_1 = IdentityAccess.create(
         pytest.device_1_config_dir,
         pytest.CRYPT,
     )
-    mark(isinstance(pytest.device_1, IdentityAccess), "Created IdentityAccess")
+    invitation = pytest.device_1.create_invitation()
+    print(invitation)
+    # mark(isinstance(pytest.device_1, IdentityAccess), "Created IdentityAccess")
+
+
+def test_create_identity_and_invitation():
+    print("Creating identiy and invitation on docker...")
+    output = pytest.containers[0].run_python_command(
+        "import sys;"
+        "sys.path.append('/opt/WalytisAuth/tests');"
+        "import test_key_sharing;"
+        "test_key_sharing.REBUILD_DOCKER=False;"
+        "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
+        "test_key_sharing.test_preparations();"
+        "test_key_sharing.create_identity_and_invitation();"
+        "test_key_sharing.pytest.device_1.terminate()"
+    )
+    print("Got output!")
+    try:
+        pytest.invitation = json.loads(output)
+    except:
+        pass
+    mark(
+        pytest.invitation is not None,
+        "created identity and invitation on docker"
+    )
 
 
 def test_add_device_identity():
-    invitation = pytest.device_1.create_invitation()
-
     pytest.device_2 = IdentityAccess.join(
-        invitation,
+        pytest.invitation,
         pytest.device_2_config_dir,
         pytest.CRYPT
     )
@@ -84,10 +127,12 @@ def test_get_control_key():
 def run_tests():
     print("\nRunning tests for Key Sharing:")
     test_preparations()
+    test_create_dockker_containers()
 
-    test_create_identity()
-    test_add_device_identity()
-    test_get_control_key()
+    test_create_identity_and_invitation()
+    if pytest.invitation:
+        test_add_device_identity()
+        test_get_control_key()
     cleanup()
 
 

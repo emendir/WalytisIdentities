@@ -53,7 +53,6 @@ class DidManager:
         """Load a DidManager from a Walytis blockchain."""
         if isinstance(blockchain, str):
             blockchain = Blockchain(blockchain)
-
         self.blockchain = blockchain
         self.key_store = key_store
 
