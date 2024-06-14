@@ -8,7 +8,7 @@ cp -r ../../MultiCrypt tests/walytis_auth_docker/MultiCrypt/
 
 
 
-docker build -t local/walytis_auth -f tests/walytis_auth_docker/dockerfile .
+docker build -t local/walytis_auth_testing -f tests/walytis_auth_docker/walytis_auth_testing.dockerfile .
 
 ## Run with:
-# docker run -it --privileged local/walytis_auth
+# docker run -it --privileged local/walytis_auth_testing

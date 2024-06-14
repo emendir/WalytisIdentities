@@ -181,6 +181,7 @@ class IdentityAccess:
         if isinstance(invitation, str):
             invitation = json.loads(invitation)
         try:
+            logger.debug(f"Joining blockchain {invitation}")
             blockchain = Blockchain.join(invitation)
         except BlockchainAlreadyExistsError:
             blockchain = Blockchain(invitation["blockchain_id"])

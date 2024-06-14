@@ -11,13 +11,22 @@ from termcolor import colored as coloured
 
 def build_docker_image(verbose: bool = True) -> None:
     """Rebuild the brenthy-test docker image."""
+    print(
+        coloured(
+            (
+                "DON'T FORGET to update the walytis_auth_prereqs docker image "
+                "if you've introduced new dependency packages!"
+            ),
+            "yellow",
+        )
+    )
     print("Building docker image...")
 
     args_str = ""
     if not verbose:
         args_str += " >/dev/null"
     builder_script_path = os.path.join(
-        os.path.dirname(__file__), "build_docker.sh"
+        os.path.dirname(__file__), "build_walytis_auth_testing.sh"
     )
     exit_code = os.system(builder_script_path + args_str)
     if exit_code != 0:

@@ -66,12 +66,31 @@ def cleanup():
 
 def create_identity_and_invitation():
     pytest.device_1 = IdentityAccess.create(
-        pytest.device_1_config_dir,
+        "/opt",
         pytest.CRYPT,
     )
     invitation = pytest.device_1.create_invitation()
     print(invitation)
     # mark(isinstance(pytest.device_1, IdentityAccess), "Created IdentityAccess")
+
+
+def add_device(did: str):
+    pytest.device_1 = IdentityAccess.load_from_appdata(
+        "/opt",
+        pytest.CRYPT,
+    )
+    pytest.device_1.add_member(did)
+
+    members = pytest.device_1.get_members()
+    success = (
+        {"did": pytest.device_2_did} in pytest.device_1.person_did_manager.get_members()
+        and {"did": pytest.device_2_did} in pytest.device_1.get_members()
+    )
+    if success:
+        print(success)
+    else:
+        print("DID-MAnager Members:", pytest.device_1.person_did_manager.get_members())
+        print("Person Members:", pytest.device_1.get_members())
 
 
 def test_create_identity_and_invitation():
@@ -99,18 +118,25 @@ def test_create_identity_and_invitation():
 
 def test_add_device_identity():
     pytest.device_2 = IdentityAccess.join(
-        pytest.invitation,
-        pytest.device_2_config_dir,
-        pytest.CRYPT
-    )
+        pytest.invitation, pytest.device_2_config_dir, pytest.CRYPT)
 
-    pytest.device_1.add_member(pytest.device_2.device_did_manager.get_did())
-
-    members = pytest.device_1.get_members()
     pytest.device_2_did = pytest.device_2.device_did_manager.get_did()
+
+    print("Adding device on docker...")
+    output = pytest.containers[0].run_python_command(
+        "import sys;"
+        "sys.path.append('/opt/WalytisAuth/tests');"
+        "import test_key_sharing;"
+        "test_key_sharing.REBUILD_DOCKER=False;"
+        "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
+        "test_key_sharing.test_preparations();"
+        f"test_key_sharing.add_device('{pytest.device_2_did}');"
+        "test_key_sharing.pytest.device_1.terminate()"
+    )
+    print("Got output!")
+
     mark(
-        {"did": pytest.device_2_did} in pytest.device_1.person_did_manager.get_members()
-        and {"did": pytest.device_2_did} in pytest.device_1.get_members(),
+        output == "True",
         "Added member"
     )
 

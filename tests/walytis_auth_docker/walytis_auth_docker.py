@@ -4,7 +4,7 @@ import docker
 
 class ContactsDocker:
     def __init__(self, auto_run: bool = True):
-        self.image_name = "local/walytis_auth"
+        self.image_name = "local/walytis_auth_testing"
         self._docker_client = docker.from_env()
         self.container = self._docker_client.containers.create(self.image_name, privileged=True)
         if auto_run:
@@ -48,9 +48,9 @@ def delete_containers() -> None:
     """Delete all Brenthy docker containers."""
     os.system(
         "docker stop "
-        "$(docker ps --filter 'ancestor=local/walytis_auth' -aq) "
+        "$(docker ps --filter 'ancestor=local/walytis_auth_testing' -aq) "
         ">/dev/null 2>&1; "
-        "docker rm $(docker ps --filter 'ancestor=local/walytis_auth' -aq) "
+        "docker rm $(docker ps --filter 'ancestor=local/walytis_auth_testing' -aq) "
         ">/dev/null 2>&1"
     )
     os.system(
