@@ -27,7 +27,11 @@ class KeyStore:
         encrypted_keys = data["keys"]
 
         if appdata_encryption_public_key != self.key.public_key.hex():
-            raise ValueError("Wrong cryptographic key for unlocking keystore.")
+            raise ValueError(
+                "Wrong cryptographic key for unlocking keystore.\n"
+                f"{appdata_encryption_public_key}\n"
+                f"{self.key.public_key.hex()}"
+            )
 
         keys = {}
         for encrypted_key in encrypted_keys:

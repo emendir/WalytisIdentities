@@ -3,7 +3,7 @@ WORKDIR /opt/WalytisAuth
 COPY . /opt/WalytisAuth
 
 
-RUN pip install /opt/WalytisAuth/
+# RUN pip install --no-dependencies /opt/WalytisAuth/
 
 # RUN pip show walytis_auth
 ## Run with:

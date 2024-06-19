@@ -1,5 +1,6 @@
 import os
 import docker
+from time import sleep
 
 
 class ContactsDocker:
@@ -13,6 +14,15 @@ class ContactsDocker:
     def start(self) -> None:
         """Start this container."""
         self.container.start()
+
+        # wait till docker container's Brenthy has renamed its update blockhain
+        # and restarted
+        while not self.run_python_command(
+            "import os;"
+            "print(os.path.exists('/opt/Brenthy/BlockchainData/Walytis_Beta/BrenthyUpdatesTEST'))"
+        ) == "True":
+            sleep(0.2)
+        sleep(0.2)
 
     def stop(self) -> None:
         """Stop this container."""

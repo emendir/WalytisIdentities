@@ -195,7 +195,7 @@ class KeyOwnershipBlock(InfoBlock):
     """Representation of a block publishing annoucing key ownership."""
 
     walytis_block_topic = 'key_ownership'
-    info_content: list
+    info_content: dict
 
     def get_key_ownership(self) -> dict:
         """Get the member devices published."""
