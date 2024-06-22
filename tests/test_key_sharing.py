@@ -68,12 +68,12 @@ def cleanup():
 
 
 def create_identity_and_invitation():
-    # logger.debug("DockerTest: creating identity...")
+    logger.debug("DockerTest: creating identity...")
     pytest.device_1 = IdentityAccess.create(
         "/opt",
         pytest.CRYPT,
     )
-    # logger.debug("DockerTest: creating invitation...")
+    logger.debug("DockerTest: creating invitation...")
     invitation = pytest.device_1.create_invitation()
     print(invitation)
     # mark(isinstance(pytest.device_1, IdentityAccess), "Created IdentityAccess")
@@ -84,6 +84,7 @@ def add_device(did: str, invitation: str):
         "/opt",
         pytest.CRYPT,
     )
+
     pytest.device_1.add_member(
         did,
         invitation
@@ -91,15 +92,21 @@ def add_device(did: str, invitation: str):
 
     members = pytest.device_1.get_members()
     success = (
-        {"did": did} in pytest.device_1.person_did_manager.get_members()
-        and {"did": did} in pytest.device_1.get_members()
+        did in [
+            member["did"]
+            for member in pytest.device_1.person_did_manager.get_members()
+        ]
+        and did in [
+            member["did"]
+            for member in pytest.device_1.get_members()
+        ]
     )
     if success:
         print(success)
     else:
-        print("DID-MAnager Members:",
+        print("\nDocker: DID-MAnager Members:\n",
               pytest.device_1.person_did_manager.get_members())
-        print("Person Members:", pytest.device_1.get_members())
+        print("\nDocker: Person Members:\n", pytest.device_1.get_members())
 
 
 def test_create_identity_and_invitation():
@@ -115,7 +122,9 @@ def test_create_identity_and_invitation():
         "test_key_sharing.pytest.device_1.terminate()"
     )
     output = None
-    output = pytest.containers[0].run_python_command(python_code)
+    print(python_code)
+    # breakpoint()
+    output = pytest.containers[0].run_python_code(python_code)
     print("Got output!")
     print(output)
     try:
@@ -152,13 +161,13 @@ def test_add_device_identity():
 
     )
     print(f"\n{python_code}\n")
-    output = pytest.containers[0].run_python_command(python_code)
+    output = pytest.containers[0].run_python_code(python_code)
 
     print("Got output!")
     print(output)
 
     mark(
-        output == "True",
+        output.split("\n")[-1] == "True",
         "Added member"
     )
 

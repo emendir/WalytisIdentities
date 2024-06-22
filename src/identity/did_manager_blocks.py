@@ -1,4 +1,5 @@
 """Machinery for working with Walytis blocks for the DID-Manager."""
+from loguru import logger
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 import json
@@ -284,14 +285,17 @@ def get_latest_block(
     last_info_block = None
 
     topic = block_type.walytis_block_topic
-
+    # logger.debug(f"WAB: Getting latest {block_type} block...")
     for block_id in blockchain.block_ids:
+        # logger.debug("WAB: Analysing block...")
         # if this block is a control key update block
         if 'control_key' in walytis_api.decode_short_id(block_id)['topics']:
             # load block content
+            # logger.debug("WAB: Getting Control Key block...")
             ctrl_key_block = ControlKeyBlock.load_from_block_content(
                 blockchain.get_block(block_id).content
             )
+            # logger.debug("WAB: Processing block...")
             # if we haven't processed this blockchain's first ctrl key yet
             if not last_key_block:
                 # ensure the first ControlKeyBlock
@@ -315,9 +319,11 @@ def get_latest_block(
         # if this block is of the type we are looking for
         if topic in walytis_api.decode_short_id(block_id)['topics']:
             # load block content
+            # logger.debug("WAB: Getting block...")
             info_block = block_type.load_from_block_content(
                 blockchain.get_block(block_id).content
             )
+            # logger.debug("WAB: Processing block...")
             # if its signature is validated by the last ctrl key
             if (last_key_block and
                     info_block.verify_signature(last_key_block.get_new_key())):
@@ -325,7 +331,7 @@ def get_latest_block(
                 last_info_block = info_block
             else:
                 print("Found info-block Block with invalid signature")
-
+    logger.debug("WAB: Finished!", last_info_block)
     # return the DID-document of the last valid DID-Doc block
     if last_info_block:
         return last_info_block
@@ -361,7 +367,7 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
     return latest_block.info_content
 
 
-def get_latest_members_list(blockchain: Blockchain) -> list | None:
+def get_latest_members_list(blockchain: Blockchain) -> list[dict] | None:
     """Get a DID-Manager's blockchain's current members-list.
 
     Iterates through the blockchain's blocks to find the latest valid
@@ -379,13 +385,18 @@ def get_latest_members_list(blockchain: Blockchain) -> list | None:
         blockchain,
         MembersListBlock
     )
+    logger.debug(f"WAB: got latest members block! {type(latest_block)}")
     if not latest_block:
+        logger.debug("WAB: Returning none.")
         return None
     if not isinstance(latest_block, MembersListBlock):
-        raise ValueError(
+        error_message = (
             "Bug: get_latest_block() should've returned a DidDocBlock, "
             f"not {type(latest_block)}"
         )
+        logger.error(error_message)
+        raise ValueError(error_message)
+    logger.debug("WAB: Returning info content.")
     return latest_block.info_content
 
 

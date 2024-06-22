@@ -11,3 +11,6 @@
 - key sharing
 - member management
 - invitation sharing across devices
+
+## Debug
+- resources aren't cleaned up during continuous key requests

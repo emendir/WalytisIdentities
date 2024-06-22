@@ -104,7 +104,7 @@ class IdentityAccess:
                             "Strange, Control key hasn't unlocked after key reception."
                         )
                 # logger.warning("Request for control key failed.")
-            time.sleep(1)
+            time.sleep(0.5)
 
         # log.debug("Got control key ownership!")
 
@@ -380,30 +380,35 @@ class IdentityAccess:
 
     def get_member_ipfs_id(self, did: str) -> str:
         """Get the IPFS content ID of another member."""
-        results = [member["invitation"] for member in self.get_members() if member["did"] == did]
+        results = [member for member in self.get_members() if member["did"] == did]
 
         if not results:
             logger.debug([member["did"] for member in self.get_members()])
             raise NotMemberError(f"This DID is not among our members.\n{did}")
         if len(results) > 1:
             raise Exception("Found more than one entry for did in members list.")
-        invitation = json.loads(results[0])
+        member = results[0]
+        invitation = json.loads(member["invitation"])
         blockchain_id = blockchain_id_from_did(did)
         if not blockchain_id == invitation["blockchain_id"]:
             raise Exception(f"Found corrupt members entry for peer {did}")
-        if invitation["blockchain_id"] in list_blockchain_ids():
-            blockchain = Blockchain(invitation["blockchain_id"])
+        if "blockchain" not in member.keys():
+            logger.debug("Blockchain not cached")
+            if invitation["blockchain_id"] in list_blockchain_ids():
+                blockchain = Blockchain(blockchain_id)
+            else:
+                # logger.debug(f"Joining blockchain {invitation}")
+                try:
+                    blockchain = Blockchain.join(invitation)
+                except walytis_beta_api.exceptions.JoinFailureError as error:
+                    logger.error(error)
+                    logger.debug("Retrying to join")
+
+                    blockchain = Blockchain.join(invitation)
+            member.update({"blockchain": blockchain})
         else:
-            # logger.debug(f"Joining blockchain {invitation}")
-            try:
-                blockchain = Blockchain.join(invitation)
-            except walytis_beta_api.exceptions.JoinFailureError as error:
-                logger.error(error)
-                logger.debug("Retrying to join")
-
-                blockchain = Blockchain.join(invitation)
-
-        blockchain = Blockchain(blockchain_id)
+            logger.debug("USing chached blockchain")
+            blockchain = member["blockchain"]
 
         did_doc = get_latest_did_doc(blockchain)
         blockchain.terminate()
@@ -469,10 +474,12 @@ class IdentityAccess:
                 logger.debug("Timeout communicating with peer.")
                 conv.close()
                 return None
-            logger.debug("RK: Got key!")
+            logger.debug("RK: Got Response!")
             conv.close()
 
         except Exception as error:
+            import traceback
+            print(traceback.format_exc())
             logger.warning(f"Error in request_key {error}")
             conv.close()
             return None

@@ -7,7 +7,7 @@ from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
 from strict_typing import strictly_typed
 from walytis_beta_api import Blockchain, delete_blockchain
-
+from loguru import logger
 from .did_manager_blocks import (
     ControlKeyBlock,
     DidDocBlock,
@@ -55,25 +55,31 @@ class DidManager:
             blockchain = Blockchain(blockchain)
         self.blockchain = blockchain
         self.key_store = key_store
-
+        # logger.debug("DM: Getting control key...")
         self._control_key = get_latest_control_key(blockchain)
+        # logger.debug("DM: Getting DID-Doc...")
         self.did_doc = get_latest_did_doc(blockchain)
         if not self.did_doc:
             raise NotValidDidBlockchainError()
+        logger.debug("DM: Getting members...")
         self.members_list = get_latest_members_list(blockchain)
+        logger.debug("DM: Built DID-Manager object!")
 
     @classmethod
     def create(cls: Type[_DidManager], key_store: KeyStore) -> _DidManager:
         """Create a new DID-Manager."""
+        logger.debug("DM: Creating DID-Manager...")
         # create crypto keys
         ctrl_key = Key.create(CRYPTO_FAMILY)
         key_store.add_key(ctrl_key)
+        # logger.debug("DM: Createing DID-Manager's blockchain...")
         # create blockchain
         blockchain = Blockchain.create(
             blockchain_name=f"waco-{ctrl_key.public_key}"
         )
 
         # publish first key on blockchain
+        # logger.debug("DM: Adding ControlKey block...")
         keyblock = ControlKeyBlock.new(
             old_key=ctrl_key,
             new_key=ctrl_key,
@@ -83,8 +89,9 @@ class DidManager:
             keyblock.generate_block_content(),
             topics="control_key"
         )
-        did = did_from_blockchain_id(blockchain.blockchain_id)
 
+        # logger.debug("DM: Adding DID-Doc block...")
+        did = did_from_blockchain_id(blockchain.blockchain_id)
         did_doc = {"id": did}
         did_doc_block = DidDocBlock.new(did_doc)
         did_doc_block.sign(ctrl_key)
@@ -92,9 +99,12 @@ class DidManager:
             did_doc_block.generate_block_content(),
             did_doc_block.walytis_block_topic
         )
+        # logger.debug("DM: Instantiating...")
 
         did_manager = cls(blockchain, key_store=key_store)
         blockchain.terminate()
+
+        logger.debug("DM: created DID-Manager!")
         return did_manager
 
     def get_did(self) -> str:
@@ -167,7 +177,7 @@ class DidManager:
 
         self.members_list = members_list
 
-    def get_members(self) -> list:
+    def get_members(self) -> list[dict]:
         """Get the current list of member-devices."""
         if not self.members_list:
             self.members_list = get_latest_members_list(self.blockchain)
@@ -211,4 +221,4 @@ class DidNotOwnedError(Exception):
     """When we don't have the private key to a DID-Manager's control key."""
 
 
-decorate_all_functions(strictly_typed, __name__)
+# decorate_all_functions(strictly_typed, __name__)
