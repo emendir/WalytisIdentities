@@ -81,10 +81,15 @@ class ContactsDocker:
         """Check if this docker container is running or not."""
         return self._docker_client.containers.get(self.container.id).attrs["State"]["Running"]
 
-    def _run_shell_command(self, command: str):
+    def _run_shell_command(self, command: str, background: bool = False):
+        """Run shell code from within the container's operating system.
+
+        Not suitable for code that contains double quotes."""
+        if background:
+            command = f"nohup {command} > /dev/null 2>&1 &"
         exec_id = self._docker_client.api.exec_create(self.container.id, command)['Id']
-        output = self._docker_client.api.exec_start(exec_id)
-        return output
+        output = self._docker_client.api.exec_start(exec_id, tty=True, detach=background)
+        return output if not background else None
 
     def run_shell_command(
         self, command: str,

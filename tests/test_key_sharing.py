@@ -173,12 +173,30 @@ def test_add_device_identity():
 
 
 def test_get_control_key():
-    pytest.device_1.add_member(
-        pytest.device_did_manager.get_did(),
-        pytest.device_did_manager.blockchain.create_invitation(
-            one_time=False, shared=True)
+    # create an IdentityAccess object to run on the docker container in the
+    # background to handle a key request from pytest.device_2
+    python_code = (
+        "import sys;"
+        "sys.path.append('/opt/WalytisAuth/tests');"
+        "import test_key_sharing;"
+        "from test_key_sharing import logger;"
+        "logger.info('DOCKER: Testing control key...');"
+        "test_key_sharing.REBUILD_DOCKER=False;"
+        "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
+        "test_key_sharing.test_preparations();"
+        "dev = test_key_sharing.IdentityAccess.load_from_appdata("
+        "    '/opt',"
+        "    test_key_sharing.pytest.CRYPT,"
+        ");"
+        "from time import sleep;"
+        "[(sleep(10), logger.debug('waiting...')) for i in range(6)];"
+        "dev.terminate();"
     )
-    polite_wait(20)
+    bash_code = (f'/bin/python -c "{python_code}"')
+    pytest.containers[0]._run_shell_command(bash_code, background=True)
+    print(bash_code)
+    print("Waiting for key sharing...")
+    polite_wait(60)
     mark(
         pytest.device_2.person_did_manager.get_control_key().private_key,
         "Got control key ownership"

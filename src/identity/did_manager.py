@@ -20,7 +20,7 @@ from .did_manager_blocks import (
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .key_store import KeyStore, UnknownKeyError
-
+from brenthy_tools_beta.utils import bytes_to_string
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
 
@@ -75,7 +75,7 @@ class DidManager:
         # logger.debug("DM: Createing DID-Manager's blockchain...")
         # create blockchain
         blockchain = Blockchain.create(
-            blockchain_name=f"waco-{ctrl_key.public_key}"
+            blockchain_name=f"waco-{bytes_to_string(ctrl_key.public_key)}"
         )
 
         # publish first key on blockchain

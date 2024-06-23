@@ -266,7 +266,10 @@ class IdentityAccess:
             # "service": [
             #     service.generate_service_spec() for service in self.services
             # ],
-            "members": self.get_members()
+            "members": [
+                {"did": member["did"], "invitation": member["invitation"]}
+                for member in self.get_members()
+            ]
         }
 
         # check that components produce valid URIs
