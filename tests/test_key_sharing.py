@@ -38,6 +38,8 @@ def test_preparations():
         from walytis_auth_docker.build_docker import build_docker_image
 
         build_docker_image(verbose=False)
+    pytest.device_1 = None
+    pytest.device_2 = None
     pytest.device_1_config_dir = tempfile.mkdtemp()
     pytest.device_2_config_dir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(
@@ -59,10 +61,11 @@ def test_create_dockker_containers():
 def cleanup():
     for container in pytest.containers:
         container.delete()
-
-    pytest.device_2.terminate()
-    pytest.device_2.device_did_manager.delete()
-    pytest.device_1.delete()
+    if pytest.device_2:
+        pytest.device_2.terminate()
+        pytest.device_2.device_did_manager.delete()
+    if pytest.device_1:
+        pytest.device_1.delete()
     shutil.rmtree(pytest.device_1_config_dir)
     shutil.rmtree(pytest.device_2_config_dir)
 
@@ -175,6 +178,7 @@ def test_add_device_identity():
 def test_get_control_key():
     # create an IdentityAccess object to run on the docker container in the
     # background to handle a key request from pytest.device_2
+    wait_dur_s = 30
     python_code = (
         "import sys;"
         "sys.path.append('/opt/WalytisAuth/tests');"
@@ -189,14 +193,14 @@ def test_get_control_key():
         "    test_key_sharing.pytest.CRYPT,"
         ");"
         "from time import sleep;"
-        "[(sleep(10), logger.debug('waiting...')) for i in range(6)];"
+        f"[(sleep(10), logger.debug('waiting...')) for i in range({wait_dur_s//10})];"
         "dev.terminate();"
     )
     bash_code = (f'/bin/python -c "{python_code}"')
-    pytest.containers[0]._run_shell_command(bash_code, background=True)
+    pytest.containers[0].run_shell_command(bash_code, background=True, print_output=False)
     print(bash_code)
     print("Waiting for key sharing...")
-    polite_wait(60)
+    polite_wait(wait_dur_s)
     mark(
         pytest.device_2.person_did_manager.get_control_key().private_key,
         "Got control key ownership"

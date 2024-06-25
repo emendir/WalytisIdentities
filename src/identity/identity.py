@@ -1,39 +1,42 @@
 """Classes for managing Person and Device identities."""
-import traceback
 
-import walytis_beta_api
-import time
-from threading import Thread
 import json
 import os
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
+import time
 from datetime import datetime, timedelta
+from threading import Thread
 from typing import Type, TypeVar
 
+import brenthy_tools_beta
 import ipfs_api
-from brenthy_tools_beta.utils import bytes_to_string
-from decorate_all import decorate_all_functions
-from ipfs_datatransmission import Conversation, TransmissionListener, ConversationListener, ConvListenTimeout
-from loguru import logger
-from strict_typing import strictly_typed
-from walytis_beta_api import (
-    Blockchain, decode_short_id, BlockchainAlreadyExistsError,
-    list_blockchain_ids
-)
+import ipfs_datatransmission
+import walytis_beta_api
 import walytis_beta_api as walytis_beta
+from brenthy_tools_beta.utils import bytes_to_string
+from ipfs_datatransmission import (
+    Conversation,
+    ConversationListener,
+    ConvListenTimeout,
+)
+from loguru import logger
+from walytis_beta_api import (
+    Blockchain,
+    BlockchainAlreadyExistsError,
+    decode_short_id,
+    list_blockchain_ids,
+)
+
 from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
     KeyOwnershipBlock,
     get_latest_control_key,
     get_latest_did_doc,
 )
-import brenthy_tools_beta
 from .did_objects import Key
 from .key_store import KeyStore, UnknownKeyError
 from .settings import CTRL_KEY_MAX_RENEWAL_DUR_HR, CTRL_KEY_RENEWAL_AGE_HR
 from .utils import validate_did_doc
-import json
+
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
 
@@ -367,14 +370,12 @@ class IdentityAccess:
             logger.debug("KRH: Shared key!")
 
         except Exception as error:
-            print("\n".join(traceback.format_stack()))
             logger.error(f"Error in key_requests_handler: {error}")
             conv.terminate()
 
     def add_member(self, did: str, invitation: str) -> None:
         blockchain_id = blockchain_id_from_did(did)
         if blockchain_id != json.loads(invitation)["blockchain_id"]:
-            print("\n".join(traceback.format_stack()))
             logger.error("DID and invitation don't match!")
             raise ValueError("DID and invitation don't match!")
         members = self.get_members()+[{"did": did, "invitation": invitation}]
@@ -418,7 +419,7 @@ class IdentityAccess:
         peer_id = did_doc.get("ipfs_peer_id", None)
         if not peer_id:
             logger.warning(f"Member has no full DID-Doc: {did}")
-            print(did_doc)
+            logger.warning(did_doc)
             raise IncompletePeerInfoError()
         return peer_id
 
@@ -451,13 +452,15 @@ class IdentityAccess:
         peer_id = self.get_member_ipfs_id(did)
         logger.debug("RK: Requesting key...")
         try:
-            print(f"{did}-KeyRequests")
             conv = Conversation()
-            conv.start(
-                conv_name=f"KeyRequest-{key_id}",
-                peer_id=peer_id,
-                others_req_listener=f"{did}-KeyRequests",
-            )
+            try:
+                conv.start(
+                    conv_name=f"KeyRequest-{key_id}",
+                    peer_id=peer_id,
+                    others_req_listener=f"{did}-KeyRequests",
+                )
+            except ipfs_datatransmission.CommunicationTimeout:
+                return None
             logger.debug("RK: started conversation")
             key = self.device_did_manager.get_control_key()
             logger.debug("RK: Got contrail key")
@@ -481,9 +484,8 @@ class IdentityAccess:
             conv.close()
 
         except Exception as error:
-            import traceback
-            print(traceback.format_exc())
-            logger.warning(f"Error in request_key {error}")
+            # logger.warning(traceback.format_exc())
+            logger.warning(f"Error in request_key: {type(error)} {error}")
             conv.close()
             return None
 
@@ -491,7 +493,6 @@ class IdentityAccess:
             logger.warning(response)
             return None
         private_key = key.decrypt(bytes.fromhex(response["private_key"]))
-        print(private_key)
         key = Key.from_key_id(key_id)
         key.unlock(private_key)
         self.person_did_manager.key_store.add_key(key)

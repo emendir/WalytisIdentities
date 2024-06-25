@@ -13,8 +13,8 @@ from termcolor import colored as coloured
 class ContactsDocker:
     def __init__(self, auto_run: bool = True):
         self.image_name = "local/walytis_auth_testing"
-        self._docker_client = docker.from_env()
-        self.container = self._docker_client.containers.create(
+        self._docker = docker.from_env()
+        self.container = self._docker.containers.create(
             self.image_name, privileged=True)
         if auto_run:
             self.start()
@@ -60,7 +60,7 @@ class ContactsDocker:
             info.name = os.path.basename(remote_filepath)
             tar.addfile(info, f)
         # create remote directory if needed
-        self.run_shell_command(f"mkdir -p {os.path.dirname(remote_filepath)}")
+        self.run_shell_command(f"mkdir -p {os.path.dirname(remote_filepath)}", print_output=False)
         self.container.put_archive(dst_dir, stream.getvalue())
 
     def write_to_tempfile(self, data: str | bytes) -> str:
@@ -71,7 +71,7 @@ class ContactsDocker:
 
         with open(local_tempfile, "wb+") as file:
             file.write(data)
-        remote_tempfile = self._run_shell_command("mktemp").strip().decode()
+        remote_tempfile = self.run_shell_command("mktemp", print_output=False).strip()
         self.transfer_file(local_tempfile, remote_tempfile)
 
         shutil.rmtree(tempdir)
@@ -79,30 +79,54 @@ class ContactsDocker:
 
     def is_running(self) -> bool:
         """Check if this docker container is running or not."""
-        return self._docker_client.containers.get(self.container.id).attrs["State"]["Running"]
-
-    def _run_shell_command(self, command: str, background: bool = False):
-        """Run shell code from within the container's operating system.
-
-        Not suitable for code that contains double quotes."""
-        if background:
-            command = f"nohup {command} > /dev/null 2>&1 &"
-        exec_id = self._docker_client.api.exec_create(self.container.id, command)['Id']
-        output = self._docker_client.api.exec_start(exec_id, tty=True, detach=background)
-        return output if not background else None
+        return self._docker.containers.get(
+            self.container.id
+        ).attrs["State"]["Running"]
 
     def run_shell_command(
-        self, command: str,
+        self,
+        command: str,
         user: str | None = None,
-        print_output=True,
-        colour="light_yellow"
+        print_output: bool = True,
+        colour: str = "light_yellow",
+        background: bool = False
     ) -> str:
         """Run shell code from within the container's operating system.
 
         Not suitable for code that contains double quotes.
         """
+        if print_output and background:
+            print(
+                "Parameters `print_output` and `background` "
+                "can't both be `True`. Deactivating `print_output`."
+            )
+
         if user:
             command = f"su {user} -c \"{command}\""
+
+        if print_output:
+            return self.run_shell_command_printed(
+                command, print_output=True, colour=colour
+            )
+
+        if background:
+            command = f"nohup {command} > /dev/null 2>&1 &"
+        ex_id = self._docker.api.exec_create(self.container.id, command)['Id']
+        output = self._docker.api.exec_start(
+            ex_id, tty=True, detach=background
+        )
+        return output.strip().decode() if not background else ""
+
+    def run_shell_command_printed(
+        self,
+        command: str,
+        print_output: bool = True,
+        colour: str = "light_yellow"
+    ) -> str:
+        """Run shell code from within the container's operating system.
+
+        Not suitable for code that contains double quotes.
+        """
         command = f"docker exec -it {self.container.id} {command}"
         import pexpect
         child = pexpect.spawn(command, encoding='utf-8')
