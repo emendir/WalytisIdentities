@@ -32,7 +32,7 @@ DELETE_ALL_BRENTHY_DOCKERS = True
 
 def test_preparations():
     if DELETE_ALL_BRENTHY_DOCKERS:
-        delete_containers()
+        delete_containers(image="local/walytis_auth_testing")
 
     if REBUILD_DOCKER:
         from walytis_auth_docker.build_docker import build_docker_image
@@ -71,6 +71,10 @@ def cleanup():
 
 
 def create_identity_and_invitation():
+    """Create an identity and invitation for it.
+
+    TO BE RUN IN DOCKER CONTAINER.
+    """
     logger.debug("DockerTest: creating identity...")
     pytest.device_1 = IdentityAccess.create(
         "/opt",
@@ -83,6 +87,10 @@ def create_identity_and_invitation():
 
 
 def add_device(did: str, invitation: str):
+    """Add a new device to pytest.device_1.
+
+    TO BE RUN IN DOCKER CONTAINER.
+    """
     pytest.device_1 = IdentityAccess.load_from_appdata(
         "/opt",
         pytest.CRYPT,
@@ -112,18 +120,35 @@ def add_device(did: str, invitation: str):
         print("\nDocker: Person Members:\n", pytest.device_1.get_members())
 
 
+def renew_control_key():
+    """Renew the control key of pytest.device_1.
+
+    TO BE RUN IN DOCKER CONTAINER.
+    """
+    pytest.device_1 = IdentityAccess.load_from_appdata(
+        "/opt",
+        pytest.CRYPT,
+    )
+    old_key = pytest.device_1.person_did_manager.get_control_key()
+    pytest.device_1.person_did_manager.renew_control_key()
+    new_key = pytest.device_1.person_did_manager.get_control_key()
+    pytest.device_1.terminate()
+    print(f"{old_key.get_key_id()} {new_key.get_key_id()}")
+
+
 def test_create_identity_and_invitation():
     print("Creating identiy and invitation on docker...")
-    python_code = (
-        "import sys;"
-        "sys.path.append('/opt/WalytisAuth/tests');"
-        "import test_key_sharing;"
-        "test_key_sharing.REBUILD_DOCKER=False;"
-        "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
-        "test_key_sharing.test_preparations();"
-        "test_key_sharing.create_identity_and_invitation();"
-        "test_key_sharing.pytest.device_1.terminate()"
-    )
+    python_code = "\n".join([
+        "import sys;",
+        "sys.path.append('/opt/WalytisAuth/tests');",
+        "import test_key_sharing;",
+        "test_key_sharing.REBUILD_DOCKER=False;",
+        "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
+        "test_key_sharing.test_preparations();",
+        "test_key_sharing.create_identity_and_invitation();",
+        "test_key_sharing.pytest.device_1.terminate()",
+        # "test_key_sharing.cleanup()"
+    ])
     output = None
     print(python_code)
     # breakpoint()
@@ -145,9 +170,13 @@ def test_add_device_identity():
     try:
         pytest.device_2 = IdentityAccess.join(
             pytest.invitation, pytest.device_2_config_dir, pytest.CRYPT)
-    except walytis_api.JoinFailureError as error:
-        print(error)
-        breakpoint()
+    except walytis_api.JoinFailureError:
+        try:
+            pytest.device_2 = IdentityAccess.join(
+                pytest.invitation, pytest.device_2_config_dir, pytest.CRYPT)
+        except walytis_api.JoinFailureError as error:
+            print(error)
+            breakpoint()
     pytest.device_2_did = pytest.device_2.device_did_manager.get_did()
     pytest.device_2_invitation = pytest.device_2.device_did_manager.blockchain.create_invitation(
         one_time=False, shared=True)
@@ -184,7 +213,7 @@ def test_get_control_key():
         "sys.path.append('/opt/WalytisAuth/tests');"
         "import test_key_sharing;"
         "from test_key_sharing import logger;"
-        "logger.info('DOCKER: Testing control key...');"
+        "logger.info('DOCKER: Testing control key sharing...');"
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
@@ -207,6 +236,74 @@ def test_get_control_key():
     )
 
 
+def test_renew_control_key():
+    success = True
+    wait_dur_s = 30
+    python_code = "\n".join([
+        "import sys;",
+        "sys.path.append('/opt/WalytisAuth/tests');",
+        "import test_key_sharing;",
+        "from test_key_sharing import logger;",
+        "logger.info('DOCKER: Testing control key renewal...');",
+        "test_key_sharing.REBUILD_DOCKER=False;",
+        "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
+        "test_key_sharing.test_preparations();",
+        "test_key_sharing.renew_control_key();",
+    ])
+
+    output = pytest.containers[0].run_python_code(
+        python_code, print_output=True
+    ).split("\n")
+    old_key = ""
+    new_key = ""
+    if output and output[-1]:
+        keys = output[-1].split(" ")
+        if len(keys) == 2 and keys[0] != keys[1]:
+            try:
+                old_key = Key.from_key_id(keys[0])
+                new_key = Key.from_key_id(keys[1])
+            except:
+                pass
+    if not old_key and new_key:
+        logger.error(output)
+        print("Failed to renew keys in docker container.")
+        success = False
+    if success:
+        python_code = (
+            "import sys;"
+            "sys.path.append('/opt/WalytisAuth/tests');"
+            "import test_key_sharing;"
+            "from test_key_sharing import logger;"
+            "logger.info('DOCKER: Testing control key renewal...');"
+            "test_key_sharing.REBUILD_DOCKER=False;"
+            "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
+            "test_key_sharing.test_preparations();"
+            "dev = test_key_sharing.IdentityAccess.load_from_appdata("
+            "    '/opt',"
+            "    test_key_sharing.pytest.CRYPT,"
+            ");"
+            "from time import sleep;"
+            f"[(sleep(10), logger.debug('waiting...')) for i in range({wait_dur_s//10})];"
+            "dev.terminate();"
+        )
+        shell_command = (f'/bin/python -c "{python_code}"')
+        pytest.containers[0].run_shell_command(
+            shell_command, background=True, print_output=False
+        )
+
+        print("Waiting for key sharing...")
+        polite_wait(wait_dur_s)
+        private_key = pytest.device_2.person_did_manager.get_control_key().private_key
+        try:
+            new_key.unlock(private_key)
+        except:
+            success = False
+    mark(
+        success,
+        "Shared key on renewal."
+    )
+
+
 def run_tests():
     print("\nRunning tests for Key Sharing:")
     test_preparations()
@@ -216,6 +313,7 @@ def run_tests():
     if pytest.invitation:
         test_add_device_identity()
         test_get_control_key()
+        test_renew_control_key()
     else:
         print("Skipped tests for add-device identity because first test failed.")
     cleanup()

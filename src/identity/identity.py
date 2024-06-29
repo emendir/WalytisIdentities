@@ -12,7 +12,7 @@ import ipfs_api
 import ipfs_datatransmission
 import walytis_beta_api
 import walytis_beta_api as walytis_beta
-from brenthy_tools_beta.utils import bytes_to_string
+from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from ipfs_datatransmission import (
     Conversation,
     ConversationListener,
@@ -112,9 +112,9 @@ class IdentityAccess:
         # log.debug("Got control key ownership!")
 
     def manage_control_key(self):
-        self.assert_ownership()
 
         while not self._terminate:
+            self.assert_ownership()
             time.sleep(1)
             self.check_prepare_control_key_update()
             self.check_apply_control_key_update()
@@ -302,7 +302,7 @@ class IdentityAccess:
         """Publish a public key and proof that we have it's private key."""
         key_ownership = {
             "owner": self.device_did_manager.get_did(),
-            "key": key.get_key_id()
+            "key_id": key.get_key_id()
         }
         sig = bytes_to_string(key.sign(json.dumps(key_ownership).encode()))
         key_ownership.update({"proof": sig})
@@ -512,17 +512,16 @@ class IdentityAccess:
             )
             if metadata["creation_time"] < key_expiry:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
-                    self.person_did_manager.blockchain.get_block(block_id)
+                    self.person_did_manager.blockchain.get_block(block_id).content
                 ).get_key_ownership()
-
                 key_id = key_ownership["key_id"]
                 owner = key_ownership["owner"]
 
-                key = Key.from_id()
-                proof = key_ownership["proof"]
+                key = Key.from_key_id(key_id)
+                proof = string_to_bytes(key_ownership["proof"])
                 key_ownership.pop("proof")
 
-                if not key.verify_signature(proof, key_ownership):
+                if not key.verify_signature(proof, json.dumps(key_ownership).encode()):
                     logger.warning(
                         "Found key ownership block with invalid proof."
                     )

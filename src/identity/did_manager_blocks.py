@@ -36,6 +36,7 @@ class ControlKeyBlock:
     signature: str
 
     priblocks_version: tuple | list
+    walytis_block_topic = "control_key"
 
     @classmethod
     def new(
@@ -235,7 +236,7 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
             blockchain.get_block(block_id).content
         )
         for block_id in blockchain.block_ids
-        if 'control_key' in walytis_api.decode_short_id(block_id)['topics']
+        if get_block_type(walytis_api.decode_short_id(block_id)['topics']) == ControlKeyBlock
     ]
 
     # ensure the first ControlKeyBlock has identical current and new keys
@@ -284,12 +285,11 @@ def get_latest_block(
     last_key_block = None
     last_info_block = None
 
-    topic = block_type.walytis_block_topic
     # logger.debug(f"WAB: Getting latest {block_type} block...")
     for block_id in blockchain.block_ids:
         # logger.debug("WAB: Analysing block...")
         # if this block is a control key update block
-        if 'control_key' in walytis_api.decode_short_id(block_id)['topics']:
+        if get_block_type(walytis_api.decode_short_id(block_id)['topics']) == ControlKeyBlock:
             # load block content
             # logger.debug("WAB: Getting Control Key block...")
             ctrl_key_block = ControlKeyBlock.load_from_block_content(
@@ -317,7 +317,7 @@ def get_latest_block(
                 print("Found Control Key Block with invalid signature")
 
         # if this block is of the type we are looking for
-        if topic in walytis_api.decode_short_id(block_id)['topics']:
+        if get_block_type(walytis_api.decode_short_id(block_id)['topics']) == block_type:
             # load block content
             # logger.debug("WAB: Getting block...")
             info_block = block_type.load_from_block_content(
@@ -399,5 +399,25 @@ def get_latest_members_list(blockchain: Blockchain) -> list[dict] | None:
     logger.debug("WAB: Returning info content.")
     return latest_block.info_content
 
+
+def get_block_type(topics: list[str] | str) -> InfoBlockType | None:
+    """Get the block's DID-Manager block-type given its IDs.
+
+    Is strict and detects invalid block IDs.
+    """
+    if isinstance(topics, str):
+        topics = [topics]
+    block_type: InfoBlockType | None = None
+    if ControlKeyBlock.walytis_block_topic in topics:
+        block_type = ControlKeyBlock
+    if DidDocBlock.walytis_block_topic in topics:
+        if block_type:
+            return None
+        block_type = DidDocBlock
+    if MembersListBlock.walytis_block_topic in topics:
+        if block_type:
+            return None
+        block_type = MembersListBlock
+    return block_type
 
 # decorate_all_functions(strictly_typed, __name__)

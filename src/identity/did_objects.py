@@ -176,5 +176,8 @@ class Key(Crypt):
             raise ValueError("Not all of this objects' fields are set.")
         return f"{self.family}:{time_to_string(self.creation_time)}:{self.get_public_key()}"
 
+    def __str__(self):
+        return self.get_key_id()
+
 
 decorate_all_functions(strictly_typed, __name__)

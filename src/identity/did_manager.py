@@ -6,8 +6,9 @@ from typing import Type, TypeVar
 from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
 from strict_typing import strictly_typed
-from walytis_beta_api import Blockchain, delete_blockchain
+from walytis_beta_api import Blockchain, Block, delete_blockchain
 from loguru import logger
+from . import did_manager_blocks
 from .did_manager_blocks import (
     ControlKeyBlock,
     DidDocBlock,
@@ -16,6 +17,7 @@ from .did_manager_blocks import (
     get_latest_control_key,
     get_latest_did_doc,
     get_latest_members_list,
+    get_block_type,
 )
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
@@ -54,6 +56,9 @@ class DidManager:
         if isinstance(blockchain, str):
             blockchain = Blockchain(blockchain)
         self.blockchain = blockchain
+
+        self.blockchain.block_received_handler = self.on_block_received
+        self.blockchain.update_blockids_before_handling = True
         self.key_store = key_store
         # logger.debug("DM: Getting control key...")
         self._control_key = get_latest_control_key(blockchain)
@@ -74,9 +79,12 @@ class DidManager:
         key_store.add_key(ctrl_key)
         # logger.debug("DM: Createing DID-Manager's blockchain...")
         # create blockchain
+        logger.debug("DM: Creating Blockchain...")
+
         blockchain = Blockchain.create(
             blockchain_name=f"waco-{bytes_to_string(ctrl_key.public_key)}"
         )
+        logger.debug("DM: Initialising cryptography...")
 
         # publish first key on blockchain
         # logger.debug("DM: Adding ControlKey block...")
@@ -87,7 +95,7 @@ class DidManager:
         keyblock.sign(ctrl_key)
         blockchain.add_block(
             keyblock.generate_block_content(),
-            topics="control_key"
+            topics=keyblock.walytis_block_topic
         )
 
         # logger.debug("DM: Adding DID-Doc block...")
@@ -131,7 +139,7 @@ class DidManager:
 
         self.blockchain.add_block(
             keyblock.generate_block_content(),
-            topics="control_key"
+            topics=keyblock.walytis_block_topic
         )
 
         self._control_key = keyblock.get_new_key()
@@ -185,6 +193,24 @@ class DidManager:
                 return []
 
         return self.members_list
+
+    def on_block_received(self, block: Block) -> None:
+        block_type = get_block_type(block.topics)
+        logger.debug(f"DM: Received block of type {block_type}")
+        if not block_type:
+            logger.warning("DM: Received block of unknown type.")
+
+        match block_type:
+            case did_manager_blocks.ControlKeyBlock:
+                logger.debug("DM: Received control key block!")
+                self._control_key = get_latest_control_key(self.blockchain)
+                logger.debug(f"DM: new control_key: {self._control_key}")
+            case did_manager_blocks.DidDocBlock:
+                self.did_doc = get_latest_did_doc(self.blockchain)
+            case did_manager_blocks.MembersListBlock:
+                self.members_list = get_latest_members_list(self.blockchain)
+            case _:
+                logger.warning(f"DM: Did not recognise block type: {block_type}")
 
     def delete(self) -> None:
         """Delete this DID-Manager."""
