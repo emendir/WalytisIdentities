@@ -81,26 +81,28 @@ def create_identity_and_invitation():
         pytest.CRYPT,
     )
     logger.debug("DockerTest: creating invitation...")
-    invitation = pytest.device_1.create_invitation()
-    print(invitation)
+    invitation = pytest.device_1.invite_member()
+    print(json.dumps(invitation))
     # mark(isinstance(pytest.device_1, IdentityAccess), "Created IdentityAccess")
 
 
-def add_device(did: str, invitation: str):
+def check_new_device(did: str):
     """Add a new device to pytest.device_1.
 
     TO BE RUN IN DOCKER CONTAINER.
     """
+    logger.debug("CND: Loading IdentityAccess...")
     pytest.device_1 = IdentityAccess.load_from_appdata(
         "/opt",
         pytest.CRYPT,
     )
 
-    pytest.device_1.add_member(
-        did,
-        invitation
-    )
+    # pytest.device_1.add_member(
+    #     did,
+    #     invitation
+    # )
 
+    logger.debug("CND: Getting members...")
     members = pytest.device_1.get_members()
     success = (
         did in [
@@ -112,6 +114,8 @@ def add_device(did: str, invitation: str):
             for member in pytest.device_1.get_members()
         ]
     )
+    logger.debug("CND: got data, exiting...")
+
     if success:
         print(success)
     else:
@@ -150,11 +154,13 @@ def test_create_identity_and_invitation():
         # "test_key_sharing.cleanup()"
     ])
     output = None
-    print(python_code)
+    # print(python_code)
     # breakpoint()
-    output = pytest.containers[0].run_python_code(python_code)
-    print("Got output!")
-    print(output)
+    output = pytest.containers[0].run_python_code(
+        python_code, print_output=False
+    )
+    # print("Got output!")
+    # print(output)
     try:
         pytest.invitation = json.loads(output.split("\n")[-1])
     except:
@@ -178,8 +184,10 @@ def test_add_device_identity():
             print(error)
             breakpoint()
     pytest.device_2_did = pytest.device_2.device_did_manager.get_did()
-    pytest.device_2_invitation = pytest.device_2.device_did_manager.blockchain.create_invitation(
-        one_time=False, shared=True)
+
+    # wait a short amount to allow the docker container to learn of the new device
+    polite_wait(2)
+
     print("Adding device on docker...")
     python_code = (
         "import sys;"
@@ -188,15 +196,17 @@ def test_add_device_identity():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        f"test_key_sharing.add_device('{pytest.device_2_did}', '{pytest.device_2_invitation}');"
+        f"test_key_sharing.check_new_device('{pytest.device_2_did}');"
         "test_key_sharing.pytest.device_1.terminate()"
 
     )
-    print(f"\n{python_code}\n")
-    output = pytest.containers[0].run_python_code(python_code)
+    # print(f"\n{python_code}\n")
+    output = pytest.containers[0].run_python_code(
+        python_code, print_output=False
+    )
 
-    print("Got output!")
-    print(output)
+    # print("Got output!")
+    # print(output)
 
     mark(
         output.split("\n")[-1] == "True",
@@ -227,7 +237,7 @@ def test_get_control_key():
     )
     bash_code = (f'/bin/python -c "{python_code}"')
     pytest.containers[0].run_shell_command(bash_code, background=True, print_output=False)
-    print(bash_code)
+    # print(bash_code)
     print("Waiting for key sharing...")
     polite_wait(wait_dur_s)
     mark(
@@ -252,7 +262,7 @@ def test_renew_control_key():
     ])
 
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=True
+        python_code, print_output=False
     ).split("\n")
     old_key = ""
     new_key = ""

@@ -29,8 +29,11 @@ from walytis_beta_api import (
 from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
     KeyOwnershipBlock,
+    MemberInvitationBlock,
+    MemberJoiningBlock,
     get_latest_control_key,
     get_latest_did_doc,
+    get_info_blocks,
 )
 from .did_objects import Key
 from .key_store import KeyStore, UnknownKeyError
@@ -63,8 +66,10 @@ class IdentityAccess:
         self.key = key
         self.person_did_manager = person_did_manager
         self.config_file = os.path.join(config_dir, "person_id.json")
-        self.person_keystore_file = os.path.join(config_dir, "person_keys.json")
-        self.device_keystore_file = os.path.join(config_dir, "device_keys.json")
+        self.person_keystore_file = os.path.join(
+            config_dir, "person_keys.json")
+        self.device_keystore_file = os.path.join(
+            config_dir, "device_keys.json")
         self.candidate_keys: dict[str, list[str]] = {}
         self.get_published_candidate_keys()
 
@@ -78,7 +83,7 @@ class IdentityAccess:
         )
         self.control_key_manager_thr.start()
 
-    def assert_ownership(self):
+    def assert_ownership(self) -> None:
         """If we don't yet own the control key, get it."""
         control_key = self.person_did_manager.get_control_key()
         if control_key.private_key:
@@ -100,7 +105,8 @@ class IdentityAccess:
                 if key:
                     self.person_did_manager.key_store.add_key(key)
                     if self.person_did_manager.get_control_key().private_key:
-                        self.person_did_manager.update_did_doc(self.generate_did_doc())
+                        self.person_did_manager.update_did_doc(
+                            self.generate_did_doc())
                         return
                     else:
                         logger.warning(
@@ -129,18 +135,17 @@ class IdentityAccess:
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
         device_keystore_file = os.path.join(config_dir, "device_keys.json")
         key_store = KeyStore(person_keystore_file, key)
-        logger.debug("Creating Person-Did-Manager...")
+        # logger.debug("Creating Person-Did-Manager...")
         person_did_manager = DidManager.create(key_store)
-        logger.debug("Creating Device-Did-Manager...")
-        device_keystore = KeyStore(device_keystore_file, key)
-        device_did_manager = DidManager.create(device_keystore)
+        # logger.debug("Creating Device-Did-Manager...")
 
-        person_did_manager.update_members_list([
-            {
-                "did": device_did_manager.get_did(),
-                "invitation": device_did_manager.blockchain.create_invitation(one_time=False, shared=True)
-            }
-        ])
+        # create device did manager
+        device_did_manager = DidManager.join_as_member(
+            invitation=person_did_manager.invite_member(),
+            blockchain=person_did_manager.blockchain,
+            device_keystore_file=device_keystore_file,
+            key=key,
+        )
 
         # logger.debug("Creating Identity...")
         person_id_acc = cls(
@@ -150,7 +155,8 @@ class IdentityAccess:
             key,
         )
         person_id_acc.save_appdata()
-        person_id_acc.device_did_manager.update_did_doc(person_id_acc.generate_device_did_doc())
+        person_id_acc.device_did_manager.update_did_doc(
+            person_id_acc.generate_device_did_doc())
         return person_id_acc
 
     @classmethod
@@ -195,32 +201,31 @@ class IdentityAccess:
         """Create a new IdentityAccess object."""
         if isinstance(invitation, str):
             invitation = json.loads(invitation)
+        blockchain_invitation: dict = invitation["blockchain_invitation"]
+
+        # join blockchain
         try:
-            logger.debug(f"Joining blockchain {invitation}")
+            # logger.debug(f"Joining blockchain {blockchain_invitation}")
             walytis_beta.log.PRINT_DEBUG = True
-            blockchain = Blockchain.join(invitation)
+            blockchain = Blockchain.join(blockchain_invitation)
         except BlockchainAlreadyExistsError:
-            blockchain = Blockchain(invitation["blockchain_id"])
-        except brenthy_tools_beta.brenthy_api.BrenthyReplyDecodeError as error:
-            logger.error(error)
-            logger.error("BrenthyReplyDecodeError. Trying joining one more time...")
+            blockchain = Blockchain(blockchain_invitation["blockchain_id"])
 
-            try:
-                logger.debug(f"Joining blockchain {invitation}")
-                blockchain = Blockchain.join(invitation)
-            except BlockchainAlreadyExistsError:
-                blockchain = Blockchain(invitation["blockchain_id"])
-
-        person_keystore_file = os.path.join(config_dir, "person_keys.json")
         device_keystore_file = os.path.join(config_dir, "device_keys.json")
+        person_keystore_file = os.path.join(config_dir, "person_keys.json")
+
+        # create device did manager
+        device_did_manager = DidManager.join_as_member(
+            invitation=invitation,
+            blockchain=blockchain,
+            device_keystore_file=device_keystore_file,
+            key=key,
+        )
         key_store = KeyStore(person_keystore_file, key)
         person_did_manager = DidManager(
             blockchain,
             key_store
         )
-
-        device_keystore = KeyStore(device_keystore_file, key)
-        device_did_manager = DidManager.create(device_keystore)
 
         person_id_acc = cls(
             person_did_manager,
@@ -229,12 +234,13 @@ class IdentityAccess:
             key,
         )
         person_id_acc.save_appdata()
-        person_id_acc.device_did_manager.update_did_doc(person_id_acc.generate_device_did_doc())
+        person_id_acc.device_did_manager.update_did_doc(
+            person_id_acc.generate_device_did_doc())
+
         return person_id_acc
 
-    def create_invitation(self) -> str:
-        """Genereate an invitation which another device can use to join."""
-        return self.person_did_manager.blockchain.create_invitation(one_time=False, shared=True)
+    def invite_member(self) -> dict:
+        return self.person_did_manager.invite_member()
 
     def serialise(self) -> dict:
         """Generate this Identity's appdata."""
@@ -261,7 +267,8 @@ class IdentityAccess:
         did_doc = {
             "id": self.person_did_manager.get_did(),
             "verificationMethod": [
-                self.person_did_manager.get_control_key().generate_key_spec(self.person_did_manager.get_did())
+                self.person_did_manager.get_control_key().generate_key_spec(
+                    self.person_did_manager.get_did())
 
                 # key.generate_key_spec(self.person_did_manager.get_did())
                 # for key in self.keys
@@ -284,7 +291,8 @@ class IdentityAccess:
         did_doc = {
             "id": self.device_did_manager.get_did(),
             "verificationMethod": [
-                self.device_did_manager.get_control_key().generate_key_spec(self.device_did_manager.get_did())
+                self.device_did_manager.get_control_key().generate_key_spec(
+                    self.device_did_manager.get_did())
                 # key.generate_key_spec(self.person_did_manager.get_did())
                 # for key in self.keys
             ],
@@ -311,22 +319,22 @@ class IdentityAccess:
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
-        logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
+        # logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
         conv = Conversation()
         conv.join(
             conv_name,
             peer_id,
             conv_name
         )
-        logger.debug("RKH: Joined conversation.")
+        # logger.debug("RKH: Joined conversation.")
         success = conv.say("Hello there!".encode())
         if not success:
-            logger.debug("RKH: failed to communicate with peer.")
+            # logger.debug("RKH: failed to communicate with peer.")
             conv.terminate()
             return
         try:
             message = json.loads(conv.listen(timeout=10).decode())
-            logger.debug("RKH: got message.")
+            # logger.debug("RKH: got message.")
             peer_did = message["did"]
             key_id = message["key_id"]
             sig = bytes.fromhex(message["signature"])
@@ -335,14 +343,14 @@ class IdentityAccess:
             try:
                 peer_key = self.get_member_control_key(peer_did)
             except NotMemberError as error:
-                logger.debug(error)
-                logger.debug(peer_did)
+                logger.warning(error)
+                # logger.debug(peer_did)
                 conv.say(json.dumps({
                     "error": "NotMemberError",
                 }).encode())
                 conv.terminate()
                 return
-            logger.debug("RKH: got peer's key.")
+            # logger.debug("RKH: got peer's key.")
 
             if not peer_key.verify_signature(sig, json.dumps(message).encode()):
 
@@ -351,7 +359,7 @@ class IdentityAccess:
                     "peer_public_key": peer_key.get_public_key()
                 }).encode())
                 conv.terminate()
-                logger.debug("KRH: authentication failed.")
+                logger.warning("KRH: authentication failed.")
                 return
             try:
                 key = self.person_did_manager.key_store.get_key(key_id)
@@ -361,43 +369,36 @@ class IdentityAccess:
                     "peer_public_key": peer_key.get_public_key()
                 }).encode())
                 conv.terminate()
-                logger.debug("KRH: Don't have requested key.")
+                logger.warning("KRH: Don't have requested key.")
                 return
 
             conv.say(json.dumps({
                 "private_key": peer_key.encrypt(key.private_key).hex()
             }).encode())
-            logger.debug("KRH: Shared key!")
+            # logger.debug("KRH: Shared key!")
 
         except Exception as error:
             logger.error(f"Error in key_requests_handler: {error}")
             conv.terminate()
 
-    def add_member(self, did: str, invitation: str) -> None:
-        blockchain_id = blockchain_id_from_did(did)
-        if blockchain_id != json.loads(invitation)["blockchain_id"]:
-            logger.error("DID and invitation don't match!")
-            raise ValueError("DID and invitation don't match!")
-        members = self.get_members()+[{"did": did, "invitation": invitation}]
-        self.person_did_manager.update_members_list(members)
-        logger.debug("Added member!")
-
     def get_member_ipfs_id(self, did: str) -> str:
         """Get the IPFS content ID of another member."""
-        results = [member for member in self.get_members() if member["did"] == did]
+        results = [member for member in self.get_members()
+                   if member["did"] == did]
 
         if not results:
             logger.debug([member["did"] for member in self.get_members()])
             raise NotMemberError(f"This DID is not among our members.\n{did}")
         if len(results) > 1:
-            raise Exception("Found more than one entry for did in members list.")
+            raise Exception(
+                "Found more than one entry for did in members list.")
         member = results[0]
         invitation = json.loads(member["invitation"])
         blockchain_id = blockchain_id_from_did(did)
         if not blockchain_id == invitation["blockchain_id"]:
             raise Exception(f"Found corrupt members entry for peer {did}")
         if "blockchain" not in member.keys():
-            logger.debug("Blockchain not cached")
+            # logger.debug("Blockchain not cached")
             if invitation["blockchain_id"] in list_blockchain_ids():
                 blockchain = Blockchain(blockchain_id)
             else:
@@ -411,7 +412,7 @@ class IdentityAccess:
                     blockchain = Blockchain.join(invitation)
             member.update({"blockchain": blockchain})
         else:
-            logger.debug("USing chached blockchain")
+            # logger.debug("USing chached blockchain")
             blockchain = member["blockchain"]
 
         did_doc = get_latest_did_doc(blockchain)
@@ -425,7 +426,8 @@ class IdentityAccess:
 
     def get_member_control_key(self, did: str) -> Key:
         """Get the DID control key of another member."""
-        members = [member for member in self.get_members() if member["did"] == did]
+        members = [member for member in self.get_members()
+                   if member["did"] == did]
         if not members:
             raise NotMemberError("This DID is not among our members.")
         member = members[0]
@@ -450,7 +452,7 @@ class IdentityAccess:
     def request_key(self, key_id: str, did: str) -> Key | None:
         """Request a key from another member."""
         peer_id = self.get_member_ipfs_id(did)
-        logger.debug("RK: Requesting key...")
+        # logger.debug("RK: Requesting key...")
         try:
             conv = Conversation()
             try:
@@ -461,26 +463,29 @@ class IdentityAccess:
                 )
             except ipfs_datatransmission.CommunicationTimeout:
                 return None
-            logger.debug("RK: started conversation")
+            # logger.debug("RK: started conversation")
             key = self.device_did_manager.get_control_key()
-            logger.debug("RK: Got contrail key")
+            # logger.debug("RK: Got contrail key")
             message = {
                 "did": self.device_did_manager.get_did(),
                 "key_id": key_id,
             }
-            message.update({"signature": key.sign(json.dumps(message).encode()).hex()})
+            message.update({"signature": key.sign(
+                json.dumps(message).encode()).hex()})
             salutation = conv.listen(timeout=10)
-            logger.debug(salutation)
+            # logger.debug(salutation)
             success = conv.say(json.dumps(message).encode(), )
             if not success:
-                logger.debug("Timeout communicating with peer.")
+                logger.debug("Timeout communicating with peer when getting key.")
+                conv.close()
+                return None
             try:
                 response = json.loads(conv.listen(timeout=10).decode())
             except ConvListenTimeout:
                 logger.debug("Timeout communicating with peer.")
                 conv.close()
                 return None
-            logger.debug("RK: Got Response!")
+            # logger.debug("RK: Got Response!")
             conv.close()
 
         except Exception as error:
@@ -512,7 +517,8 @@ class IdentityAccess:
             )
             if metadata["creation_time"] < key_expiry:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
-                    self.person_did_manager.blockchain.get_block(block_id).content
+                    self.person_did_manager.blockchain.get_block(
+                        block_id).content
                 ).get_key_ownership()
                 key_id = key_ownership["key_id"]
                 owner = key_ownership["owner"]

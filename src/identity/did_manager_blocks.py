@@ -166,7 +166,6 @@ class InfoBlock(ABC):
 
 
 @strictly_typed
-# @dataclass
 class DidDocBlock(InfoBlock):
     """A block containing a DID document."""
 
@@ -179,20 +178,54 @@ class DidDocBlock(InfoBlock):
 
 
 @strictly_typed
-# @dataclass
-class MembersListBlock(InfoBlock):
-    """Representation of a block publishing this DID's member-devices."""
+class MemberInvitationBlock(InfoBlock):
+    """A block containing a DID document."""
 
-    walytis_block_topic = 'members_list'
-    info_content: list
+    walytis_block_topic = "member_invitation"
+    info_content: dict
 
-    def get_members(self) -> list:
-        """Get the member devices published."""
+    def get_member_invitation(self) -> dict:
+        """Get the DID-Document which this block publishes."""
         return self.info_content
 
 
 @strictly_typed
-# @dataclass
+class MemberJoiningBlock(InfoBlock):
+    """A block containing a DID document."""
+
+    walytis_block_topic = "member_joining"
+    info_content: dict
+
+    def get_member(self) -> dict:
+        """Get the DID-Document which this block publishes."""
+        return self.info_content
+
+
+@strictly_typed
+class MemberLeavingBlock(InfoBlock):
+    """A block containing a DID document."""
+
+    walytis_block_topic = "member_leaving"
+    info_content: dict
+
+    def get_member(self) -> dict:
+        """Get the DID-Document which this block publishes."""
+        return self.info_content
+
+
+@strictly_typed
+class MemberUpdateBlock(InfoBlock):
+    """A block containing a DID document."""
+
+    walytis_block_topic = "member_update"
+    info_content: dict
+
+    def get_member(self) -> dict:
+        """Get the DID-Document which this block publishes."""
+        return self.info_content
+
+
+@strictly_typed
 class KeyOwnershipBlock(InfoBlock):
     """Representation of a block publishing annoucing key ownership."""
 
@@ -263,10 +296,10 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
 InfoBlockType = TypeVar('InfoBlockType', bound=InfoBlock)
 
 
-def get_latest_block(
+def get_info_blocks(
     blockchain: Blockchain,
-    block_type: Type[InfoBlockType]
-) -> InfoBlockType | None:
+    block_types: Type[InfoBlockType] | set[Type[InfoBlockType]]
+) -> list[InfoBlockType]:
     """Get the latest validly signed block of the given topic.
 
     Iterates through the blockchain's blocks to find the latest valid
@@ -283,13 +316,19 @@ def get_latest_block(
         dict: the currently valid DID-document of the identity
     """
     last_key_block = None
-    last_info_block = None
+    valid_member_invitations = {}
+    if not isinstance(block_types, set):
+        block_types = {block_types}
+    valid_blocks = []
 
     # logger.debug(f"WAB: Getting latest {block_type} block...")
     for block_id in blockchain.block_ids:
+        block_type = get_block_type(walytis_api.decode_short_id(block_id)['topics'])
         # logger.debug("WAB: Analysing block...")
         # if this block is a control key update block
-        if get_block_type(walytis_api.decode_short_id(block_id)['topics']) == ControlKeyBlock:
+        if not block_type:
+            pass
+        elif block_type == ControlKeyBlock:
             # load block content
             # logger.debug("WAB: Getting Control Key block...")
             ctrl_key_block = ControlKeyBlock.load_from_block_content(
@@ -315,9 +354,35 @@ def get_latest_block(
                 last_key_block = ctrl_key_block
             else:
                 print("Found Control Key Block with invalid signature")
+        elif block_type == MemberInvitationBlock:
+            invitation_block = MemberInvitationBlock.load_from_block_content(
+                blockchain.get_block(block_id).content
+            )
+            invitation = invitation_block.get_member_invitation()
+            if (last_key_block and
+                    invitation_block.verify_signature(last_key_block.get_new_key())):
+
+                # set this to the latest info-block
+                valid_member_invitations.update({invitation["invitation_key"]: invitation})
+                if block_type in block_types:
+                    valid_blocks.append(invitation_block)
+            else:
+                print("Found info-block Block with invalid signature")
+        elif block_type == MemberJoiningBlock and block_type in block_types:
+            joining_block = block_type.load_from_block_content(
+                blockchain.get_block(block_id).content
+            )
+            member = joining_block.get_member()
+            _invitation = valid_member_invitations.get(member["invitation_key"])
+            if _invitation and joining_block.verify_signature(
+                Key.from_key_id(_invitation["invitation_key"])
+            ):
+                valid_blocks.append(joining_block)
+            else:
+                logger.warning("Found joining block with invalid signature.")
 
         # if this block is of the type we are looking for
-        if get_block_type(walytis_api.decode_short_id(block_id)['topics']) == block_type:
+        elif block_type in block_types:
             # load block content
             # logger.debug("WAB: Getting block...")
             info_block = block_type.load_from_block_content(
@@ -328,13 +393,19 @@ def get_latest_block(
             if (last_key_block and
                     info_block.verify_signature(last_key_block.get_new_key())):
                 # set this to the latest info-block
-                last_info_block = info_block
+                valid_blocks.append(info_block)
             else:
-                print("Found info-block Block with invalid signature")
-    logger.debug("WAB: Finished!", last_info_block)
-    # return the DID-document of the last valid DID-Doc block
-    if last_info_block:
-        return last_info_block
+                logger.warning(f"Found {block_type} with invalid signature")
+    return valid_blocks
+
+
+def get_latest_block(
+    blockchain: Blockchain,
+    block_type: Type[InfoBlockType]
+) -> InfoBlockType | None:
+    blocks = get_info_blocks(blockchain, block_type)
+    if blocks:
+        return blocks[-1]
     # print("No valid blocks found")
     return None
 
@@ -367,40 +438,51 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
     return latest_block.info_content
 
 
-def get_latest_members_list(blockchain: Blockchain) -> list[dict] | None:
-    """Get a DID-Manager's blockchain's current members-list.
-
-    Iterates through the blockchain's blocks to find the latest valid
-    DID-document.
-    This function lookss so complex because it has to work even if the latest
-    valid DID-Doc block was created before the currently valid control key.
-
-    Args:
-        blockchain: the identity-control-blockchain of the
-                                identity whose DID-doc is to be retrieved
-    Returns:
-        dict: the currently valid DID-document of the identity
-    """
-    latest_block = get_latest_block(
-        blockchain,
-        MembersListBlock
+def get_members(blockchain: Blockchain) -> dict:
+    blocks: list[
+        MemberJoiningBlock | MemberUpdateBlock | MemberLeavingBlock
+    ] = get_info_blocks(
+        blockchain, {MemberJoiningBlock, MemberUpdateBlock, MemberLeavingBlock}
     )
-    logger.debug(f"WAB: got latest members block! {type(latest_block)}")
-    if not latest_block:
-        logger.debug("WAB: Returning none.")
-        return None
-    if not isinstance(latest_block, MembersListBlock):
-        error_message = (
-            "Bug: get_latest_block() should've returned a DidDocBlock, "
-            f"not {type(latest_block)}"
-        )
-        logger.error(error_message)
-        raise ValueError(error_message)
-    logger.debug("WAB: Returning info content.")
-    return latest_block.info_content
+    members: dict[str, dict] = {}
+    for block in blocks:
+        member = block.get_member()
+        match block.walytis_block_topic:
+            case MemberJoiningBlock.walytis_block_topic:
+                if member["did"] in members.keys():
+                    logger.warning(
+                        "Members: Found MemberJoiningBlock for existing member."
+                    )
+                else:
+                    members.update({member["did"]: member})
+            case MemberUpdateBlock.walytis_block_topic:
+                if member["did"] not in members.keys():
+                    logger.warning(
+                        "Members: Found MemberUpdateBlock for non-existent member."
+                    )
+                else:
+                    members["did"] = member
+            case MemberLeavingBlock.walytis_block_topic:
+                if member["did"] not in members.keys():
+                    logger.warning(
+                        "Members: Found MemberLeavingBlock for non-existent member."
+                    )
+                else:
+                    members.pop(member["did"])
+    return members
 
 
-def get_block_type(topics: list[str] | str) -> InfoBlockType | None:
+INFO_BLOCK_TYPES: set[InfoBlockType] = {
+    DidDocBlock,
+    MemberInvitationBlock,
+    MemberJoiningBlock,
+    MemberLeavingBlock,
+    MemberUpdateBlock,
+    KeyOwnershipBlock,
+}
+
+
+def get_block_type(topics: list[str] | str) -> InfoBlockType | type(ControlKeyBlock) | None:
     """Get the block's DID-Manager block-type given its IDs.
 
     Is strict and detects invalid block IDs.
@@ -408,16 +490,12 @@ def get_block_type(topics: list[str] | str) -> InfoBlockType | None:
     if isinstance(topics, str):
         topics = [topics]
     block_type: InfoBlockType | None = None
-    if ControlKeyBlock.walytis_block_topic in topics:
-        block_type = ControlKeyBlock
-    if DidDocBlock.walytis_block_topic in topics:
-        if block_type:
-            return None
-        block_type = DidDocBlock
-    if MembersListBlock.walytis_block_topic in topics:
-        if block_type:
-            return None
-        block_type = MembersListBlock
+    for _type in set.union(INFO_BLOCK_TYPES, {ControlKeyBlock}):
+        if _type.walytis_block_topic in topics:
+            if block_type:
+                return None
+            block_type = _type
+
     return block_type
 
 # decorate_all_functions(strictly_typed, __name__)

@@ -80,18 +80,6 @@ def test_update_did_doc():
     mark(pytest.did_manager.get_did_doc() == pytest.did_doc, "Update DID Doc")
 
 
-def test_update_members_list():
-    pytest.members_list = [
-        {'did': 'device1'},
-        {'did': 'device2'},
-    ]
-    pytest.did_manager.update_members_list(pytest.members_list)
-    mark(
-        pytest.did_manager.get_members() == pytest.members_list,
-        "Update Members List"
-    )
-
-
 def test_reload_did_manager():
     did_manager_copy = DidManager(
         pytest.did_manager.blockchain.blockchain_id,
@@ -101,7 +89,6 @@ def test_reload_did_manager():
     mark((
         did_manager_copy.get_control_key().public_key == pytest.new_control_key.public_key
         and did_manager_copy.get_did_doc() == pytest.did_doc
-        and did_manager_copy.get_members() == pytest.members_list
     ),
         "Reload DID Manager"
     )
@@ -117,7 +104,6 @@ def run_tests():
     test_create_did_manager()
     test_renew_control_key()
     test_update_did_doc()
-    test_update_members_list()
     test_reload_did_manager()
     test_delete_did_manager()
 
