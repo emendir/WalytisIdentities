@@ -48,10 +48,10 @@ def test_create_identity():
     )
 
     mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
-    devices = pytest.me1.get_members()
+    members = pytest.me1.get_members()
     mark(
-        len(devices) == 1 and devices[0]["did"] == pytest.me1.device_did_manager.get_did(),
-        "person identity has device identity"
+        len(members) == 1 and members[0]["did"] == pytest.me1.member_did_manager.get_did(),
+        "person identity has member identity"
     )
 
 

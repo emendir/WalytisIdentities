@@ -233,7 +233,7 @@ class KeyOwnershipBlock(InfoBlock):
     info_content: dict
 
     def get_key_ownership(self) -> dict:
-        """Get the member devices published."""
+        """Get the members published."""
         return self.info_content
 
 

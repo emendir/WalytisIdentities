@@ -52,7 +52,7 @@ def test_create_person_identity():
     mark(
         isinstance(pytest.p_id_access, IdentityAccess)
         and len(members) == 1
-        and pytest.p_id_access.device_did_manager.get_did() in members[0]["did"],
+        and pytest.p_id_access.member_did_manager.get_did() in members[0]["did"],
         "Create IdentityAccess"
     )
     pytest.p_id_access.terminate()
@@ -63,14 +63,14 @@ def test_load_person_identity():
         pytest.person_config_dir,
         pytest.CRYPT
     )
-    device_did = pytest.p_id_access.device_did_manager.get_did()
+    member_did = pytest.p_id_access.member_did_manager.get_did()
     person_did = pytest.p_id_access.person_did_manager.get_did()
     members = p_id_access.get_members()
     mark(
-        p_id_access.device_did_manager.get_did() == device_did
+        p_id_access.member_did_manager.get_did() == member_did
         and p_id_access.person_did_manager.get_did() == person_did
         and len(members) == 1
-        and p_id_access.device_did_manager.get_did() in members[0]["did"],
+        and p_id_access.member_did_manager.get_did() in members[0]["did"],
         "Load IdentityAccess"
     )
     # p_id_access.terminate()
@@ -79,14 +79,14 @@ def test_load_person_identity():
 
 def test_delete_person_identity():
     person_blockchain = pytest.p_id_access.person_did_manager.blockchain.blockchain_id
-    device_blockchain = pytest.p_id_access.device_did_manager.blockchain.blockchain_id
+    member_blockchain = pytest.p_id_access.member_did_manager.blockchain.blockchain_id
     pytest.p_id_access.delete()
 
-    # ensure the blockchains of both the person and the device identities
+    # ensure the blockchains of both the person and the member identities
     # have been deleted
     mark(
         person_blockchain not in walytis_beta_api.list_blockchain_ids() and
-        device_blockchain not in walytis_beta_api.list_blockchain_ids(),
+        member_blockchain not in walytis_beta_api.list_blockchain_ids(),
         "Delete IdentityAccess"
     )
 

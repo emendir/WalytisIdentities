@@ -57,24 +57,24 @@ class IdentityAccess:
     def __init__(
         self,
         person_did_manager: DidManager,
-        device_did_manager: DidManager,
+        member_did_manager: DidManager,
         config_dir: str,
         key: Key,
     ):
-        self.device_did_manager = device_did_manager
+        self.member_did_manager = member_did_manager
         self.config_dir = config_dir
         self.key = key
         self.person_did_manager = person_did_manager
         self.config_file = os.path.join(config_dir, "person_id.json")
         self.person_keystore_file = os.path.join(
             config_dir, "person_keys.json")
-        self.device_keystore_file = os.path.join(
-            config_dir, "device_keys.json")
+        self.member_keystore_file = os.path.join(
+            config_dir, "member_keys.json")
         self.candidate_keys: dict[str, list[str]] = {}
         self.get_published_candidate_keys()
 
         self.key_requests_listener = ConversationListener(
-            f"{self.device_did_manager.get_did()}-KeyRequests",
+            f"{self.member_did_manager.get_did()}-KeyRequests",
             self.key_requests_handler
         )
         self._terminate = False
@@ -95,7 +95,7 @@ class IdentityAccess:
                 if self._terminate:
                     return
                 did = member["did"]
-                if did == self.device_did_manager.get_did():
+                if did == self.member_did_manager.get_did():
                     continue
                 # logger.debug(f"Requesting control key from {did}")
                 try:
@@ -133,30 +133,30 @@ class IdentityAccess:
     ) -> _IdentityAccess:
         """Create a new IdentityAccess object."""
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
-        device_keystore_file = os.path.join(config_dir, "device_keys.json")
+        member_keystore_file = os.path.join(config_dir, "member_keys.json")
         key_store = KeyStore(person_keystore_file, key)
         # logger.debug("Creating Person-Did-Manager...")
         person_did_manager = DidManager.create(key_store)
         # logger.debug("Creating Device-Did-Manager...")
 
-        # create device did manager
-        device_did_manager = DidManager.join_as_member(
+        # create member did manager
+        member_did_manager = DidManager.join_as_member(
             invitation=person_did_manager.invite_member(),
             blockchain=person_did_manager.blockchain,
-            device_keystore_file=device_keystore_file,
+            member_keystore_file=member_keystore_file,
             key=key,
         )
 
         # logger.debug("Creating Identity...")
         person_id_acc = cls(
             person_did_manager,
-            device_did_manager,
+            member_did_manager,
             config_dir,
             key,
         )
         person_id_acc.save_appdata()
-        person_id_acc.device_did_manager.update_did_doc(
-            person_id_acc.generate_device_did_doc())
+        person_id_acc.member_did_manager.update_did_doc(
+            person_id_acc.generate_member_did_doc())
         return person_id_acc
 
     @classmethod
@@ -168,7 +168,7 @@ class IdentityAccess:
         """Load a saved IdentityAccess object from appdata."""
         config_file = os.path.join(config_dir, "person_id.json")
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
-        device_keystore_file = os.path.join(config_dir, "device_keys.json")
+        member_keystore_file = os.path.join(config_dir, "member_keys.json")
 
         with open(config_file, "r") as file:
             data = json.loads(file.read())
@@ -177,14 +177,14 @@ class IdentityAccess:
             blockchain=data["person_blockchain"],
             key_store=KeyStore(person_keystore_file, key),
         )
-        device_did_manager = DidManager(
-            blockchain=data["device_blockchain"],
-            key_store=KeyStore(device_keystore_file, key),
+        member_did_manager = DidManager(
+            blockchain=data["member_blockchain"],
+            key_store=KeyStore(member_keystore_file, key),
         )
 
         identity_access = cls(
             person_did_manager,
-            device_did_manager,
+            member_did_manager,
             config_dir,
             key,
         )
@@ -211,14 +211,14 @@ class IdentityAccess:
         except BlockchainAlreadyExistsError:
             blockchain = Blockchain(blockchain_invitation["blockchain_id"])
 
-        device_keystore_file = os.path.join(config_dir, "device_keys.json")
+        member_keystore_file = os.path.join(config_dir, "member_keys.json")
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
 
-        # create device did manager
-        device_did_manager = DidManager.join_as_member(
+        # create member did manager
+        member_did_manager = DidManager.join_as_member(
             invitation=invitation,
             blockchain=blockchain,
-            device_keystore_file=device_keystore_file,
+            member_keystore_file=member_keystore_file,
             key=key,
         )
         key_store = KeyStore(person_keystore_file, key)
@@ -229,13 +229,13 @@ class IdentityAccess:
 
         person_id_acc = cls(
             person_did_manager,
-            device_did_manager,
+            member_did_manager,
             config_dir,
             key,
         )
         person_id_acc.save_appdata()
-        person_id_acc.device_did_manager.update_did_doc(
-            person_id_acc.generate_device_did_doc())
+        person_id_acc.member_did_manager.update_did_doc(
+            person_id_acc.generate_member_did_doc())
 
         return person_id_acc
 
@@ -246,7 +246,7 @@ class IdentityAccess:
         """Generate this Identity's appdata."""
         return {
             "person_blockchain": self.person_did_manager.blockchain.blockchain_id,
-            "device_blockchain": self.device_did_manager.blockchain.blockchain_id,
+            "member_blockchain": self.member_did_manager.blockchain.blockchain_id,
         }
 
     def save_appdata(self) -> None:
@@ -256,7 +256,7 @@ class IdentityAccess:
             file.write(data)
 
     def get_members(self) -> list:
-        """Get the current list of member-devices."""
+        """Get the current list of member-members."""
         members = self.person_did_manager.get_members()
         if not members:
             return []
@@ -286,13 +286,13 @@ class IdentityAccess:
         validate_did_doc(did_doc)
         return did_doc
 
-    def generate_device_did_doc(self) -> dict:
+    def generate_member_did_doc(self) -> dict:
         """Generate a DID-document."""
         did_doc = {
-            "id": self.device_did_manager.get_did(),
+            "id": self.member_did_manager.get_did(),
             "verificationMethod": [
-                self.device_did_manager.get_control_key().generate_key_spec(
-                    self.device_did_manager.get_did())
+                self.member_did_manager.get_control_key().generate_key_spec(
+                    self.member_did_manager.get_did())
                 # key.generate_key_spec(self.person_did_manager.get_did())
                 # for key in self.keys
             ],
@@ -309,7 +309,7 @@ class IdentityAccess:
     def publish_key_ownership(self, key: Key) -> None:
         """Publish a public key and proof that we have it's private key."""
         key_ownership = {
-            "owner": self.device_did_manager.get_did(),
+            "owner": self.member_did_manager.get_did(),
             "key_id": key.get_key_id()
         }
         sig = bytes_to_string(key.sign(json.dumps(key_ownership).encode()))
@@ -464,10 +464,10 @@ class IdentityAccess:
             except ipfs_datatransmission.CommunicationTimeout:
                 return None
             # logger.debug("RK: started conversation")
-            key = self.device_did_manager.get_control_key()
+            key = self.member_did_manager.get_control_key()
             # logger.debug("RK: Got contrail key")
             message = {
-                "did": self.device_did_manager.get_did(),
+                "did": self.member_did_manager.get_did(),
                 "key_id": key_id,
             }
             message.update({"signature": key.sign(
@@ -543,7 +543,7 @@ class IdentityAccess:
     def check_prepare_control_key_update(self) -> bool:
         """Check if we should prepare to renew our DID-manager's control key.
 
-        Generates new control key and shares it with other devices,
+        Generates new control key and shares it with other members,
         doesn't update the DID-Manager though
 
         Returns:
@@ -572,18 +572,18 @@ class IdentityAccess:
                     for member in members:
                         if self._terminate:
                             return True
-                        if member == self.device_did_manager.get_did():
+                        if member == self.member_did_manager.get_did():
                             continue
                         key = self.request_key(key_id, member)
                         if key:
-                            self.candidate_keys[key_id] += self.device_did_manager.get_did()
+                            self.candidate_keys[key_id] += self.member_did_manager.get_did()
                             break
             return True
 
         key = Key.create(CRYPTO_FAMILY)
         self.person_did_manager.key_store.add_key(key)
         self.candidate_keys.update(
-            {key.get_key_id(): [self.device_did_manager.get_did()]}
+            {key.get_key_id(): [self.member_did_manager.get_did()]}
         )
         self.save_appdata()
 
@@ -614,7 +614,7 @@ class IdentityAccess:
 
                     if num_key_owners >= len(self.get_members()):
                         break
-            # if not all devices have the same candidate key yet,
+            # if not all members have the same candidate key yet,
             # we'll wait a little longer
             if num_key_owners < len(self.get_members()):
                 return False
@@ -627,14 +627,14 @@ class IdentityAccess:
     def delete(self) -> None:
         """Delete this Identity."""
         self.terminate()
-        self.device_did_manager.delete()
+        self.member_did_manager.delete()
         self.person_did_manager.delete()
 
     def terminate(self) -> None:
         """Stop this Identity object, cleaning up resources."""
         if not self._terminate:
             self._terminate = True
-            self.device_did_manager.terminate()
+            self.member_did_manager.terminate()
             self.person_did_manager.terminate()
             self.key_requests_listener.terminate()
 

@@ -1,6 +1,6 @@
 """Machinery for managing DID-Documents, i.e. identities' cryptography keys.
 
-Also includes machinery for managing other devices
+Also includes machinery for managing other members
 """
 
 from dataclasses import dataclass
@@ -187,7 +187,7 @@ class DidManager:
         return self.did_doc
 
     def get_members(self) -> list[dict]:
-        """Get the current list of member-devices."""
+        """Get the current list of member-members."""
         if not self.members_list:
             self.members_list = list(get_members(self.blockchain).values())
             if self.members_list is None:
@@ -236,7 +236,7 @@ class DidManager:
         cls: Type[_DidManager],
         invitation: dict,
         blockchain: Blockchain,
-        device_keystore_file: str,
+        member_keystore_file: str,
         key: Key,
     ) -> _DidManager:
         """Create a new IdentityAccess object."""
@@ -265,12 +265,12 @@ class DidManager:
                 "The Person's blockchain doesn't have our invitation in it!"
             )
 
-        device_keystore = KeyStore(device_keystore_file, key)
-        device_did_manager = cls.create(device_keystore)
+        member_keystore = KeyStore(member_keystore_file, key)
+        member_did_manager = cls.create(member_keystore)
 
         joining_block = MemberJoiningBlock.new({
-            "did": device_did_manager.get_did(),
-            "invitation": device_did_manager.blockchain.create_invitation(
+            "did": member_did_manager.get_did(),
+            "invitation": member_did_manager.blockchain.create_invitation(
                 one_time=False, shared=True
             ),
             "invitation_key": invitation["invitation_key"]
@@ -279,7 +279,7 @@ class DidManager:
         blockchain.add_block(
             joining_block.generate_block_content(), joining_block.walytis_block_topic
         )
-        return device_did_manager
+        return member_did_manager
 
     def on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")

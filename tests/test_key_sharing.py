@@ -38,12 +38,12 @@ def test_preparations():
         from walytis_auth_docker.build_docker import build_docker_image
 
         build_docker_image(verbose=False)
-    pytest.device_1 = None
-    pytest.device_2 = None
-    pytest.device_1_config_dir = tempfile.mkdtemp()
-    pytest.device_2_config_dir = tempfile.mkdtemp()
+    pytest.member_1 = None
+    pytest.member_2 = None
+    pytest.member_1_config_dir = tempfile.mkdtemp()
+    pytest.member_2_config_dir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(
-        pytest.device_1_config_dir, "keystore.json")
+        pytest.member_1_config_dir, "keystore.json")
 
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
@@ -53,7 +53,7 @@ def test_preparations():
     pytest.invitation = None
 
 
-def test_create_dockker_containers():
+def test_create_docker_containers():
     for i in range(1):
         pytest.containers.append(ContactsDocker())
 
@@ -61,13 +61,13 @@ def test_create_dockker_containers():
 def cleanup():
     for container in pytest.containers:
         container.delete()
-    if pytest.device_2:
-        pytest.device_2.terminate()
-        pytest.device_2.device_did_manager.delete()
-    if pytest.device_1:
-        pytest.device_1.delete()
-    shutil.rmtree(pytest.device_1_config_dir)
-    shutil.rmtree(pytest.device_2_config_dir)
+    if pytest.member_2:
+        pytest.member_2.terminate()
+        pytest.member_2.member_did_manager.delete()
+    if pytest.member_1:
+        pytest.member_1.delete()
+    shutil.rmtree(pytest.member_1_config_dir)
+    shutil.rmtree(pytest.member_2_config_dir)
 
 
 def create_identity_and_invitation():
@@ -76,42 +76,42 @@ def create_identity_and_invitation():
     TO BE RUN IN DOCKER CONTAINER.
     """
     logger.debug("DockerTest: creating identity...")
-    pytest.device_1 = IdentityAccess.create(
+    pytest.member_1 = IdentityAccess.create(
         "/opt",
         pytest.CRYPT,
     )
     logger.debug("DockerTest: creating invitation...")
-    invitation = pytest.device_1.invite_member()
+    invitation = pytest.member_1.invite_member()
     print(json.dumps(invitation))
-    # mark(isinstance(pytest.device_1, IdentityAccess), "Created IdentityAccess")
+    # mark(isinstance(pytest.member_1, IdentityAccess), "Created IdentityAccess")
 
 
-def check_new_device(did: str):
-    """Add a new device to pytest.device_1.
+def check_new_member(did: str):
+    """Add a new member to pytest.member_1.
 
     TO BE RUN IN DOCKER CONTAINER.
     """
     logger.debug("CND: Loading IdentityAccess...")
-    pytest.device_1 = IdentityAccess.load_from_appdata(
+    pytest.member_1 = IdentityAccess.load_from_appdata(
         "/opt",
         pytest.CRYPT,
     )
 
-    # pytest.device_1.add_member(
+    # pytest.member_1.add_member(
     #     did,
     #     invitation
     # )
 
     logger.debug("CND: Getting members...")
-    members = pytest.device_1.get_members()
+    members = pytest.member_1.get_members()
     success = (
         did in [
             member["did"]
-            for member in pytest.device_1.person_did_manager.get_members()
+            for member in pytest.member_1.person_did_manager.get_members()
         ]
         and did in [
             member["did"]
-            for member in pytest.device_1.get_members()
+            for member in pytest.member_1.get_members()
         ]
     )
     logger.debug("CND: got data, exiting...")
@@ -120,23 +120,23 @@ def check_new_device(did: str):
         print(success)
     else:
         print("\nDocker: DID-MAnager Members:\n",
-              pytest.device_1.person_did_manager.get_members())
-        print("\nDocker: Person Members:\n", pytest.device_1.get_members())
+              pytest.member_1.person_did_manager.get_members())
+        print("\nDocker: Person Members:\n", pytest.member_1.get_members())
 
 
 def renew_control_key():
-    """Renew the control key of pytest.device_1.
+    """Renew the control key of pytest.member_1.
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    pytest.device_1 = IdentityAccess.load_from_appdata(
+    pytest.member_1 = IdentityAccess.load_from_appdata(
         "/opt",
         pytest.CRYPT,
     )
-    old_key = pytest.device_1.person_did_manager.get_control_key()
-    pytest.device_1.person_did_manager.renew_control_key()
-    new_key = pytest.device_1.person_did_manager.get_control_key()
-    pytest.device_1.terminate()
+    old_key = pytest.member_1.person_did_manager.get_control_key()
+    pytest.member_1.person_did_manager.renew_control_key()
+    new_key = pytest.member_1.person_did_manager.get_control_key()
+    pytest.member_1.terminate()
     print(f"{old_key.get_key_id()} {new_key.get_key_id()}")
 
 
@@ -150,7 +150,7 @@ def test_create_identity_and_invitation():
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
         "test_key_sharing.test_preparations();",
         "test_key_sharing.create_identity_and_invitation();",
-        "test_key_sharing.pytest.device_1.terminate()",
+        "test_key_sharing.pytest.member_1.terminate()",
         # "test_key_sharing.cleanup()"
     ])
     output = None
@@ -172,23 +172,23 @@ def test_create_identity_and_invitation():
     )
 
 
-def test_add_device_identity():
+def test_add_member_identity():
     try:
-        pytest.device_2 = IdentityAccess.join(
-            pytest.invitation, pytest.device_2_config_dir, pytest.CRYPT)
+        pytest.member_2 = IdentityAccess.join(
+            pytest.invitation, pytest.member_2_config_dir, pytest.CRYPT)
     except walytis_api.JoinFailureError:
         try:
-            pytest.device_2 = IdentityAccess.join(
-                pytest.invitation, pytest.device_2_config_dir, pytest.CRYPT)
+            pytest.member_2 = IdentityAccess.join(
+                pytest.invitation, pytest.member_2_config_dir, pytest.CRYPT)
         except walytis_api.JoinFailureError as error:
             print(error)
             breakpoint()
-    pytest.device_2_did = pytest.device_2.device_did_manager.get_did()
+    pytest.member_2_did = pytest.member_2.member_did_manager.get_did()
 
-    # wait a short amount to allow the docker container to learn of the new device
+    # wait a short amount to allow the docker container to learn of the new member
     polite_wait(2)
 
-    print("Adding device on docker...")
+    print("Adding member on docker...")
     python_code = (
         "import sys;"
         "sys.path.append('/opt/WalytisAuth/tests');"
@@ -196,8 +196,8 @@ def test_add_device_identity():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        f"test_key_sharing.check_new_device('{pytest.device_2_did}');"
-        "test_key_sharing.pytest.device_1.terminate()"
+        f"test_key_sharing.check_new_member('{pytest.member_2_did}');"
+        "test_key_sharing.pytest.member_1.terminate()"
 
     )
     # print(f"\n{python_code}\n")
@@ -216,7 +216,7 @@ def test_add_device_identity():
 
 def test_get_control_key():
     # create an IdentityAccess object to run on the docker container in the
-    # background to handle a key request from pytest.device_2
+    # background to handle a key request from pytest.member_2
     wait_dur_s = 30
     python_code = (
         "import sys;"
@@ -241,7 +241,7 @@ def test_get_control_key():
     print("Waiting for key sharing...")
     polite_wait(wait_dur_s)
     mark(
-        pytest.device_2.person_did_manager.get_control_key().private_key,
+        pytest.member_2.person_did_manager.get_control_key().private_key,
         "Got control key ownership"
     )
 
@@ -303,7 +303,7 @@ def test_renew_control_key():
 
         print("Waiting for key sharing...")
         polite_wait(wait_dur_s)
-        private_key = pytest.device_2.person_did_manager.get_control_key().private_key
+        private_key = pytest.member_2.person_did_manager.get_control_key().private_key
         try:
             new_key.unlock(private_key)
         except:
@@ -317,15 +317,15 @@ def test_renew_control_key():
 def run_tests():
     print("\nRunning tests for Key Sharing:")
     test_preparations()
-    test_create_dockker_containers()
+    test_create_docker_containers()
 
     test_create_identity_and_invitation()
     if pytest.invitation:
-        test_add_device_identity()
+        test_add_member_identity()
         test_get_control_key()
         test_renew_control_key()
     else:
-        print("Skipped tests for add-device identity because first test failed.")
+        print("Skipped tests for add-member identity because first test failed.")
     cleanup()
 
 
