@@ -624,6 +624,83 @@ class IdentityAccess:
         self.save_appdata()
         return True
 
+    def encrypt(
+        self,
+        data_to_encrypt: bytes,
+        encryption_options: str | None = None
+    ) -> bytes:
+        """Encrypt the provided data using the specified public key.
+
+        Args:
+            data_to_encrypt (bytes): the data to encrypt
+            encryption_options (str): specification code for which
+                                    encryption/decryption protocol should be used
+        Returns:
+            bytes: the encrypted data
+        """
+        return self.person_did_manager.encrypt(
+            data_to_encrypt=data_to_encrypt,
+            encryption_options=encryption_options,
+        )
+
+    def decrypt(
+        self,
+        encrypted_data: bytes,
+        encryption_options: str | None = None
+    ) -> bytes:
+        """Decrypt the provided data using the specified private key.
+
+        Args:
+            encrypted_data (bytes): the data to decrypt
+            encryption_options (str): specification code for which
+                                    encryption/decryption protocol should be used
+        Returns:
+            bytes: the encrypted data
+        """
+        return self.person_did_manager.decrypt(
+            encrypted_data=encrypted_data,
+            encryption_options=encryption_options,
+        )
+
+    def sign(self, data: bytes, signature_options: str | None = None) -> bytes:
+        """Sign the provided data using the specified private key.
+
+        Args:
+            data (bytes): the data to sign
+            private_key (bytes): the private key to be used for the signing
+            signature_options (str): specification code for which
+                                signature/verification protocol should be used
+        Returns:
+            bytes: the signature
+        """
+        return self.person_did_manager.sign(
+            data=data,
+            signature_options=signature_options,
+        )
+
+    def verify_signature(
+        self,
+        signature: bytes,
+        data: bytes,
+        signature_options: str | None = None
+    ) -> bool:
+        """Verify the given signature of the given data using the given key.
+
+        Args:
+            signature (bytes): the signaure to verify
+            data (bytes): the data to sign
+            public_key (bytes): the public key to verify the signature against
+            signature_options (str): specification code for which
+                                signature/verification protocol should be used
+        Returns:
+            bool: whether or not the signature matches the data
+        """
+        return self.person_did_manager.verify_signature(
+            signature=signature,
+            data=data,
+            signature_options=signature_options,
+        )
+
     def delete(self) -> None:
         """Delete this Identity."""
         self.terminate()

@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 dynamic = ["dependencies"]
 name = "walytis_auth"
+authors = [{ name = "emendir" }]
 version = "0.0.1"
 
 [tool.setuptools.dynamic]
