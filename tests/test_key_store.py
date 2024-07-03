@@ -27,10 +27,11 @@ def test_preparations():
 
 
 def test_key_serialisation():
-    key = Key.create(pytest.CRYPTO_FAMILY)
+    key1 = Key.create(pytest.CRYPTO_FAMILY)
+    key2 = Key.create(pytest.CRYPTO_FAMILY)
     mark(
-        key.decrypt(bytes.fromhex(key.serialise(key)["private_key"])) == key.private_key,
-        "Serialisation encrypt private key."
+        key2.decrypt(bytes.fromhex(key1.serialise(key2)["private_key"])) == key1.private_key,
+        "private key encryption in serialisation"
     )
 
 
@@ -74,6 +75,21 @@ def test_reopen_keystore():
     )
 
 
+PLAIN_TEXT = "Hello there!".encode()
+
+
+def test_encryption_package():
+    code_package = pytest.keystore.encrypt(PLAIN_TEXT, pytest.crypt2)
+    decrypted = pytest.keystore.decrypt(code_package)
+    mark(decrypted == PLAIN_TEXT, "encryption using CodePackage")
+
+
+def test_signing_package():
+    code_package = pytest.keystore.sign(PLAIN_TEXT, pytest.crypt2)
+    validity = pytest.keystore.verify_signature(code_package, PLAIN_TEXT)
+    mark(validity, "signing using CodePackage")
+
+
 def cleanup():
     shutil.rmtree(pytest.tempdir)
 
@@ -84,6 +100,8 @@ def run_tests():
     test_key_serialisation()
     test_add_get_key()
     test_reopen_keystore()
+    test_encryption_package()
+    test_signing_package()
     cleanup()
 
 

@@ -1,9 +1,41 @@
+from typing import Type, TypeVar
 from typing import Any
 from strict_typing import strictly_typed
 from decorate_all import decorate_all_functions
 from .did_objects import Key
 import json
 import os
+from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
+from dataclasses import dataclass
+
+_CodePackage = TypeVar('_CodePackage', bound='CodePackage')
+
+
+@dataclass
+class CodePackage:
+    """Package of encrypted data or a signature with crypto-key-metadata."""
+    code: bytes
+    public_key: bytes
+    family: str
+    operation_options: str
+
+    @classmethod
+    def deserialise(cls: _CodePackage, data: str) -> _CodePackage:
+        _data = json.loads(data)
+        return cls(
+            code=string_to_bytes(data["code"]),
+            public_key=string_to_bytes(data["public_key"]),
+            family=data["family"],
+            operation_options=data["operation_options"],
+        )
+
+    def serialise(self):
+        return json.dumps({
+            "code": bytes_to_string(self.code),
+            "public_key": bytes_to_string(self.public_key),
+            "family": self.family,
+            "operation_options": self.operation_options
+        })
 
 
 class KeyStore:
@@ -17,7 +49,8 @@ class KeyStore:
 
     def _load_appdata(self):
         if not os.path.exists(os.path.dirname(self.key_store_path)):
-            raise FileNotFoundError("The directory of the keystore path doesn't exist.")
+            raise FileNotFoundError(
+                "The directory of the keystore path doesn't exist.")
         if not os.path.exists(self.key_store_path):
             self.keys: dict[str, Key] = {}
             return
@@ -61,6 +94,113 @@ class KeyStore:
         if not key:
             raise UnknownKeyError
         return key
+
+    def get_key_from_public(
+        self, public_key: str | bytes | bytearray, family: str
+    ) -> Key:
+        if isinstance(public_key, str):
+            public_key = bytes.fromhex(public_key)
+        for key in self.keys.values():
+            if key.public_key == public_key and key.family == family:
+                return key
+        raise UnknownKeyError()
+
+    @staticmethod
+    def encrypt(
+        data_to_encrypt: bytes,
+        key: Key,
+        encryption_options: str = ""
+    ) -> CodePackage:
+        """Encrypt the provided data using the specified key.
+
+        Args:
+            data_to_encrypt (bytes): the data to encrypt
+            key (Key): the key to use to encrypt the data
+            encryption_options (str): specification code for which
+                            encryption/decryption protocol should be used
+        Returns:
+            CodePackage: an object containing the ciphertext, public-key,
+                            crypto-family and encryption-options
+        """
+        cipher = key.encrypt(
+            data_to_encrypt=data_to_encrypt,
+            encryption_options=encryption_options,
+        )
+        return CodePackage(
+            code=cipher,
+            public_key=key.public_key,
+            family=key.family,
+            operation_options=encryption_options
+        )
+
+    def decrypt(
+        self,
+        code_package: CodePackage
+    ) -> bytes:
+        """Decrypt the provided data using the specified private key.
+
+        Args:
+            code_package: a CodePackage object containing the ciphertext,
+                    public-key, crypto-family and encryption-options
+        Returns:
+            bytes: the decrypted data
+        """
+        key = self.get_key_from_public(code_package.public_key, code_package.family)
+        encrypted_data = code_package.code
+        return key.decrypt(
+            encrypted_data=encrypted_data,
+            encryption_options=code_package.operation_options,
+        )
+
+    @staticmethod
+    def sign(
+        data: bytes,
+        key: Key,
+        signature_options: str = ""
+    ) -> CodePackage:
+        """Sign the provided data using the specified key.
+
+        Args:
+            data (bytes): the data to sign
+            key (Key): the key to use to sign the data
+            signature_options (str): specification code for which
+                            signing/verification protocol should be used
+        Returns:
+            CodePackage: an object containing the signature, public-key,
+                            crypto-family and signature-options
+        """
+        signature = key.sign(
+            data=data,
+            signature_options=signature_options,
+        )
+        return CodePackage(
+            code=signature,
+            public_key=key.public_key,
+            family=key.family,
+            operation_options=signature_options
+        )
+
+    def verify_signature(
+        self,
+        code_package: CodePackage,
+        data: bytes
+    ) -> bool:
+        """Decrypt the provided data using the specified private key.
+
+        Args:
+            code_package: a CodePackage object containing the ciphertext,
+                    public-key, crypto-family and encryption-options
+            data: the data to verify the signature against
+        Returns:
+            bytes: the decrypted data
+        """
+        key = self.get_key_from_public(code_package.public_key, code_package.family)
+        signature = code_package.code
+        return key.verify_signature(
+            signature=signature,
+            data=data,
+            signature_options=code_package.operation_options,
+        )
 
 
 class UnknownKeyError(Exception):

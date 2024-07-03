@@ -655,7 +655,7 @@ class IdentityAccess:
             encryption_options (str): specification code for which
                                     encryption/decryption protocol should be used
         Returns:
-            bytes: the encrypted data
+            bytes: the decrypted data
         """
         return self.person_did_manager.decrypt(
             encrypted_data=encrypted_data,
