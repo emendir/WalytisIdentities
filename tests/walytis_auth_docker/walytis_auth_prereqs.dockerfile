@@ -16,7 +16,7 @@ RUN pip install /opt/IPFS-Toolkit
 
 
 
-RUN pip install -r /opt/WalytisAuth/dev-requirements.txt
+RUN pip install -r /opt/WalytisAuth/requirements-dev.txt
 RUN pip install -r /opt/WalytisAuth/requirements.txt
 
 # RUN pip show walytis_auth
