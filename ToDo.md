@@ -7,9 +7,5 @@
 
 
 # Next Steps:
-- member management
-  - remove all occurrances of IdentityAccess.add_member, replacing with invite_member
-- invitation sharing across devices
+- Blockchain invitation sharing across devices
 - auto renewal of device-keys
-
-

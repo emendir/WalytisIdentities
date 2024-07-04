@@ -19,6 +19,7 @@ if True:
     ))
 
     from identity.identity import IdentityAccess
+    from identity.key_store import CodePackage
 
 testing_utils.BREAKPOINTS = True
 
@@ -77,6 +78,41 @@ def test_load_person_identity():
     pytest.p_id_access = p_id_access
 
 
+PLAIN_TEXT = "Hello there!".encode()
+
+
+def test_encryption():
+    cipher_1 = pytest.p_id_access.encrypt(PLAIN_TEXT)
+    pytest.p_id_access.person_did_manager.renew_control_key()
+    cipher_2 = pytest.p_id_access.encrypt(PLAIN_TEXT)
+
+    mark(
+        (
+            CodePackage.deserialise_bytes(cipher_1).public_key !=
+            CodePackage.deserialise_bytes(cipher_2).public_key
+            and pytest.p_id_access.decrypt(cipher_1) == PLAIN_TEXT
+            and pytest.p_id_access.decrypt(cipher_2) == PLAIN_TEXT
+        ),
+        "Encryption across key renewal works"
+    )
+
+
+def test_signing():
+    signature_1 = pytest.p_id_access.sign(PLAIN_TEXT)
+    pytest.p_id_access.person_did_manager.renew_control_key()
+    signature_2 = pytest.p_id_access.sign(PLAIN_TEXT)
+
+    mark(
+        (
+            CodePackage.deserialise_bytes(signature_1).public_key !=
+            CodePackage.deserialise_bytes(signature_2).public_key
+            and pytest.p_id_access.verify_signature(signature_1, PLAIN_TEXT)
+            and pytest.p_id_access.verify_signature(signature_2, PLAIN_TEXT)
+        ),
+        "Signature verification across key renewal works"
+    )
+
+
 def test_delete_person_identity():
     person_blockchain = pytest.p_id_access.person_did_manager.blockchain.blockchain_id
     member_blockchain = pytest.p_id_access.member_did_manager.blockchain.blockchain_id
@@ -99,6 +135,8 @@ def run_tests():
     # run tests
     test_create_person_identity()
     test_load_person_identity()
+    test_encryption()
+    test_signing()
     test_delete_person_identity()
     pytest_unconfigure()  # run test cleanup
 

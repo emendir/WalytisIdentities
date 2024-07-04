@@ -29,7 +29,7 @@ from .did_manager_blocks import (
 )
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
-from .key_store import KeyStore, UnknownKeyError
+from .key_store import KeyStore, CodePackage, UnknownKeyError
 from brenthy_tools_beta.utils import bytes_to_string
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -308,8 +308,8 @@ class DidManager:
 
     def encrypt(
         self,
-        data_to_encrypt: bytes,
-        encryption_options: str | None = None
+        data: bytes,
+        encryption_options: str = ""
     ) -> bytes:
         """Encrypt the provided data using the specified public key.
 
@@ -320,31 +320,29 @@ class DidManager:
         Returns:
             bytes: the encrypted data
         """
-        return self.get_control_key().encrypt(
-            data_to_encrypt=data_to_encrypt,
+        return self.key_store.encrypt(
+            data=data,
+            key=self.get_control_key(),
             encryption_options=encryption_options,
-        )
+        ).serialise_bytes()
 
     def decrypt(
         self,
-        encrypted_data: bytes,
-        encryption_options: str | None = None
+        data: bytes,
     ) -> bytes:
         """Decrypt the provided data using the specified private key.
 
         Args:
-            encrypted_data (bytes): the data to decrypt
-            encryption_options (str): specification code for which
-                                    encryption/decryption protocol should be used
+            data (bytes): the data to decrypt
         Returns:
             bytes: the decrypted data
         """
-        return self.get_control_key().decrypt(
-            encrypted_data=encrypted_data,
-            encryption_options=encryption_options,
+        cipher_package = CodePackage.deserialise_bytes(data)
+        return self.key_store.decrypt(
+            cipher_package,
         )
 
-    def sign(self, data: bytes, signature_options: str | None = None) -> bytes:
+    def sign(self, data: bytes, signature_options: str = "") -> bytes:
         """Sign the provided data using the specified private key.
 
         Args:
@@ -355,16 +353,16 @@ class DidManager:
         Returns:
             bytes: the signature
         """
-        return self.get_control_key().sign(
+        return self.key_store.sign(
             data=data,
+            key=self.get_control_key(),
             signature_options=signature_options,
-        )
+        ).serialise_bytes()
 
     def verify_signature(
         self,
         signature: bytes,
         data: bytes,
-        signature_options: str | None = None
     ) -> bool:
         """Verify the given signature of the given data using the given key.
 
@@ -377,10 +375,10 @@ class DidManager:
         Returns:
             bool: whether or not the signature matches the data
         """
-        return self.get_control_key().verify_signature(
-            signature=signature,
-            data=data,
-            signature_options=signature_options,
+        signature_package = CodePackage.deserialise_bytes(signature)
+        return self.key_store.verify_signature(
+            signature_package,
+            data=data
         )
 
     def delete(self) -> None:

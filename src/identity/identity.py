@@ -626,43 +626,39 @@ class IdentityAccess:
 
     def encrypt(
         self,
-        data_to_encrypt: bytes,
-        encryption_options: str | None = None
+        data: bytes,
+        encryption_options: str = ""
     ) -> bytes:
         """Encrypt the provided data using the specified public key.
 
         Args:
-            data_to_encrypt (bytes): the data to encrypt
+            data (bytes): the data to encrypt
             encryption_options (str): specification code for which
                                     encryption/decryption protocol should be used
         Returns:
             bytes: the encrypted data
         """
         return self.person_did_manager.encrypt(
-            data_to_encrypt=data_to_encrypt,
+            data=data,
             encryption_options=encryption_options,
         )
 
     def decrypt(
         self,
-        encrypted_data: bytes,
-        encryption_options: str | None = None
+        data: bytes,
     ) -> bytes:
         """Decrypt the provided data using the specified private key.
 
         Args:
-            encrypted_data (bytes): the data to decrypt
-            encryption_options (str): specification code for which
-                                    encryption/decryption protocol should be used
+            data (bytes): the data to decrypt
         Returns:
             bytes: the decrypted data
         """
         return self.person_did_manager.decrypt(
-            encrypted_data=encrypted_data,
-            encryption_options=encryption_options,
+            data=data,
         )
 
-    def sign(self, data: bytes, signature_options: str | None = None) -> bytes:
+    def sign(self, data: bytes, signature_options: str = "") -> bytes:
         """Sign the provided data using the specified private key.
 
         Args:
@@ -682,7 +678,6 @@ class IdentityAccess:
         self,
         signature: bytes,
         data: bytes,
-        signature_options: str | None = None
     ) -> bool:
         """Verify the given signature of the given data using the given key.
 
@@ -690,15 +685,12 @@ class IdentityAccess:
             signature (bytes): the signaure to verify
             data (bytes): the data to sign
             public_key (bytes): the public key to verify the signature against
-            signature_options (str): specification code for which
-                                signature/verification protocol should be used
         Returns:
             bool: whether or not the signature matches the data
         """
         return self.person_did_manager.verify_signature(
             signature=signature,
             data=data,
-            signature_options=signature_options,
         )
 
     def delete(self) -> None:

@@ -15,14 +15,15 @@ if True:
 
     from identity.did_manager import DidManager
     from identity.did_objects import Key
-    from identity.key_store import KeyStore
+    from identity.key_store import KeyStore, CodePackage
 
 
 def pytest_configure():
     pytest.tempdir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(pytest.tempdir, "keystore.json")
 
-    pytest.CRYPTO_FAMILY = "EC-secp256k1"  # the cryptographic family to use for the tests
+    # the cryptographic family to use for the tests
+    pytest.CRYPTO_FAMILY = "EC-secp256k1"
     pytest.CRYPT = Key.create(pytest.CRYPTO_FAMILY)
 
 
@@ -95,6 +96,41 @@ def test_reload_did_manager():
     did_manager_copy.terminate()
 
 
+PLAIN_TEXT = "Hello there!".encode()
+
+
+def test_encryption():
+    cipher_1 = pytest.did_manager.encrypt(PLAIN_TEXT)
+    pytest.did_manager.renew_control_key()
+    cipher_2 = pytest.did_manager.encrypt(PLAIN_TEXT)
+
+    mark(
+        (
+            CodePackage.deserialise_bytes(cipher_1).public_key !=
+            CodePackage.deserialise_bytes(cipher_2).public_key
+            and pytest.did_manager.decrypt(cipher_1) == PLAIN_TEXT
+            and pytest.did_manager.decrypt(cipher_2) == PLAIN_TEXT
+        ),
+        "Encryption across key renewal works"
+    )
+
+
+def test_signing():
+    signature_1 = pytest.did_manager.sign(PLAIN_TEXT)
+    pytest.did_manager.renew_control_key()
+    signature_2 = pytest.did_manager.sign(PLAIN_TEXT)
+
+    mark(
+        (
+            CodePackage.deserialise_bytes(signature_1).public_key !=
+            CodePackage.deserialise_bytes(signature_2).public_key
+            and pytest.did_manager.verify_signature(signature_1, PLAIN_TEXT)
+            and pytest.did_manager.verify_signature(signature_2, PLAIN_TEXT)
+        ),
+        "Signature verification across key renewal works"
+    )
+
+
 def run_tests():
     print("\nRunning tests for DidManager:")
     testing_utils.PYTEST = False
@@ -105,8 +141,9 @@ def run_tests():
     test_renew_control_key()
     test_update_did_doc()
     test_reload_did_manager()
+    test_encryption()
+    test_signing()
     test_delete_did_manager()
-
     pytest_unconfigure()  # run test cleanup
 
 

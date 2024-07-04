@@ -161,7 +161,7 @@ class InfoBlock(ABC):
             key.family,
             bytes_from_string(self.signature),
             self.get_signature_data(),
-            bytes_from_string(key.public_key)
+            key.public_key
         )
 
 

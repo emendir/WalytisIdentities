@@ -30,7 +30,7 @@ def validate_did_doc(did_doc: dict):
         raise ValueError("One of this Identy's fields has an incompatible value.")
 
 
-def bytes_to_string(data, variable_name: str = "Value"):
+def bytes_to_string(data: bytes | bytearray, variable_name: str = "Value") -> str:
     """Convert the input data from bytes or bytearray to string if it isn't
     already, raising an error if it has an incompatible type.
     Parameters:
@@ -41,15 +41,13 @@ def bytes_to_string(data, variable_name: str = "Value"):
     if isinstance(data, (bytearray, bytes)):
         # first perform base 64 encoding, then convert to string
         return urlsafe_b64encode(data).decode()
-    if isinstance(data, str):
-        return data
     raise ValueError((
-        f"{variable_name} must be of type bytearray, bytes, or str, not "
+        f"{variable_name} must be of type bytearray or bytes, not "
         f"{type(data)}"
     ))
 
 
-def bytes_from_string(data, variable_name: str = "Value"):
+def bytes_from_string(data: str, variable_name: str = "Value") -> bytes:
     """Reverse of bytes_to_string, converting such encoded strings back to
     bytes (if they the data isn't already),
      raising an error if it has an incompatible type.
@@ -61,9 +59,7 @@ def bytes_from_string(data, variable_name: str = "Value"):
     if isinstance(data, str):
         # first perform base 64 encoding, then convert to string
         return urlsafe_b64decode(data)
-    if isinstance(data, (bytes, bytearray)):
-        return bytearray(data)
     raise ValueError((
-        f"{variable_name} must be of type str, bytearray or bytes, not "
+        f"{variable_name} must be of type str, not "
         f"{type(data)}"
     ))

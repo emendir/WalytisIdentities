@@ -5,7 +5,7 @@ from decorate_all import decorate_all_functions
 from .did_objects import Key
 import json
 import os
-from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
+from .utils import bytes_to_string, bytes_from_string
 from dataclasses import dataclass
 
 _CodePackage = TypeVar('_CodePackage', bound='CodePackage')
@@ -20,22 +20,30 @@ class CodePackage:
     operation_options: str
 
     @classmethod
-    def deserialise(cls: _CodePackage, data: str) -> _CodePackage:
+    def deserialise(cls: Type[_CodePackage], data: str) -> _CodePackage:
         _data = json.loads(data)
         return cls(
-            code=string_to_bytes(data["code"]),
-            public_key=string_to_bytes(data["public_key"]),
-            family=data["family"],
-            operation_options=data["operation_options"],
+            code=bytes_from_string(_data["code"]),
+            public_key=bytes_from_string(_data["public_key"]),
+            family=_data["family"],
+            operation_options=_data["operation_options"],
         )
 
-    def serialise(self):
+    @classmethod
+    def deserialise_bytes(cls: Type[_CodePackage], data: bytes) -> _CodePackage:
+        _data = data.decode()
+        return cls.deserialise(_data)
+
+    def serialise(self) -> str:
         return json.dumps({
             "code": bytes_to_string(self.code),
             "public_key": bytes_to_string(self.public_key),
             "family": self.family,
             "operation_options": self.operation_options
         })
+
+    def serialise_bytes(self) -> bytes:
+        return self.serialise().encode()
 
 
 class KeyStore:
@@ -107,14 +115,14 @@ class KeyStore:
 
     @staticmethod
     def encrypt(
-        data_to_encrypt: bytes,
+        data: bytes,
         key: Key,
         encryption_options: str = ""
     ) -> CodePackage:
         """Encrypt the provided data using the specified key.
 
         Args:
-            data_to_encrypt (bytes): the data to encrypt
+            data (bytes): the data to encrypt
             key (Key): the key to use to encrypt the data
             encryption_options (str): specification code for which
                             encryption/decryption protocol should be used
@@ -123,7 +131,7 @@ class KeyStore:
                             crypto-family and encryption-options
         """
         cipher = key.encrypt(
-            data_to_encrypt=data_to_encrypt,
+            data_to_encrypt=data,
             encryption_options=encryption_options,
         )
         return CodePackage(

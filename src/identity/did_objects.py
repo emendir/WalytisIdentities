@@ -50,15 +50,15 @@ class Key(Crypt):
     """Represents a set of cryptographic keys, compatible with DID specs."""
 
     family: str
-    public_key: bytearray
-    private_key: bytearray | None
+    public_key: bytes
+    private_key: bytes | None
     creation_time: datetime
 
     def __init__(
         self,
         family: str,
-        public_key: bytearray | str,
-        private_key: bytearray | str | None,
+        public_key: bytes | str,
+        private_key: bytes | str | None,
         creation_time: datetime,
     ):
         """Create a Key object."""
@@ -66,7 +66,7 @@ class Key(Crypt):
             public_key = bytes.fromhex(public_key)
 
         if isinstance(private_key, str):
-            public_key = bytes.fromhex(private_key)
+            private_key = bytes.fromhex(private_key)
         self.family = family
         self.public_key = public_key
         self.private_key = private_key

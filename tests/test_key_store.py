@@ -15,7 +15,7 @@ if True:
     ))
 
     from identity.did_objects import Key
-    from identity.key_store import KeyStore
+    from identity.key_store import KeyStore, CodePackage
 
 
 def test_preparations():
@@ -90,6 +90,13 @@ def test_signing_package():
     mark(validity, "signing using CodePackage")
 
 
+def test_code_package_serialisation():
+    code_package = pytest.keystore.encrypt(PLAIN_TEXT, pytest.crypt2)
+    new_code_package = CodePackage.deserialise_bytes(code_package.serialise_bytes())
+    decrypted = pytest.keystore.decrypt(new_code_package)
+    mark(decrypted == PLAIN_TEXT, "CodePackage serialisation")
+
+
 def cleanup():
     shutil.rmtree(pytest.tempdir)
 
@@ -102,6 +109,7 @@ def run_tests():
     test_reopen_keystore()
     test_encryption_package()
     test_signing_package()
+    test_code_package_serialisation()
     cleanup()
 
 
