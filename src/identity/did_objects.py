@@ -71,7 +71,8 @@ class Key(Crypt):
         self.public_key = public_key
         self.private_key = private_key
         self.creation_time = creation_time
-        super().__init__(self.family, self.private_key, self.public_key)
+        super().__init__(family=self.family,
+                         private_key=self.private_key, public_key=self.public_key)
 
     @classmethod
     def create(cls: Type[_Key], family: str) -> _Key:
@@ -139,23 +140,39 @@ class Key(Crypt):
             "controller": controller,
         }
 
-    def serialise(self, crypt: Crypt) -> dict:
+    def serialise(self, crypt: Crypt, allow_missing_private_key: bool = False) -> dict:
         """Serialise this key's data, including the private key encrypted."""
-        if not (self.family and self.public_key and self.private_key
-                and self.creation_time):
-            raise ValueError("Not all of this objects' fields are set.")
+        if not allow_missing_private_key and not self.private_key:
+            raise ValueError(
+                "Private Key is not set!\n"
+                "You can use the `allow_missing_private_key` parameter to "
+                "ignore this."
+            )
 
+        if not (self.family and self.public_key and self.creation_time):
+            error_message = ("Not all of this objects' fields are set!"
+                             "\n".join([
+                                 f"family: {type(self.family)}",
+                                 f"public_key: {type(self.public_key)}",
+                                 f"creation_time: {type(self.creation_time)}",
+                             ])
+                             )
+            raise ValueError(error_message)
+
+        private_key = crypt.encrypt(
+            self.private_key).hex() if self.private_key else None
         return {
             "family": self.family,
             "public_key": self.public_key.hex(),
-            "private_key": crypt.encrypt(self.private_key).hex(),
+            "private_key": private_key,
             "creation_time": time_to_string(self.creation_time),
         }
 
     @classmethod
     def deserialise(cls: Type[_Key], data: dict, crypt: Crypt) -> _Key:
         """Deserialise data with encrypted private key."""
-        private_key = crypt.decrypt(bytes.fromhex(data["private_key"]))
+        private_key = crypt.decrypt(bytes.fromhex(
+            data["private_key"]))if data["private_key"] else None
         return cls(
             family=data["family"],
             public_key=data["public_key"],

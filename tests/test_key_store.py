@@ -59,10 +59,10 @@ def test_add_get_key():
 
 
 def test_reopen_keystore():
-    pytest.keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
+    keystore = KeyStore(pytest.key_store_path, pytest.CRYPT)
 
-    c1 = pytest.keystore.get_key(pytest.crypt1.get_key_id())
-    c2 = pytest.keystore.get_key(pytest.crypt2.get_key_id())
+    c1 = keystore.get_key(pytest.crypt1.get_key_id())
+    c2 = keystore.get_key(pytest.crypt2.get_key_id())
 
     mark(
         c1.public_key == pytest.crypt1.public_key

@@ -83,7 +83,9 @@ class KeyStore:
     def save_appdata(self):
         encrypted_keys = []
         for key_id, key in list(self.keys.items()):
-            encrypted_serialised_key = key.serialise(self.key)
+            encrypted_serialised_key = key.serialise(
+                self.key, allow_missing_private_key=True
+            )
             encrypted_keys.append(encrypted_serialised_key)
         data = {
             "appdata_encryption_public_key": self.key.public_key.hex(),

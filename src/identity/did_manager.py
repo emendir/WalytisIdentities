@@ -31,6 +31,8 @@ from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .key_store import KeyStore, CodePackage, UnknownKeyError
 from brenthy_tools_beta.utils import bytes_to_string
+from typing import Callable
+
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
 
@@ -58,13 +60,21 @@ class DidManager:
     def __init__(
         self,
         blockchain: Blockchain | str,
-        key_store: KeyStore
+        key_store: KeyStore,
+        non_did_blocks_handler: Callable[[Block], None] | None = None,
     ):
-        """Load a DidManager from a Walytis blockchain."""
+        """Load a DidManager from a Walytis blockchain.
+
+        Args:
+            blockchain: the blockchain on which this DID-Manager's data is
+            key_store: the KeyStore object in which to store this DID's keys
+            non_did_blocks_handler: eventhandler for blocks published on
+                `blockchain` that aren't related to this DID-Manager work
+        """
         if isinstance(blockchain, str):
             blockchain = Blockchain(blockchain)
         self.blockchain = blockchain
-
+        self.non_did_blocks_handler = non_did_blocks_handler
         self.blockchain.block_received_handler = self.on_block_received
         self.blockchain.update_blockids_before_handling = True
         self.key_store = key_store
@@ -171,6 +181,9 @@ class DidManager:
                 )
             except UnknownKeyError:
                 pass
+        if self._control_key.get_key_id() not in self.key_store.keys.keys():
+            self.key_store.add_key(self._control_key)
+            self.key_store.save_appdata()
         return self._control_key
 
     def update_did_doc(self, did_doc: dict) -> None:
@@ -305,6 +318,18 @@ class DidManager:
             case _:
                 logger.warning(
                     f"DM: Did not recognise block type: {block_type}")
+                # if user defined an event-handler for non-DID blocks, call it
+                if self.non_did_blocks_handler:
+                    self.non_did_blocks_handler(block)
+
+    def unlock(self, private_key: bytes | bytearray | str) -> None:
+        control_key = self.get_control_key()
+        if control_key:
+            control_key.unlock(private_key)
+            self.key_store.save_appdata()
+        else:
+            # TODO: raise custom exception
+            raise Exception("Don't have control key yet!")
 
     def encrypt(
         self,

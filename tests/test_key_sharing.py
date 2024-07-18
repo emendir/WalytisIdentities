@@ -4,7 +4,7 @@ import walytis_beta_api as walytis_api
 import pytest
 import sys
 import os
-from testing_utils import mark, polite_wait
+from testing_utils import mark, polite_wait, test_threads_cleanup
 from walytis_auth_docker.walytis_auth_docker import (
     ContactsDocker, delete_containers
 )
@@ -320,13 +320,15 @@ def run_tests():
     test_create_docker_containers()
 
     test_create_identity_and_invitation()
-    if pytest.invitation:
-        test_add_member_identity()
-        test_get_control_key()
-        test_renew_control_key()
-    else:
-        print("Skipped tests for add-member identity because first test failed.")
+    if not pytest.invitation:
+        print("Skipped remaining tests because first test failed.")
+        cleanup()
+        return
+    test_add_member_identity()
+    test_get_control_key()
+    test_renew_control_key()
     cleanup()
+    test_threads_cleanup()
 
 
 if __name__ == "__main__":
