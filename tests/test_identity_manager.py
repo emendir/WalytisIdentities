@@ -10,7 +10,7 @@ from testing_utils import mark
 
 if True:
     sys.path.insert(0, os.path.join(
-        os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "src"
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
     ))
     from identity.identity import IdentityAccess
     from management import friends_management, identity_management

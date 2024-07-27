@@ -6,6 +6,6 @@
 - pytest gets stuck
 
 
-# Next Steps:
+## Next Steps:
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
