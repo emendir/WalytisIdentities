@@ -1,21 +1,19 @@
-import tempfile
-import walytis_beta_api as walytis_api
-import pytest
-import sys
 import os
-from testing_utils import mark
-
-from multi_crypt import Crypt
 import shutil
+import tempfile
 
+import _testing_utils
+import identity
+import pytest
+from identity.did_objects import Key
+from identity.key_store import CodePackage, KeyStore
 
-if True:
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-    ))
+from _testing_utils import mark
+from multi_crypt import Crypt
 
-    from identity.did_objects import Key
-    from identity.key_store import KeyStore, CodePackage
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+)
 
 
 def test_preparations():

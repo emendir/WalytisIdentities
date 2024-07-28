@@ -1,25 +1,22 @@
 import os
 import shutil
-import sys
 import tempfile
+
+import _testing_utils
+import identity
 import pytest
 import walytis_beta_api
+from _testing_utils import mark
+from identity.identity import IdentityAccess
+from identity.key_store import CodePackage
 from multi_crypt import Crypt
-import testing_utils
-from testing_utils import mark
 
-if True:
-    # for Hydrogen
-    if False:
-        __file__ = "./test_identities.py"
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-    ))
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+)
 
-    from identity.identity import IdentityAccess
-    from identity.key_store import CodePackage
 
-testing_utils.BREAKPOINTS = True
+_testing_utils.BREAKPOINTS = True
 
 
 def pytest_configure():
@@ -127,7 +124,7 @@ def test_delete_person_identity():
 
 def run_tests():
     print("\nRunning tests for Identities:")
-    testing_utils.PYTEST = False
+    _testing_utils.PYTEST = False
     pytest_configure()  # run test preparations
 
     # run tests

@@ -1,20 +1,20 @@
 import os
 import shutil
-import sys
-
-import pytest
-import testing_utils
-import walytis_beta_api
-from multi_crypt import Crypt
-from testing_utils import mark
-
-if True:
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-    ))
-    from identity.identity import IdentityAccess
-    from management import friends_management, identity_management
 import tempfile
+
+import _testing_utils
+import identity
+import pytest
+import walytis_beta_api
+from _testing_utils import mark
+from identity.identity import IdentityAccess
+from management import friends_management, identity_management
+from multi_crypt import Crypt
+
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+)
+
 
 BREAKPOINTS = True
 PYTEST = True  # whether or not this script is being run by pytest
@@ -50,7 +50,8 @@ def test_create_identity():
     mark(isinstance(pytest.me1, IdentityAccess), "identity creation")
     members = pytest.me1.get_members()
     mark(
-        len(members) == 1 and members[0]["did"] == pytest.me1.member_did_manager.get_did(),
+        len(members) == 1 and members[0]["did"] == pytest.me1.member_did_manager.get_did(
+        ),
         "person identity has member identity"
     )
 
@@ -86,7 +87,7 @@ def test_deletion():
 
 def run_tests():
     print("\nRunning tests for IdentityManager:")
-    testing_utils.PYTEST = False
+    _testing_utils.PYTEST = False
 
     pytest_configure()
     test_create_identity()

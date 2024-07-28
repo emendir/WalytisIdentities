@@ -1,7 +1,13 @@
+from types import ModuleType
 from tqdm import tqdm, TMonitor
 import threading
 from termcolor import colored as coloured
 import time
+import sys
+import os
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
+))
 
 BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
@@ -37,7 +43,7 @@ def mark(success: bool, message: str, error: Exception | None = None) -> None:
 
 def test_threads_cleanup() -> None:
     """Test that all threads have exited."""
-    for _ in range(2):
+    for i in range(2):
         polite_wait(5)
         threads = [
             x for x in threading.enumerate() if not isinstance(x, TMonitor)
@@ -55,3 +61,27 @@ def polite_wait(n_sec: int) -> None:
     # print(f"{n_sec}s patience...")
     for i in tqdm(range(n_sec), leave=False):
         time.sleep(1)
+
+
+def assert_is_loaded_from_source(source_dir: str, module: ModuleType) -> None:
+    """Assert a module is loaded from source code, not an installation.
+
+    Asserts that the loaded module's source code is located within the given
+    directory, regardless of whether it's file is located in that folder or is
+    nested in subfolders.
+
+    Args:
+        source_dir: a directory in which the module's source should be
+        module: the module to check
+    """
+    module_path = os.path.abspath(module.__file__)
+    source_path = os.path.abspath(source_dir)
+    assert (
+        source_path in module_path
+    ), (
+        f"The module `{module.__name__}` has been loaded from an installion, not this "
+        " source code!\n"
+        f"Desired source dir: {source_path}\n"
+        f"Loaded module path: {module_path}\n"
+    )
+    print(f"Using module {module.__name__} from {module_path}")

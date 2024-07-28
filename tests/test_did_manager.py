@@ -1,21 +1,19 @@
-import testing_utils
 import os
 import shutil
-import sys
 import tempfile
-from multi_crypt import Crypt
+
+import _testing_utils
+import identity
 import pytest
 import walytis_beta_api as walytis_api
-from testing_utils import mark
+from _testing_utils import mark
+from identity.did_manager import DidManager
+from identity.did_objects import Key
+from identity.key_store import CodePackage, KeyStore
 
-if True:
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-    ))
-
-    from identity.did_manager import DidManager
-    from identity.did_objects import Key
-    from identity.key_store import KeyStore, CodePackage
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+)
 
 
 def pytest_configure():
@@ -133,7 +131,7 @@ def test_signing():
 
 def run_tests():
     print("\nRunning tests for DidManager:")
-    testing_utils.PYTEST = False
+    _testing_utils.PYTEST = False
     pytest_configure()  # run test preparations
 
     # run tests

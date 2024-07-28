@@ -1,29 +1,28 @@
-import testing_utils
-import tempfile
-import walytis_beta_api as walytis_api
-import pytest
-import sys
-import os
-from testing_utils import mark, polite_wait, test_threads_cleanup
-from walytis_auth_docker.walytis_auth_docker import (
-    ContactsDocker, delete_containers
-)
 import json
-from multi_crypt import Crypt
+import os
 import shutil
+import tempfile
+
+import _testing_utils
+import identity
+import pytest
+import walytis_beta_api as walytis_api
+from _testing_utils import mark, polite_wait, test_threads_cleanup
+from identity.did_objects import Key
+from identity.identity import IdentityAccess
+from identity.utils import logger
+from multi_crypt import Crypt
+from walytis_auth_docker.walytis_auth_docker import (
+    ContactsDocker,
+    delete_containers,
+)
 
 walytis_api.log.PRINT_DEBUG = False
 
-if True:
-    sys.path.insert(0, os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
-    ))
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+)
 
-    from identity.did_objects import Key
-    from identity.key_store import KeyStore
-    from identity.identity import IdentityAccess
-    from identity.did_manager import DidManager
-    from identity.utils import logger
 REBUILD_DOCKER = True
 
 # automatically remove all docker containers after failed tests
@@ -232,11 +231,13 @@ def test_get_control_key():
         "    test_key_sharing.pytest.CRYPT,"
         ");"
         "from time import sleep;"
-        f"[(sleep(10), logger.debug('waiting...')) for i in range({wait_dur_s//10})];"
+        f"[(sleep(10), logger.debug('waiting...')) for i in range({
+            wait_dur_s // 10})];"
         "dev.terminate();"
     )
     bash_code = (f'/bin/python -c "{python_code}"')
-    pytest.containers[0].run_shell_command(bash_code, background=True, print_output=False)
+    pytest.containers[0].run_shell_command(
+        bash_code, background=True, print_output=False)
     # print(bash_code)
     print("Waiting for key sharing...")
     polite_wait(wait_dur_s)
@@ -293,7 +294,8 @@ def test_renew_control_key():
             "    test_key_sharing.pytest.CRYPT,"
             ");"
             "from time import sleep;"
-            f"[(sleep(10), logger.debug('waiting...')) for i in range({wait_dur_s//10})];"
+            f"[(sleep(10), logger.debug('waiting...')) for i in range({
+                wait_dur_s // 10})];"
             "dev.terminate();"
         )
         shell_command = (f'/bin/python -c "{python_code}"')
@@ -332,6 +334,6 @@ def run_tests():
 
 
 if __name__ == "__main__":
-    testing_utils.PYTEST = False
-    testing_utils.BREAKPOINTS = True
+    _testing_utils.PYTEST = False
+    _testing_utils.BREAKPOINTS = True
     run_tests()
