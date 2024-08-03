@@ -231,8 +231,8 @@ def test_get_control_key():
         "    test_key_sharing.pytest.CRYPT,"
         ");"
         "from time import sleep;"
-        f"[(sleep(10), logger.debug('waiting...')) for i in range({
-            wait_dur_s // 10})];"
+        f"[(sleep(10), logger.debug('waiting...')) "
+        "for i in range({wait_dur_s // 10})];"
         "dev.terminate();"
     )
     bash_code = (f'/bin/python -c "{python_code}"')
@@ -294,8 +294,8 @@ def test_renew_control_key():
             "    test_key_sharing.pytest.CRYPT,"
             ");"
             "from time import sleep;"
-            f"[(sleep(10), logger.debug('waiting...')) for i in range({
-                wait_dur_s // 10})];"
+            f"[(sleep(10), logger.debug('waiting...')) "
+            "for i in range({wait_dur_s // 10})];"
             "dev.terminate();"
         )
         shell_command = (f'/bin/python -c "{python_code}"')
