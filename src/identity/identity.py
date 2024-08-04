@@ -74,7 +74,7 @@ class IdentityAccess:
         self.get_published_candidate_keys()
 
         self.key_requests_listener = ConversationListener(
-            f"{self.member_did_manager.get_did()}-KeyRequests",
+            f"{self.member_did_manager.did}-KeyRequests",
             self.key_requests_handler
         )
         self._terminate = False
@@ -82,6 +82,10 @@ class IdentityAccess:
             target=self.manage_control_key
         )
         self.control_key_manager_thr.start()
+
+    @property
+    def did(self):
+        return self.person_did_manager.did
 
     def assert_ownership(self) -> None:
         """If we don't yet own the control key, get it."""
@@ -95,7 +99,7 @@ class IdentityAccess:
                 if self._terminate:
                     return
                 did = member["did"]
-                if did == self.member_did_manager.get_did():
+                if did == self.member_did_manager.did:
                     continue
                 # logger.debug(f"Requesting control key from {did}")
                 try:
@@ -265,12 +269,12 @@ class IdentityAccess:
     def generate_did_doc(self) -> dict:
         """Generate a DID-document."""
         did_doc = {
-            "id": self.person_did_manager.get_did(),
+            "id": self.did,
             "verificationMethod": [
                 self.person_did_manager.get_control_key().generate_key_spec(
-                    self.person_did_manager.get_did())
+                    self.did)
 
-                # key.generate_key_spec(self.person_did_manager.get_did())
+                # key.generate_key_spec(self.did)
                 # for key in self.keys
             ],
             # "service": [
@@ -289,11 +293,11 @@ class IdentityAccess:
     def generate_member_did_doc(self) -> dict:
         """Generate a DID-document."""
         did_doc = {
-            "id": self.member_did_manager.get_did(),
+            "id": self.member_did_manager.did,
             "verificationMethod": [
                 self.member_did_manager.get_control_key().generate_key_spec(
-                    self.member_did_manager.get_did())
-                # key.generate_key_spec(self.person_did_manager.get_did())
+                    self.member_did_manager.did)
+                # key.generate_key_spec(self.did)
                 # for key in self.keys
             ],
             # "service": [
@@ -309,7 +313,7 @@ class IdentityAccess:
     def publish_key_ownership(self, key: Key) -> None:
         """Publish a public key and proof that we have it's private key."""
         key_ownership = {
-            "owner": self.member_did_manager.get_did(),
+            "owner": self.member_did_manager.did,
             "key_id": key.get_key_id()
         }
         sig = bytes_to_string(key.sign(json.dumps(key_ownership).encode()))
@@ -467,7 +471,7 @@ class IdentityAccess:
             key = self.member_did_manager.get_control_key()
             # logger.debug("RK: Got contrail key")
             message = {
-                "did": self.member_did_manager.get_did(),
+                "did": self.member_did_manager.did,
                 "key_id": key_id,
             }
             message.update({"signature": key.sign(
@@ -572,18 +576,18 @@ class IdentityAccess:
                     for member in members:
                         if self._terminate:
                             return True
-                        if member == self.member_did_manager.get_did():
+                        if member == self.member_did_manager.did:
                             continue
                         key = self.request_key(key_id, member)
                         if key:
-                            self.candidate_keys[key_id] += self.member_did_manager.get_did()
+                            self.candidate_keys[key_id] += self.member_did_manager.did
                             break
             return True
 
         key = Key.create(CRYPTO_FAMILY)
         self.person_did_manager.key_store.add_key(key)
         self.candidate_keys.update(
-            {key.get_key_id(): [self.member_did_manager.get_did()]}
+            {key.get_key_id(): [self.member_did_manager.did]}
         )
         self.save_appdata()
 

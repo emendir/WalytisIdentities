@@ -69,10 +69,10 @@ def test_renew_control_key():
 
 def test_update_did_doc():
     pytest.did_doc = {
-        "id": pytest.did_manager.get_did(),
+        "id": pytest.did_manager.did,
         "verificationMethod": [
             pytest.new_control_key.generate_key_spec(
-                pytest.did_manager.get_did())
+                pytest.did_manager.did)
         ]
     }
     pytest.did_manager.update_did_doc(pytest.did_doc)

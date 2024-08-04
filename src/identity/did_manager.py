@@ -133,7 +133,8 @@ class DidManager:
         # logger.debug("DM: created DID-Manager!")
         return did_manager
 
-    def get_did(self) -> str:
+    @property
+    def did(self) -> str:
         """Get this DID-Manager's DID."""
         return did_from_blockchain_id(self.blockchain.blockchain_id)
 
@@ -282,7 +283,7 @@ class DidManager:
         member_did_manager = cls.create(member_keystore)
 
         joining_block = MemberJoiningBlock.new({
-            "did": member_did_manager.get_did(),
+            "did": member_did_manager.did,
             "invitation": member_did_manager.blockchain.create_invitation(
                 one_time=False, shared=True
             ),

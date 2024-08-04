@@ -20,7 +20,7 @@ class ContactsManager:
 
     def save_friends(self, ):
         data = json.dumps([
-            json.dumps(friend.person_did_manager.get_did()) for friend in self.friends
+            json.dumps(friend.did) for friend in self.friends
         ])
 
         with open(self.config_file, "w+") as file:

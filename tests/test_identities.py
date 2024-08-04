@@ -48,7 +48,7 @@ def test_create_person_identity():
     mark(
         isinstance(pytest.p_id_access, IdentityAccess)
         and len(members) == 1
-        and pytest.p_id_access.member_did_manager.get_did() in members[0]["did"],
+        and pytest.p_id_access.member_did_manager.did in members[0]["did"],
         "Create IdentityAccess"
     )
     pytest.p_id_access.terminate()
@@ -59,14 +59,14 @@ def test_load_person_identity():
         pytest.person_config_dir,
         pytest.CRYPT
     )
-    member_did = pytest.p_id_access.member_did_manager.get_did()
-    person_did = pytest.p_id_access.person_did_manager.get_did()
+    member_did = pytest.p_id_access.member_did_manager.did
+    person_did = pytest.p_id_access.did
     members = p_id_access.get_members()
     mark(
-        p_id_access.member_did_manager.get_did() == member_did
-        and p_id_access.person_did_manager.get_did() == person_did
+        p_id_access.member_did_manager.did == member_did
+        and p_id_access.did == person_did
         and len(members) == 1
-        and p_id_access.member_did_manager.get_did() in members[0]["did"],
+        and p_id_access.member_did_manager.did in members[0]["did"],
         "Load IdentityAccess"
     )
     # p_id_access.terminate()

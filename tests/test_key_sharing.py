@@ -182,7 +182,7 @@ def test_add_member_identity():
         except walytis_api.JoinFailureError as error:
             print(error)
             breakpoint()
-    pytest.member_2_did = pytest.member_2.member_did_manager.get_did()
+    pytest.member_2_did = pytest.member_2.member_did_manager.did
 
     # wait a short amount to allow the docker container to learn of the new member
     polite_wait(2)
