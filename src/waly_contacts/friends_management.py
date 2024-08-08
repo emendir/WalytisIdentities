@@ -1,4 +1,4 @@
-from identity.did_manager_blocks import DidDocBlock
+from walidentity.did_manager_blocks import DidDocBlock
 import os
 import json
 

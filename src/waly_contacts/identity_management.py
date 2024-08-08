@@ -1,6 +1,6 @@
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
-from identity.identity import IdentityAccess
+from walidentity.identity_access import IdentityAccess
 from multi_crypt import Crypt
 
 

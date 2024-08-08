@@ -1,14 +1,19 @@
-from types import ModuleType
-from tqdm import tqdm, TMonitor
-import threading
-from termcolor import colored as coloured
-import time
-import sys
 import os
+import sys
+import threading
+import time
+from types import ModuleType
+
+from termcolor import colored as coloured
+from tqdm import TMonitor, tqdm
+
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
 ))
-
+sys.path.insert(0, os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "..", "PrivateBlocks", "src"
+))
 BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
 
