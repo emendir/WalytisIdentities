@@ -61,20 +61,20 @@ class DidManager:
         self,
         blockchain: Blockchain | str,
         key_store: KeyStore,
-        non_did_blocks_handler: Callable[[Block], None] | None = None,
+        other_blocks_handler: Callable[[Block], None] | None = None,
     ):
         """Load a DidManager from a Walytis blockchain.
 
         Args:
             blockchain: the blockchain on which this DID-Manager's data is
             key_store: the KeyStore object in which to store this DID's keys
-            non_did_blocks_handler: eventhandler for blocks published on
+            other_blocks_handler: eventhandler for blocks published on
                 `blockchain` that aren't related to this DID-Manager work
         """
         if isinstance(blockchain, str):
             blockchain = Blockchain(blockchain)
         self.blockchain = blockchain
-        self.non_did_blocks_handler = non_did_blocks_handler
+        self.other_blocks_handler = other_blocks_handler
         self.blockchain.block_received_handler = self.on_block_received
         self.blockchain.update_blockids_before_handling = True
         self.key_store = key_store
@@ -298,9 +298,6 @@ class DidManager:
     def on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
-        if not block_type:
-            logger.warning("DM: Received block of unknown type.")
-            return None
 
         match block_type:
             case (
@@ -320,8 +317,8 @@ class DidManager:
                 logger.warning(
                     f"DM: Did not recognise block type: {block_type}")
                 # if user defined an event-handler for non-DID blocks, call it
-                if self.non_did_blocks_handler:
-                    self.non_did_blocks_handler(block)
+                if self.other_blocks_handler:
+                    self.other_blocks_handler(block)
 
     def unlock(self, private_key: bytes | bytearray | str) -> None:
         control_key = self.get_control_key()

@@ -697,6 +697,17 @@ class IdentityAccess:
             data=data,
         )
 
+    @property
+    def blockchain(self) -> Blockchain:
+        """The blockchain of this IdentityAccess' Identity.
+
+        Same as `.person_did_manager.blockchain`
+        NOT TO BE CONFUSED with `.member_did_manager.blockchain`
+        which is the blockchain of the DidManager we use to access this
+        IdentityAccess' Identity.
+        """
+        return self.person_did_manager.blockchain
+
     def delete(self) -> None:
         """Delete this Identity."""
         self.terminate()

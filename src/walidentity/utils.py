@@ -5,7 +5,7 @@ from loguru import logger
 import sys
 logger.remove(0)
 logger.add(sys.stdout, format="<level>{message}</level>")
-logger.add("/tmp/WalytisAuth.log", rotation="1 week")
+logger.add("/tmp/WalIdentity.log", rotation="1 week")
 
 
 def is_valid_uri(uri):

@@ -3,16 +3,16 @@ import shutil
 import tempfile
 
 import _testing_utils
-import identity
+import walidentity
 import pytest
-from identity.did_objects import Key
-from identity.key_store import CodePackage, KeyStore
+from walidentity.did_objects import Key
+from walidentity.key_store import CodePackage, KeyStore
 
 from _testing_utils import mark
 from multi_crypt import Crypt
 
 _testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
 )
 
 

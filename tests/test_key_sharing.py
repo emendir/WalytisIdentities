@@ -4,13 +4,13 @@ import shutil
 import tempfile
 
 import _testing_utils
-import identity
+import walidentity
 import pytest
 import walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
-from identity.did_objects import Key
-from identity.identity import IdentityAccess
-from identity.utils import logger
+from walidentity.did_objects import Key
+from walidentity.identity_access import IdentityAccess
+from walidentity.utils import logger
 from multi_crypt import Crypt
 from walytis_auth_docker.walytis_auth_docker import (
     ContactsDocker,
@@ -20,10 +20,10 @@ from walytis_auth_docker.walytis_auth_docker import (
 walytis_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=identity
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
 )
 
-REBUILD_DOCKER = True
+REBUILD_DOCKER = False
 
 # automatically remove all docker containers after failed tests
 DELETE_ALL_BRENTHY_DOCKERS = True
@@ -143,7 +143,7 @@ def test_create_identity_and_invitation():
     print("Creating identiy and invitation on docker...")
     python_code = "\n".join([
         "import sys;",
-        "sys.path.append('/opt/WalytisAuth/tests');",
+        "sys.path.append('/opt/WalIdentity/tests');",
         "import test_key_sharing;",
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
@@ -190,7 +190,7 @@ def test_add_member_identity():
     print("Adding member on docker...")
     python_code = (
         "import sys;"
-        "sys.path.append('/opt/WalytisAuth/tests');"
+        "sys.path.append('/opt/WalIdentity/tests');"
         "import test_key_sharing;"
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
@@ -219,7 +219,7 @@ def test_get_control_key():
     wait_dur_s = 30
     python_code = (
         "import sys;"
-        "sys.path.append('/opt/WalytisAuth/tests');"
+        "sys.path.append('/opt/WalIdentity/tests');"
         "import test_key_sharing;"
         "from test_key_sharing import logger;"
         "logger.info('DOCKER: Testing control key sharing...');"
@@ -252,7 +252,7 @@ def test_renew_control_key():
     wait_dur_s = 30
     python_code = "\n".join([
         "import sys;",
-        "sys.path.append('/opt/WalytisAuth/tests');",
+        "sys.path.append('/opt/WalIdentity/tests');",
         "import test_key_sharing;",
         "from test_key_sharing import logger;",
         "logger.info('DOCKER: Testing control key renewal...');",
@@ -282,7 +282,7 @@ def test_renew_control_key():
     if success:
         python_code = (
             "import sys;"
-            "sys.path.append('/opt/WalytisAuth/tests');"
+            "sys.path.append('/opt/WalIdentity/tests');"
             "import test_key_sharing;"
             "from test_key_sharing import logger;"
             "logger.info('DOCKER: Testing control key renewal...');"
