@@ -10,9 +10,16 @@ from _testing_utils import mark
 from walidentity.identity_access import IdentityAccess
 from walidentity.key_store import CodePackage
 from multi_crypt import Crypt
-
+from walidentity import key_store
+from walidentity import did_manager
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
+)
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=key_store
+)
+_testing_utils.assert_is_loaded_from_source(
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager
 )
 
 

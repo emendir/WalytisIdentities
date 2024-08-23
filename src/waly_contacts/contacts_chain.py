@@ -69,3 +69,12 @@ class ContactsChain:
 
     def _on_block_received(self, block: Block):
         self.current_contacts = json.loads(bytes.decode(bytes(block.content)))
+
+    def delete(self):
+        self.identity_access.delete()
+
+    def terminate(self):
+        self.identity_access.terminate()
+
+    def __del__(self):
+        self.terminate()

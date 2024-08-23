@@ -1,5 +1,5 @@
 """Classes for managing Person and Device identities."""
-
+from time import sleep
 import json
 import os
 import time
@@ -93,7 +93,7 @@ class IdentityAccess:
         if control_key.private_key:
             return
 
-        logger.debug("Not yet control key owner...")
+        logger.debug(f"Not yet control key owner: {control_key.get_key_id()}")
         while not self._terminate:
             for member in self.get_members():
                 if self._terminate:
@@ -117,7 +117,7 @@ class IdentityAccess:
                             "Strange, Control key hasn't unlocked after key reception."
                         )
                 # logger.warning("Request for control key failed.")
-            time.sleep(0.5)
+            sleep(0.5)
 
         # log.debug("Got control key ownership!")
 
@@ -323,22 +323,34 @@ class IdentityAccess:
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
-        # logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
+        logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
         conv = Conversation()
-        conv.join(
-            conv_name,
-            peer_id,
-            conv_name
-        )
-        # logger.debug("RKH: Joined conversation.")
+        # logger.debug("Joining conv...")
+        try:
+            conv.join(
+                conv_name,
+                peer_id,
+                conv_name
+            )
+        except ipfs_datatransmission.CommunicationTimeout:
+            logger.warning("KRH: failed to join conversation")
+            conv.close()
+            return
+        # logger.debug("Joined conv!")
+        logger.debug("KRH: Joined conversation.")
         success = conv.say("Hello there!".encode())
         if not success:
-            # logger.debug("RKH: failed to communicate with peer.")
+            logger.debug("KRH: failed at salutation.")
             conv.terminate()
             return
         try:
-            message = json.loads(conv.listen(timeout=10).decode())
-            # logger.debug("RKH: got message.")
+            try:
+                message = json.loads(conv.listen(timeout=5).decode())
+            except ConvListenTimeout:
+                logger.warning("Timeout waiting for key request.")
+                conv.close()
+                return None
+            logger.debug("KRH: got key request.")
             peer_did = message["did"]
             key_id = message["key_id"]
             sig = bytes.fromhex(message["signature"])
@@ -349,39 +361,55 @@ class IdentityAccess:
             except NotMemberError as error:
                 logger.warning(error)
                 # logger.debug(peer_did)
-                conv.say(json.dumps({
+                success = conv.say(json.dumps({
                     "error": "NotMemberError",
                 }).encode())
                 conv.terminate()
+                if not success:
+                    logger.warning("KRH: Failed sending response NotMemberError")
                 return
-            # logger.debug("RKH: got peer's key.")
+            logger.debug("KRH: got peer's key.")
 
             if not peer_key.verify_signature(sig, json.dumps(message).encode()):
 
-                conv.say(json.dumps({
+                success = conv.say(json.dumps({
                     "error": "authenitcation failed",
-                    "peer_public_key": peer_key.get_public_key()
+                    "peer_key_id": peer_key.get_key_id()
                 }).encode())
                 conv.terminate()
                 logger.warning("KRH: authentication failed.")
+                if not success:
+                    logger.warning("KRH: Failed sending response authentication failed.")
                 return
+            private_key = None
             try:
                 key = self.person_did_manager.key_store.get_key(key_id)
+                private_key = key.private_key
             except UnknownKeyError:
-                conv.say(json.dumps({
+                private_key = None
+            if not private_key:
+                success = conv.say(json.dumps({
                     "error": "I don't own this key.",
-                    "peer_public_key": peer_key.get_public_key()
+                    "peer_key_id": peer_key.get_key_id()
                 }).encode())
                 conv.terminate()
-                logger.warning("KRH: Don't have requested key.")
+                logger.warning(f"KRH: Don't have requested key: {peer_key.get_key_id()}")
+                if not success:
+                    logger.warning("KRH: Failed sending response I don't own this key")
                 return
 
-            conv.say(json.dumps({
-                "private_key": peer_key.encrypt(key.private_key).hex()
+            success = conv.say(json.dumps({
+                "private_key": peer_key.encrypt(private_key).hex()
             }).encode())
-            # logger.debug("KRH: Shared key!")
+            if not success:
+                logger.warning("KRH: Failed sending response with key.")
+            else:
+                logger.debug(f"KRH: Shared key!: {key.get_key_id()}")
+            conv.terminate()
 
         except Exception as error:
+            import traceback
+            traceback.print_exc()
             logger.error(f"Error in key_requests_handler: {error}")
             conv.terminate()
 
@@ -455,8 +483,16 @@ class IdentityAccess:
 
     def request_key(self, key_id: str, did: str) -> Key | None:
         """Request a key from another member."""
+        key = self.member_did_manager.get_control_key()
+        key_request_message = {
+            "did": self.member_did_manager.did,
+            "key_id": key_id,
+        }
+        key_request_message.update({"signature": key.sign(
+            json.dumps(key_request_message).encode()).hex()})
+
         peer_id = self.get_member_ipfs_id(did)
-        # logger.debug("RK: Requesting key...")
+        logger.debug("RK: Requesting key...")
         try:
             conv = Conversation()
             try:
@@ -466,35 +502,39 @@ class IdentityAccess:
                     others_req_listener=f"{did}-KeyRequests",
                 )
             except ipfs_datatransmission.CommunicationTimeout:
+                logger.warning(
+                    f"RK: Failed at key request (timeout): KeyRequest-{key_id}, "
+                    f"{peer_id}, {did}-KeyRequests"
+                )
+                conv.close()
                 return None
-            # logger.debug("RK: started conversation")
-            key = self.member_did_manager.get_control_key()
-            # logger.debug("RK: Got contrail key")
-            message = {
-                "did": self.member_did_manager.did,
-                "key_id": key_id,
-            }
-            message.update({"signature": key.sign(
-                json.dumps(message).encode()).hex()})
-            salutation = conv.listen(timeout=10)
-            # logger.debug(salutation)
-            success = conv.say(json.dumps(message).encode(), )
+            logger.debug("RK: started conversation")
+
+            try:
+                salutation = conv.listen(timeout=5)
+            except ConvListenTimeout:
+                logger.warning("RK: Timeout waiting for salutation.")
+                conv.close()
+                return None
+            logger.debug(salutation)
+            sleep(0.15)
+            success = conv.say(json.dumps(key_request_message).encode(), )
             if not success:
-                logger.debug("Timeout communicating with peer when getting key.")
+                logger.warning("RK: Timeout communicating when requesting key.")
                 conv.close()
                 return None
             try:
-                response = json.loads(conv.listen(timeout=10).decode())
+                response = json.loads(conv.listen(timeout=5).decode())
             except ConvListenTimeout:
-                logger.debug("Timeout communicating with peer.")
+                logger.warning("RK: Timeout waiting for key response.")
                 conv.close()
                 return None
-            # logger.debug("RK: Got Response!")
+            logger.debug("RK: Got Response!")
             conv.close()
 
         except Exception as error:
             # logger.warning(traceback.format_exc())
-            logger.warning(f"Error in request_key: {type(error)} {error}")
+            logger.warning(f"RK: Error in request_key: {type(error)} {error}")
             conv.close()
             return None
 
@@ -506,6 +546,7 @@ class IdentityAccess:
         key.unlock(private_key)
         self.person_did_manager.key_store.add_key(key)
         self.publish_key_ownership(key)
+        logger.debug(f"RK: Got key!: {key.get_key_id()}")
         return key
 
     def get_published_candidate_keys(self) -> dict["str", list[str]]:

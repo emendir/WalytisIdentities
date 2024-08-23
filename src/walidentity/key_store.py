@@ -96,8 +96,13 @@ class KeyStore:
             file.write(json.dumps(data))
 
     def add_key(self, key: Key):
-        self.keys.update({key.get_key_id(): key})
-        self.save_appdata()
+        key_id = key.get_key_id()
+        if key_id not in self.keys:
+            self.keys.update({key_id: key})
+            self.save_appdata()
+        elif key.private_key and not self.keys[key_id].private_key:
+            self.keys[key_id].unlock(key.private_key)
+            self.save_appdata()
 
     def get_key(self, key_id: str) -> Key:
         key = self.keys.get(key_id, None)

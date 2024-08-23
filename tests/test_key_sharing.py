@@ -23,7 +23,7 @@ _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
 )
 
-REBUILD_DOCKER = False
+REBUILD_DOCKER = True
 
 # automatically remove all docker containers after failed tests
 DELETE_ALL_BRENTHY_DOCKERS = True
@@ -116,7 +116,7 @@ def check_new_member(did: str):
     logger.debug("CND: got data, exiting...")
 
     if success:
-        print(success)
+        print("Member has joined!")
     else:
         print("\nDocker: DID-MAnager Members:\n",
               pytest.member_1.person_did_manager.get_members())
@@ -135,7 +135,13 @@ def renew_control_key():
     old_key = pytest.member_1.person_did_manager.get_control_key()
     pytest.member_1.person_did_manager.renew_control_key()
     new_key = pytest.member_1.person_did_manager.get_control_key()
+    logger.info(f"Renewed control key! {new_key.private_key}")
     pytest.member_1.terminate()
+    import threading
+    import time
+    while len(threading.enumerate()) > 1:
+        print(threading.enumerate())
+        time.sleep(1)
     print(f"{old_key.get_key_id()} {new_key.get_key_id()}")
 
 
@@ -192,11 +198,17 @@ def test_add_member_identity():
         "import sys;"
         "sys.path.append('/opt/WalIdentity/tests');"
         "import test_key_sharing;"
+        "import threading;"
+        "from test_key_sharing import logger;"
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
         f"test_key_sharing.check_new_member('{pytest.member_2_did}');"
-        "test_key_sharing.pytest.member_1.terminate()"
+        f"logger.debug('Checked new member');"
+        "test_key_sharing.pytest.member_1.terminate();"
+        f"logger.debug('Terminated...');"
+        f"logger.debug(threading.enumerate());"
+
 
     )
     # print(f"\n{python_code}\n")
@@ -204,11 +216,10 @@ def test_add_member_identity():
         python_code, print_output=False
     )
 
-    # print("Got output!")
     # print(output)
 
     mark(
-        output.split("\n")[-1] == "True",
+        "Member has joined!" in output,
         "Added member"
     )
 
@@ -231,7 +242,7 @@ def test_get_control_key():
         "    test_key_sharing.pytest.CRYPT,"
         ");"
         "from time import sleep;"
-        f"[(sleep(10), logger.debug('waiting...')) "
+        "[(sleep(10), logger.debug('waiting...')) "
         "for i in range({wait_dur_s // 10})];"
         "dev.terminate();"
     )
@@ -255,7 +266,7 @@ def test_renew_control_key():
         "sys.path.append('/opt/WalIdentity/tests');",
         "import test_key_sharing;",
         "from test_key_sharing import logger;",
-        "logger.info('DOCKER: Testing control key renewal...');",
+        "logger.info('DOCKER: Testing control key renewal part 1...');",
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
         "test_key_sharing.test_preparations();",
@@ -263,7 +274,7 @@ def test_renew_control_key():
     ])
 
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=False
+        python_code, print_output=True
     ).split("\n")
     old_key = ""
     new_key = ""
@@ -279,13 +290,16 @@ def test_renew_control_key():
         logger.error(output)
         print("Failed to renew keys in docker container.")
         success = False
+    else:
+        print("Renewed keys in docker container.")
+
     if success:
         python_code = (
             "import sys;"
             "sys.path.append('/opt/WalIdentity/tests');"
             "import test_key_sharing;"
             "from test_key_sharing import logger;"
-            "logger.info('DOCKER: Testing control key renewal...');"
+            "logger.info('DOCKER: Testing control key renewal part 2...');"
             "test_key_sharing.REBUILD_DOCKER=False;"
             "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
             "test_key_sharing.test_preparations();"
@@ -321,11 +335,14 @@ def run_tests():
     test_preparations()
     test_create_docker_containers()
 
+    # on docker container, create identity
     test_create_identity_and_invitation()
     if not pytest.invitation:
         print("Skipped remaining tests because first test failed.")
         cleanup()
         return
+
+    # locally join the identity created on docker
     test_add_member_identity()
     test_get_control_key()
     test_renew_control_key()

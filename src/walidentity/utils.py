@@ -3,7 +3,10 @@ from base64 import urlsafe_b64decode
 import rfc3987
 from loguru import logger
 import sys
-logger.remove(0)
+try:
+    logger.remove(0)
+except ValueError:
+    pass
 logger.add(sys.stdout, format="<level>{message}</level>")
 logger.add("/tmp/WalIdentity.log", rotation="1 week")
 

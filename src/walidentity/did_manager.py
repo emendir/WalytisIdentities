@@ -2,7 +2,7 @@
 
 Also includes machinery for managing other members
 """
-
+import walytis_beta_api as waly
 from dataclasses import dataclass
 from typing import Type, TypeVar
 
@@ -51,9 +51,12 @@ class DidManager:
     """
 
     blockchain: Blockchain
+
+    # The current control key's ID.
+    # This key's Key object is always available in self.key_store
+    _control_key_id: str
     key_store: KeyStore
 
-    _control_key: Key
     did_doc: dict
     members_list: list | None
 
@@ -78,8 +81,8 @@ class DidManager:
         self.blockchain.block_received_handler = self.on_block_received
         self.blockchain.update_blockids_before_handling = True
         self.key_store = key_store
+        self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
-        self._control_key = get_latest_control_key(blockchain)
         # logger.debug("DM: Getting DID-Doc...")
         self.did_doc = get_latest_did_doc(blockchain)
         if not self.did_doc:
@@ -161,7 +164,12 @@ class DidManager:
             topics=keyblock.walytis_block_topic
         )
 
-        self._control_key = keyblock.get_new_key()
+        self._control_key_id = new_ctrl_key.get_key_id()
+        logger.info(
+            "Renewed Control key:\n"
+            f"    old: {old_ctrl_key.get_key_id()}\n"
+            f"    new: {new_ctrl_key.get_key_id()}"
+        )
 
     def add_info_block(self, block: InfoBlock) -> None:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
@@ -171,21 +179,27 @@ class DidManager:
             block.generate_block_content(), block.walytis_block_topic
         )
 
+    def check_control_key(self) -> Key:
+        """Read the blockchain for the latest control key.
+
+        Updates self._control_key_id, returns the control key object.
+        The returned Key NEVER has the private key.
+        """
+        control_key = get_latest_control_key(self.blockchain)
+        self._control_key_id = control_key.get_key_id()
+        if self._control_key_id not in self.key_store.keys.keys():
+            # add key to key store
+            self.key_store.add_key(control_key)
+        return control_key
+
     def get_control_key(self) -> Key:
-        """Get the current control key."""
-        if not self._control_key:
-            self._control_key = get_latest_control_key(self.blockchain)
-        if not self._control_key.private_key:
-            try:
-                self._control_key = self.key_store.get_key(
-                    self._control_key.get_key_id()
-                )
-            except UnknownKeyError:
-                pass
-        if self._control_key.get_key_id() not in self.key_store.keys.keys():
-            self.key_store.add_key(self._control_key)
-            self.key_store.save_appdata()
-        return self._control_key
+        """Get the current control key, with private key if possible."""
+        if not self._control_key_id:
+            # update self._control_key_id from the blockchain
+            self.check_control_key()
+        # load key from key store to get potential private key
+        control_key = self.key_store.get_key(self._control_key_id)
+        return control_key
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
@@ -304,7 +318,8 @@ class DidManager:
                 did_manager_blocks.ControlKeyBlock
                 | did_manager_blocks.KeyOwnershipBlock
             ):
-                self._control_key = get_latest_control_key(self.blockchain)
+                # update self._control_key_id from the blockchain
+                self.check_control_key()
             case did_manager_blocks.DidDocBlock:
                 self.did_doc = get_latest_did_doc(self.blockchain)
             case (
@@ -407,11 +422,17 @@ class DidManager:
     def delete(self) -> None:
         """Delete this DID-Manager."""
         self.blockchain.terminate()
-        delete_blockchain(self.blockchain.blockchain_id)
+        try:
+            self.blockchain.delete()
+        except waly.exceptions.NoSuchBlockchainError:
+            pass
 
     def terminate(self) -> None:
         """Stop this DID-Manager, cleaning up resources."""
-        self.blockchain.terminate()
+        try:
+            self.blockchain.terminate()
+        except waly.exceptions.NoSuchBlockchainError:
+            pass
 
     def __del__(self):
         """Stop this DID-Manager, cleaning up resources."""
