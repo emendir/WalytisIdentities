@@ -71,10 +71,18 @@ class ContactsChain:
         self.current_contacts = json.loads(bytes.decode(bytes(block.content)))
 
     def delete(self):
-        self.identity_access.delete()
+        self.blockchain.delete()
+        try:
+            self.identity_access.delete()
+        except:
+            pass
 
     def terminate(self):
-        self.identity_access.terminate()
+        self.blockchain.terminate()
+        try:
+            self.identity_access.terminate()
+        except:
+            pass
 
     def __del__(self):
         self.terminate()

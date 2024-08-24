@@ -7,7 +7,7 @@ import private_blocks
 import pytest
 import walidentity
 import walytis_beta_api
-from _testing_utils import mark
+from _testing_utils import mark, test_threads_cleanup
 from multi_crypt import Crypt
 from walidentity.identity_access import IdentityAccess
 from waly_contacts import (
@@ -26,7 +26,6 @@ _testing_utils.assert_is_loaded_from_source(
 def pytest_configure():
     """Setup resources in preparation for tests."""
     # declare 'global' variables
-    pytest.d_id_access = None
     pytest.person1_config_dir = tempfile.mkdtemp()
     pytest.person2_config_dir = tempfile.mkdtemp()
     pytest.contacts_chain = None
@@ -45,6 +44,10 @@ def pytest_unconfigure():
         pass
     try:
         pytest.me2.delete()
+    except:
+        pass
+    try:
+        pytest.contacts_chain.delete()
     except:
         pass
     shutil.rmtree(pytest.person1_config_dir)
@@ -108,6 +111,7 @@ def run_tests():
     test_add_contact()
     test_remove_contact()
     pytest_unconfigure()
+    test_threads_cleanup()
 
 
 if __name__ == "__main__":
