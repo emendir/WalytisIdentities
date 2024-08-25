@@ -66,6 +66,10 @@ class DidManager:
         """
         if isinstance(blockchain, str):
             blockchain = Blockchain(blockchain)
+
+        # restart the blockchain object if it isn't connected to Brenthy
+        if blockchain._terminate:
+            blockchain = Blockchain(blockchain.blockchain_id)
         self.blockchain = blockchain
         self.other_blocks_handler = other_blocks_handler
         self.blockchain.block_received_handler = self.on_block_received

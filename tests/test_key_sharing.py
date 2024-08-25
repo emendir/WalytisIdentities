@@ -308,10 +308,13 @@ def test_renew_control_key():
             "    '/opt',"
             "    test_key_sharing.pytest.CRYPT,"
             ");"
+            "logger.info('DOCKER: Loaded GroupDidManager.');"
             "from time import sleep;"
-            f"[(sleep(10), logger.debug('waiting...')) "
-            "for i in range({wait_dur_s // 10})];"
+            "[(sleep(10), logger.debug('waiting...')) "
+            f"for i in range({wait_dur_s // 10})];"
             "dev.terminate();"
+            "logger.info('DOCKER: Finished Control Key Renewal test part 2.');"
+
         )
         shell_command = (f'/bin/python -c "{python_code}"')
         pytest.containers[0].run_shell_command(
