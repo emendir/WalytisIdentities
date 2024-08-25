@@ -51,8 +51,8 @@ DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section
 CRYPTO_FAMILY = "EC-secp256k1"
 
 
-_IdentityAccess = TypeVar(
-    '_IdentityAccess', bound='IdentityAccess'
+_GroupDidManager = TypeVar(
+    '_GroupDidManager', bound='GroupDidManager'
 )
 
 
@@ -62,7 +62,7 @@ class _GroupDidManager(DidManager):
     Includes functionality for keeping a list of member-DIDs, including
     the cryptographic invitations for independent joining of new members.
     DOES NOT include control-key sharing functionality, that is coded in
-    IdentityAccess, which inherits this class.
+    GroupDidManager, which inherits this class.
     """
 
     def __init__(
@@ -199,8 +199,12 @@ class _GroupDidManager(DidManager):
         return member_did_manager
 
 
-class IdentityAccess(_GroupDidManager):
-    """Class for managing a person's identity."""
+class GroupDidManager(_GroupDidManager):
+    """DidManager controlled by multiple member DIDs.
+
+    Includes functionality for sharing of the Group DID's control key
+    among the member DIDs.
+    """
     members_list: list | None
 
     def __init__(
@@ -296,11 +300,11 @@ class IdentityAccess(_GroupDidManager):
 
     @classmethod
     def create(
-        cls: Type[_IdentityAccess],
+        cls: Type[_GroupDidManager],
         config_dir: str,
         key: Key,   # for unlocking keystores in config dir
-    ) -> _IdentityAccess:
-        """Create a new IdentityAccess object."""
+    ) -> _GroupDidManager:
+        """Create a new GroupDidManager object."""
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
         member_keystore_file = os.path.join(config_dir, "member_keys.json")
         key_store = KeyStore(person_keystore_file, key)
@@ -331,11 +335,11 @@ class IdentityAccess(_GroupDidManager):
 
     @classmethod
     def load_from_appdata(
-        cls: Type[_IdentityAccess],
+        cls: Type[_GroupDidManager],
         config_dir: str,
         key: Key,
-    ) -> _IdentityAccess:
-        """Load a saved IdentityAccess object from appdata."""
+    ) -> _GroupDidManager:
+        """Load a saved GroupDidManager object from appdata."""
         config_file = os.path.join(config_dir, "person_id.json")
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
         member_keystore_file = os.path.join(config_dir, "member_keys.json")
@@ -362,14 +366,14 @@ class IdentityAccess(_GroupDidManager):
 
     @classmethod
     def join(
-        cls: Type[_IdentityAccess],
+        cls: Type[_GroupDidManager],
         invitation: str | dict,
         config_dir: str,
         key: Key,
-    ) -> _IdentityAccess:
+    ) -> _GroupDidManager:
         """Join an exisiting Group-DID-Manager, creating a new member DID.
 
-        Returns an IdentityAccess object.
+        Returns an GroupDidManager object.
         """
         if isinstance(invitation, str):
             invitation = json.loads(invitation)

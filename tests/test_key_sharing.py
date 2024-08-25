@@ -9,7 +9,7 @@ import pytest
 import walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
 from walidentity.did_objects import Key
-from walidentity.identity_access import IdentityAccess
+from walidentity.identity_access import GroupDidManager
 from walidentity.utils import logger
 from multi_crypt import Crypt
 from walytis_auth_docker.walytis_auth_docker import (
@@ -76,14 +76,14 @@ def create_identity_and_invitation():
     TO BE RUN IN DOCKER CONTAINER.
     """
     logger.debug("DockerTest: creating identity...")
-    pytest.member_1 = IdentityAccess.create(
+    pytest.member_1 = GroupDidManager.create(
         "/opt",
         pytest.CRYPT,
     )
     logger.debug("DockerTest: creating invitation...")
     invitation = pytest.member_1.invite_member()
     print(json.dumps(invitation))
-    # mark(isinstance(pytest.member_1, IdentityAccess), "Created IdentityAccess")
+    # mark(isinstance(pytest.member_1, GroupDidManager), "Created GroupDidManager")
 
 
 def check_new_member(did: str):
@@ -91,8 +91,8 @@ def check_new_member(did: str):
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    logger.debug("CND: Loading IdentityAccess...")
-    pytest.member_1 = IdentityAccess.load_from_appdata(
+    logger.debug("CND: Loading GroupDidManager...")
+    pytest.member_1 = GroupDidManager.load_from_appdata(
         "/opt",
         pytest.CRYPT,
     )
@@ -129,7 +129,7 @@ def renew_control_key():
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    pytest.member_1 = IdentityAccess.load_from_appdata(
+    pytest.member_1 = GroupDidManager.load_from_appdata(
         "/opt",
         pytest.CRYPT,
     )
@@ -180,11 +180,11 @@ def test_create_identity_and_invitation():
 
 def test_add_member_identity():
     try:
-        pytest.member_2 = IdentityAccess.join(
+        pytest.member_2 = GroupDidManager.join(
             pytest.invitation, pytest.member_2_config_dir, pytest.CRYPT)
     except walytis_api.JoinFailureError:
         try:
-            pytest.member_2 = IdentityAccess.join(
+            pytest.member_2 = GroupDidManager.join(
                 pytest.invitation, pytest.member_2_config_dir, pytest.CRYPT)
         except walytis_api.JoinFailureError as error:
             print(error)
@@ -226,7 +226,7 @@ def test_add_member_identity():
 
 
 def test_get_control_key():
-    # create an IdentityAccess object to run on the docker container in the
+    # create an GroupDidManager object to run on the docker container in the
     # background to handle a key request from pytest.member_2
     wait_dur_s = 30
     python_code = (
@@ -238,7 +238,7 @@ def test_get_control_key():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        "dev = test_key_sharing.IdentityAccess.load_from_appdata("
+        "dev = test_key_sharing.GroupDidManager.load_from_appdata("
         "    '/opt',"
         "    test_key_sharing.pytest.CRYPT,"
         ");"
@@ -304,7 +304,7 @@ def test_renew_control_key():
             "test_key_sharing.REBUILD_DOCKER=False;"
             "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
             "test_key_sharing.test_preparations();"
-            "dev = test_key_sharing.IdentityAccess.load_from_appdata("
+            "dev = test_key_sharing.GroupDidManager.load_from_appdata("
             "    '/opt',"
             "    test_key_sharing.pytest.CRYPT,"
             ");"

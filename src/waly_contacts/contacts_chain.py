@@ -1,4 +1,4 @@
-from walidentity import IdentityAccess
+from walidentity import GroupDidManager
 from walytis_beta_api import Block
 from private_blocks import PrivateBlockchain
 from typing import Callable
@@ -10,7 +10,7 @@ class ContactsChain:
 
     def __init__(
         self,
-        identity_access: IdentityAccess,
+        identity_access: GroupDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ):
         self.identity_access = identity_access
@@ -18,7 +18,7 @@ class ContactsChain:
         self.other_blocks_handler = other_blocks_handler
         if self.identity_access.other_blocks_handler is not None:
             raise Exception(
-                "The IdentityAccess' person-DID-Manager's "
+                "The GroupDidManager' person-DID-Manager's "
                 "`other_blocks_handler` field has been set and would be "
                 "overriden by ContactsChain.\n"
                 "Remove your setting `identity_access."

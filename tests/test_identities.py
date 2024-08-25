@@ -7,7 +7,7 @@ import walidentity
 import pytest
 import walytis_beta_api
 from _testing_utils import mark
-from walidentity.identity_access import IdentityAccess
+from walidentity.identity_access import GroupDidManager
 from walidentity.key_store import CodePackage
 from multi_crypt import Crypt
 from walidentity import key_store
@@ -46,23 +46,23 @@ def pytest_unconfigure():
 
 
 def test_create_person_identity():
-    pytest.p_id_access = IdentityAccess.create(
+    pytest.p_id_access = GroupDidManager.create(
         pytest.person_config_dir,
         pytest.CRYPT,
     )
 
     members = pytest.p_id_access.get_members()
     mark(
-        isinstance(pytest.p_id_access, IdentityAccess)
+        isinstance(pytest.p_id_access, GroupDidManager)
         and len(members) == 1
         and pytest.p_id_access.member_did_manager.did in members[0]["did"],
-        "Create IdentityAccess"
+        "Create GroupDidManager"
     )
     pytest.p_id_access.terminate()
 
 
 def test_load_person_identity():
-    p_id_access = IdentityAccess.load_from_appdata(
+    p_id_access = GroupDidManager.load_from_appdata(
         pytest.person_config_dir,
         pytest.CRYPT
     )
@@ -74,7 +74,7 @@ def test_load_person_identity():
         and p_id_access.did == person_did
         and len(members) == 1
         and p_id_access.member_did_manager.did in members[0]["did"],
-        "Load IdentityAccess"
+        "Load GroupDidManager"
     )
     # p_id_access.terminate()
     pytest.p_id_access = p_id_access
@@ -125,7 +125,7 @@ def test_delete_person_identity():
     mark(
         person_blockchain not in walytis_beta_api.list_blockchain_ids() and
         member_blockchain not in walytis_beta_api.list_blockchain_ids(),
-        "Delete IdentityAccess"
+        "Delete GroupDidManager"
     )
 
 

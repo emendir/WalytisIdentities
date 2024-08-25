@@ -9,7 +9,7 @@ import walidentity
 import walytis_beta_api
 from _testing_utils import mark, test_threads_cleanup
 from multi_crypt import Crypt
-from walidentity.identity_access import IdentityAccess
+from walidentity.identity_access import GroupDidManager
 from waly_contacts import (
     ContactsChain,
     identity_management,
@@ -63,7 +63,7 @@ def test_create_identity():
 
     members = pytest.me1.get_members()
     mark(
-        isinstance(pytest.me1, IdentityAccess) and
+        isinstance(pytest.me1, GroupDidManager) and
         len(members) == 1 and members[0]["did"] == pytest.me1.member_did_manager.did,
         "Created identity"
     )
