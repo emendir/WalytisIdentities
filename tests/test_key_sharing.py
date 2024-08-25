@@ -107,7 +107,7 @@ def check_new_member(did: str):
     success = (
         did in [
             member["did"]
-            for member in pytest.member_1.person_did_manager.get_members()
+            for member in pytest.member_1.get_members()
         ]
         and did in [
             member["did"]
@@ -120,7 +120,7 @@ def check_new_member(did: str):
         print("Member has joined!")
     else:
         print("\nDocker: DID-MAnager Members:\n",
-              pytest.member_1.person_did_manager.get_members())
+              pytest.member_1.get_members())
         print("\nDocker: Person Members:\n", pytest.member_1.get_members())
 
 
@@ -133,9 +133,9 @@ def renew_control_key():
         "/opt",
         pytest.CRYPT,
     )
-    old_key = pytest.member_1.person_did_manager.get_control_key()
-    pytest.member_1.person_did_manager.renew_control_key()
-    new_key = pytest.member_1.person_did_manager.get_control_key()
+    old_key = pytest.member_1.get_control_key()
+    pytest.member_1.renew_control_key()
+    new_key = pytest.member_1.get_control_key()
     logger.info(f"Renewed control key! {new_key.private_key}")
     pytest.member_1.terminate()
     import threading
@@ -254,7 +254,7 @@ def test_get_control_key():
     print("Waiting for key sharing...")
     polite_wait(wait_dur_s)
     mark(
-        pytest.member_2.person_did_manager.get_control_key().private_key,
+        pytest.member_2.get_control_key().private_key,
         "Got control key ownership"
     )
 
@@ -320,7 +320,7 @@ def test_renew_control_key():
 
         print("Waiting for key sharing...")
         polite_wait(wait_dur_s)
-        private_key = pytest.member_2.person_did_manager.get_control_key().private_key
+        private_key = pytest.member_2.get_control_key().private_key
         try:
             new_key.unlock(private_key)
         except:

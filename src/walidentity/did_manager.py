@@ -1,37 +1,28 @@
 """Machinery for managing DID-Documents, i.e. identities' cryptography keys.
 
-Also includes machinery for managing other members
+Doesn't include machinery for managing other members.
 """
-import walytis_beta_api as waly
 from dataclasses import dataclass
-from typing import Type, TypeVar
+from typing import Callable, Type, TypeVar
 
-from decorate_all import decorate_all_functions
-import json
-from multi_crypt import Crypt
-from strict_typing import strictly_typed
-from walytis_beta_api import Blockchain, Block, delete_blockchain
+import walytis_beta_api as waly
+from brenthy_tools_beta.utils import bytes_to_string
 from loguru import logger
+from multi_crypt import Crypt
+from walytis_beta_api import Block, Blockchain
+
 from . import did_manager_blocks
 from .did_manager_blocks import (
     ControlKeyBlock,
     DidDocBlock,
     InfoBlock,
-    MemberJoiningBlock,
-    MemberUpdateBlock,
-    MemberLeavingBlock,
-    MemberInvitationBlock,
+    get_block_type,
     get_latest_control_key,
     get_latest_did_doc,
-    get_members,
-    get_block_type,
-    get_info_blocks,
 )
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
-from .key_store import KeyStore, CodePackage, UnknownKeyError
-from brenthy_tools_beta.utils import bytes_to_string
-from typing import Callable
+from .key_store import CodePackage, KeyStore
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -58,7 +49,6 @@ class DidManager:
     key_store: KeyStore
 
     did_doc: dict
-    members_list: list | None
 
     def __init__(
         self,
@@ -84,11 +74,10 @@ class DidManager:
         self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
         # logger.debug("DM: Getting DID-Doc...")
-        self.did_doc = get_latest_did_doc(blockchain)
+        self.did_doc = get_latest_did_doc(self.blockchain)
         if not self.did_doc:
             raise NotValidDidBlockchainError()
-        # logger.debug("DM: Getting members...")
-        self.members_list = list(get_members(blockchain).values())
+
         # logger.debug("DM: Built DID-Manager object!")
 
     @classmethod
@@ -214,101 +203,6 @@ class DidManager:
             self.did_doc = get_latest_did_doc(self.blockchain)
         return self.did_doc
 
-    def get_members(self) -> list[dict]:
-        """Get the current list of member-members."""
-        if not self.members_list:
-            self.members_list = list(get_members(self.blockchain).values())
-            if self.members_list is None:
-                return []
-
-        return self.members_list
-
-    def add_member_invitation(self, member_invitation: dict) -> None:
-        member_invitation_block = MemberInvitationBlock.new(member_invitation)
-        self.add_info_block(member_invitation_block)
-
-    def add_member_update(self, member: dict) -> None:
-        block = MemberUpdateBlock.new(member)
-        self.add_info_block(block)
-
-    def add_member_leaving(self, member: dict) -> None:
-        block = MemberLeavingBlock.new(member)
-        self.add_info_block(block)
-
-    def invite_member(self) -> dict:
-        """Create and register a member invitation on the blockchain."""
-        # generate a key to be used by new member when registering themselves
-        key = Key.create(CRYPTO_FAMILY)
-
-        person_blockchain_invitation = json.loads(
-            self.blockchain.create_invitation(
-                one_time=False, shared=True
-            )
-        )
-        member_invitation = {
-            "blockchain_invitation": person_blockchain_invitation,
-            "invitation_key": key.get_key_id()
-        }
-        signature = bytes_to_string(key.sign(str.encode(json.dumps(
-            member_invitation
-        ))))
-        member_invitation.update({"signature": signature})
-
-        self.add_member_invitation(member_invitation)
-        member_invitation.update({"private_key": key.get_private_key()})
-
-        return member_invitation
-
-    @classmethod
-    def join_as_member(
-        cls: Type[_DidManager],
-        invitation: dict,
-        blockchain: Blockchain,
-        member_keystore_file: str,
-        key: Key,
-    ) -> _DidManager:
-        """Create a new IdentityAccess object."""
-        # logger.debug("DM: Member joining a did_manager.")
-        invitation_key = Key.from_key_id(invitation["invitation_key"])
-        try:
-            invitation_key.unlock(invitation["private_key"])
-        except:
-            raise IdentityJoinError(
-                "Invalid invitation: public-private key mismatch"
-            )
-        member_invitation_blocks = get_info_blocks(
-            blockchain, MemberInvitationBlock
-        )
-        member_invitation_blocks.reverse()
-        member_invitation_block = None
-        # TODO: filter by creation time
-        for invitation_block in member_invitation_blocks:
-            if invitation_block.get_member_invitation()["invitation_key"] == invitation["invitation_key"]:
-                member_invitation_block = invitation_block
-                break
-
-        if not member_invitation_block:
-            # TODO: wait little and try again
-            raise IdentityJoinError(
-                "The Person's blockchain doesn't have our invitation in it!"
-            )
-
-        member_keystore = KeyStore(member_keystore_file, key)
-        member_did_manager = cls.create(member_keystore)
-
-        joining_block = MemberJoiningBlock.new({
-            "did": member_did_manager.did,
-            "invitation": member_did_manager.blockchain.create_invitation(
-                one_time=False, shared=True
-            ),
-            "invitation_key": invitation["invitation_key"]
-        })
-        joining_block.sign(invitation_key)
-        blockchain.add_block(
-            joining_block.generate_block_content(), joining_block.walytis_block_topic
-        )
-        return member_did_manager
-
     def on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
@@ -322,13 +216,7 @@ class DidManager:
                 self.check_control_key()
             case did_manager_blocks.DidDocBlock:
                 self.did_doc = get_latest_did_doc(self.blockchain)
-            case (
-                did_manager_blocks.MemberJoiningBlock
-                | did_manager_blocks.MemberUpdateBlock
-                | did_manager_blocks.MemberLeavingBlock
-            ):
-                self.members_list = list(get_members(self.blockchain).values())
-            case _:
+            case 0:
                 logger.warning(
                     f"DM: Did not recognise block type: {block_type}")
                 # if user defined an event-handler for non-DID blocks, call it
@@ -459,14 +347,5 @@ def did_from_blockchain_id(blockchain_id: str) -> str:
 class DidNotOwnedError(Exception):
     """When we don't have the private key to a DID-Manager's control key."""
 
-
-class IdentityJoinError(Exception):
-    """When `DidManager.join_as_member()` fails."""
-
-    def __init__(self, message: str):
-        self.message = message
-
-    def __str__(self):
-        return self.message
 
 # decorate_all_functions(strictly_typed, __name__)

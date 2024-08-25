@@ -76,7 +76,7 @@ def test_create_contacts_manager():
 
     mark(
         pytest.contacts_chain.blockchain.base_blockchain.blockchain_id ==
-        pytest.me1.person_did_manager.blockchain.blockchain_id,
+        pytest.me1.blockchain.blockchain_id,
         "create contacts manager"
     )
 
@@ -94,7 +94,7 @@ def test_add_contact():
 def test_remove_contact():
     print("Deleting contacts...")
     pytest.contacts_chain.remove_contact(pytest.me2.did)
-    me2_blockchain_id = pytest.me2.person_did_manager.blockchain.blockchain_id
+    me2_blockchain_id = pytest.me2.blockchain.blockchain_id
     mark(
         pytest.me2.did not in pytest.contacts_chain.get_contacts(),
         "remove contact"

@@ -85,7 +85,7 @@ PLAIN_TEXT = "Hello there!".encode()
 
 def test_encryption():
     cipher_1 = pytest.p_id_access.encrypt(PLAIN_TEXT)
-    pytest.p_id_access.person_did_manager.renew_control_key()
+    pytest.p_id_access.renew_control_key()
     cipher_2 = pytest.p_id_access.encrypt(PLAIN_TEXT)
 
     mark(
@@ -101,7 +101,7 @@ def test_encryption():
 
 def test_signing():
     signature_1 = pytest.p_id_access.sign(PLAIN_TEXT)
-    pytest.p_id_access.person_did_manager.renew_control_key()
+    pytest.p_id_access.renew_control_key()
     signature_2 = pytest.p_id_access.sign(PLAIN_TEXT)
 
     mark(
@@ -116,7 +116,7 @@ def test_signing():
 
 
 def test_delete_person_identity():
-    person_blockchain = pytest.p_id_access.person_did_manager.blockchain.blockchain_id
+    person_blockchain = pytest.p_id_access.blockchain.blockchain_id
     member_blockchain = pytest.p_id_access.member_did_manager.blockchain.blockchain_id
     pytest.p_id_access.delete()
 

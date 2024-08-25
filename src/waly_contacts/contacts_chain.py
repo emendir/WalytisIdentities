@@ -16,12 +16,12 @@ class ContactsChain:
         self.identity_access = identity_access
 
         self.other_blocks_handler = other_blocks_handler
-        if self.identity_access.person_did_manager.other_blocks_handler is not None:
+        if self.identity_access.other_blocks_handler is not None:
             raise Exception(
                 "The IdentityAccess' person-DID-Manager's "
                 "`other_blocks_handler` field has been set and would be "
                 "overriden by ContactsChain.\n"
-                "Remove your setting `identity_access.person_did_manager."
+                "Remove your setting `identity_access."
                 "other_blocks_handler`, using the `other_blocks_handler` "
                 "parameter of the `ContactsChain` constructor instead."
             )

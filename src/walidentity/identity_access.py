@@ -1,13 +1,12 @@
 """Classes for managing Person and Device identities."""
-from time import sleep
 import json
 import os
 import time
 from datetime import datetime, timedelta
 from threading import Thread
-from typing import Type, TypeVar
+from time import sleep
+from typing import Callable, Type, TypeVar
 
-import brenthy_tools_beta
 import ipfs_api
 import ipfs_datatransmission
 import walytis_beta_api
@@ -20,20 +19,26 @@ from ipfs_datatransmission import (
 )
 from loguru import logger
 from walytis_beta_api import (
+    Block,
     Blockchain,
     BlockchainAlreadyExistsError,
     decode_short_id,
     list_blockchain_ids,
 )
 
+from . import did_manager_blocks
 from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
     KeyOwnershipBlock,
     MemberInvitationBlock,
     MemberJoiningBlock,
+    MemberLeavingBlock,
+    MemberUpdateBlock,
+    get_block_type,
+    get_info_blocks,
     get_latest_control_key,
     get_latest_did_doc,
-    get_info_blocks,
+    get_members,
 )
 from .did_objects import Key
 from .key_store import KeyStore, UnknownKeyError
@@ -51,20 +56,170 @@ _IdentityAccess = TypeVar(
 )
 
 
-class IdentityAccess:
-    """Class for managing a person's identity."""
+class _GroupDidManager(DidManager):
+    """DidManager with member-managment functionality.
+
+    Includes functionality for keeping a list of member-DIDs, including
+    the cryptographic invitations for independent joining of new members.
+    DOES NOT include control-key sharing functionality, that is coded in
+    IdentityAccess, which inherits this class.
+    """
 
     def __init__(
         self,
-        person_did_manager: DidManager,
-        member_did_manager: DidManager,
-        config_dir: str,
-        key: Key,
+        blockchain: Blockchain | str,
+        key_store: KeyStore,
+        other_blocks_handler: Callable[[Block], None] | None = None,
     ):
+        self.other_blocks_handler = other_blocks_handler
+        DidManager.__init__(
+            self,
+            blockchain,
+            key_store,
+            self.on_block_received  # we handle member management blocks
+        )
+        self.members_list = list(get_members(self.blockchain).values())
+
+    def on_block_received(self, block: Block) -> None:
+        # logger.debug("DM: Received block!")
+        block_type = get_block_type(block.topics)
+
+        match block_type:
+            case (
+                did_manager_blocks.MemberJoiningBlock
+                | did_manager_blocks.MemberUpdateBlock
+                | did_manager_blocks.MemberLeavingBlock
+            ):
+                self.members_list = list(get_members(self.blockchain).values())
+            case 0:
+                logger.warning(
+                    f"DM: Did not recognise block type: {block_type}")
+                # if user defined an event-handler for non-DID blocks, call it
+                if self.other_blocks_handler:
+                    self.other_blocks_handler(block)
+
+    def get_members(self) -> list[dict]:
+        """Get the current list of member-members."""
+        if not self.members_list:
+            self.members_list = list(get_members(self.blockchain).values())
+            if self.members_list is None:
+                return []
+
+        return self.members_list
+
+    def add_member_invitation(self, member_invitation: dict) -> None:
+        member_invitation_block = MemberInvitationBlock.new(member_invitation)
+        self.add_info_block(member_invitation_block)
+
+    def add_member_update(self, member: dict) -> None:
+        block = MemberUpdateBlock.new(member)
+        self.add_info_block(block)
+
+    def add_member_leaving(self, member: dict) -> None:
+        block = MemberLeavingBlock.new(member)
+        self.add_info_block(block)
+
+    def invite_member(self) -> dict:
+        """Create and register a member invitation on the blockchain."""
+        # generate a key to be used by new member when registering themselves
+        key = Key.create(CRYPTO_FAMILY)
+
+        person_blockchain_invitation = json.loads(
+            self.blockchain.create_invitation(
+                one_time=False, shared=True
+            )
+        )
+        member_invitation = {
+            "blockchain_invitation": person_blockchain_invitation,
+            "invitation_key": key.get_key_id()
+        }
+        signature = bytes_to_string(key.sign(str.encode(json.dumps(
+            member_invitation
+        ))))
+        member_invitation.update({"signature": signature})
+
+        self.add_member_invitation(member_invitation)
+        member_invitation.update({"private_key": key.get_private_key()})
+
+        return member_invitation
+
+    @staticmethod
+    def create_member(
+        invitation: dict,
+        blockchain: Blockchain,
+        member_keystore_file: str,
+        key: Key,
+    ) -> DidManager:
+        """Creating a new member DID-Manager joining an existing Group-DID.
+
+        Returns the member's DidManager.
+        """
+        # logger.debug("DM: Member joining a did_manager.")
+        invitation_key = Key.from_key_id(invitation["invitation_key"])
+        try:
+            invitation_key.unlock(invitation["private_key"])
+        except:
+            raise IdentityJoinError(
+                "Invalid invitation: public-private key mismatch"
+            )
+
+        # find the block on the blockchain to which our invitation corresponds
+        member_invitation_blocks = get_info_blocks(
+            blockchain, MemberInvitationBlock
+        )
+        member_invitation_blocks.reverse()
+        member_invitation_block = None
+        # TODO: filter by creation time
+        for invitation_block in member_invitation_blocks:
+            if invitation_block.get_member_invitation()["invitation_key"] == invitation["invitation_key"]:
+                member_invitation_block = invitation_block
+                break
+
+        if not member_invitation_block:
+            # TODO: wait little and try again
+            raise IdentityJoinError(
+                "The Person's blockchain doesn't have our invitation in it!"
+            )
+
+        member_keystore = KeyStore(member_keystore_file, key)
+        member_did_manager = DidManager.create(member_keystore)
+
+        joining_block = MemberJoiningBlock.new({
+            "did": member_did_manager.did,
+            "invitation": member_did_manager.blockchain.create_invitation(
+                one_time=False, shared=True
+            ),  # invitation for other's to join our member DID blockchain
+            "invitation_key": invitation["invitation_key"]  # Key object
+        })
+        joining_block.sign(invitation_key)
+        blockchain.add_block(
+            joining_block.generate_block_content(),
+            joining_block.walytis_block_topic
+        )
+        return member_did_manager
+
+
+class IdentityAccess(_GroupDidManager):
+    """Class for managing a person's identity."""
+    members_list: list | None
+
+    def __init__(
+        self,
+        blockchain: Blockchain | str,
+        key_store: KeyStore,
+        config_dir: str,
+        member_did_manager: DidManager,
+        other_blocks_handler: Callable[[Block], None] | None = None,
+    ):
+        _GroupDidManager.__init__(
+            self,
+            blockchain,
+            key_store,
+            other_blocks_handler,
+        )
+
         self.member_did_manager = member_did_manager
         self.config_dir = config_dir
-        self.key = key
-        self.person_did_manager = person_did_manager
         self.config_file = os.path.join(config_dir, "person_id.json")
         self.person_keystore_file = os.path.join(
             config_dir, "person_keys.json")
@@ -83,13 +238,23 @@ class IdentityAccess:
         )
         self.control_key_manager_thr.start()
 
-    @property
-    def did(self):
-        return self.person_did_manager.did
+    @classmethod
+    def from_did_managers(
+        cls,
+        person_did_manager: DidManager,
+        member_did_manager: DidManager,
+        config_dir: str,
+    ):
+        return cls(
+            person_did_manager.blockchain,
+            person_did_manager.key_store,
+            config_dir=config_dir,
+            member_did_manager=member_did_manager,
+        )
 
     def assert_ownership(self) -> None:
         """If we don't yet own the control key, get it."""
-        control_key = self.person_did_manager.get_control_key()
+        control_key = self.get_control_key()
         if control_key.private_key:
             return
 
@@ -107,9 +272,9 @@ class IdentityAccess:
                 except IncompletePeerInfoError:
                     continue
                 if key:
-                    self.person_did_manager.key_store.add_key(key)
-                    if self.person_did_manager.get_control_key().private_key:
-                        self.person_did_manager.update_did_doc(
+                    self.key_store.add_key(key)
+                    if self.get_control_key().private_key:
+                        self.update_did_doc(
                             self.generate_did_doc())
                         return
                     else:
@@ -133,35 +298,36 @@ class IdentityAccess:
     def create(
         cls: Type[_IdentityAccess],
         config_dir: str,
-        key: Key,
+        key: Key,   # for unlocking keystores in config dir
     ) -> _IdentityAccess:
         """Create a new IdentityAccess object."""
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
         member_keystore_file = os.path.join(config_dir, "member_keys.json")
         key_store = KeyStore(person_keystore_file, key)
         # logger.debug("Creating Person-Did-Manager...")
-        person_did_manager = DidManager.create(key_store)
+        g_did_manager = _GroupDidManager.create(key_store)
         # logger.debug("Creating Device-Did-Manager...")
 
         # create member did manager
-        member_did_manager = DidManager.join_as_member(
-            invitation=person_did_manager.invite_member(),
-            blockchain=person_did_manager.blockchain,
+        member_did_manager = cls.create_member(
+            invitation=g_did_manager.invite_member(),
+            blockchain=g_did_manager.blockchain,
             member_keystore_file=member_keystore_file,
             key=key,
         )
 
+        g_did_manager.terminate()  # group_did_manager will take over
+
         # logger.debug("Creating Identity...")
-        person_id_acc = cls(
-            person_did_manager,
+        group_did_manager = cls.from_did_managers(
+            g_did_manager,
             member_did_manager,
             config_dir,
-            key,
         )
-        person_id_acc.save_appdata()
-        person_id_acc.member_did_manager.update_did_doc(
-            person_id_acc.generate_member_did_doc())
-        return person_id_acc
+        group_did_manager.save_appdata()
+        group_did_manager.member_did_manager.update_did_doc(
+            group_did_manager.generate_member_did_doc())
+        return group_did_manager
 
     @classmethod
     def load_from_appdata(
@@ -177,7 +343,7 @@ class IdentityAccess:
         with open(config_file, "r") as file:
             data = json.loads(file.read())
 
-        person_did_manager = DidManager(
+        g_did_manager = _GroupDidManager(
             blockchain=data["person_blockchain"],
             key_store=KeyStore(person_keystore_file, key),
         )
@@ -185,15 +351,14 @@ class IdentityAccess:
             blockchain=data["member_blockchain"],
             key_store=KeyStore(member_keystore_file, key),
         )
-
-        identity_access = cls(
-            person_did_manager,
+        g_did_manager.terminate()   # group_did_manager wil take over from here
+        group_did_manager = cls.from_did_managers(
+            g_did_manager,
             member_did_manager,
             config_dir,
-            key,
         )
 
-        return identity_access
+        return group_did_manager
 
     @classmethod
     def join(
@@ -202,7 +367,10 @@ class IdentityAccess:
         config_dir: str,
         key: Key,
     ) -> _IdentityAccess:
-        """Create a new IdentityAccess object."""
+        """Join an exisiting Group-DID-Manager, creating a new member DID.
+
+        Returns an IdentityAccess object.
+        """
         if isinstance(invitation, str):
             invitation = json.loads(invitation)
         blockchain_invitation: dict = invitation["blockchain_invitation"]
@@ -219,37 +387,33 @@ class IdentityAccess:
         person_keystore_file = os.path.join(config_dir, "person_keys.json")
 
         # create member did manager
-        member_did_manager = DidManager.join_as_member(
+        member_did_manager = cls.create_member(
             invitation=invitation,
             blockchain=blockchain,
             member_keystore_file=member_keystore_file,
             key=key,
         )
         key_store = KeyStore(person_keystore_file, key)
-        person_did_manager = DidManager(
+        g_did_manager = _GroupDidManager(
             blockchain,
             key_store
         )
-
-        person_id_acc = cls(
-            person_did_manager,
+        g_did_manager.terminate()   # group_did_manager will take over from here
+        group_did_manager = cls.from_did_managers(
+            g_did_manager,
             member_did_manager,
             config_dir,
-            key,
         )
-        person_id_acc.save_appdata()
-        person_id_acc.member_did_manager.update_did_doc(
-            person_id_acc.generate_member_did_doc())
+        group_did_manager.save_appdata()
+        group_did_manager.member_did_manager.update_did_doc(
+            group_did_manager.generate_member_did_doc())
 
-        return person_id_acc
-
-    def invite_member(self) -> dict:
-        return self.person_did_manager.invite_member()
+        return group_did_manager
 
     def serialise(self) -> dict:
         """Generate this Identity's appdata."""
         return {
-            "person_blockchain": self.person_did_manager.blockchain.blockchain_id,
+            "person_blockchain": self.blockchain.blockchain_id,
             "member_blockchain": self.member_did_manager.blockchain.blockchain_id,
         }
 
@@ -259,19 +423,12 @@ class IdentityAccess:
         with open(self.config_file, "w+") as file:
             file.write(data)
 
-    def get_members(self) -> list:
-        """Get the current list of member-members."""
-        members = self.person_did_manager.get_members()
-        if not members:
-            return []
-        return members
-
     def generate_did_doc(self) -> dict:
         """Generate a DID-document."""
         did_doc = {
             "id": self.did,
             "verificationMethod": [
-                self.person_did_manager.get_control_key().generate_key_spec(
+                self.get_control_key().generate_key_spec(
                     self.did)
 
                 # key.generate_key_spec(self.did)
@@ -319,7 +476,7 @@ class IdentityAccess:
         sig = bytes_to_string(key.sign(json.dumps(key_ownership).encode()))
         key_ownership.update({"proof": sig})
         block = KeyOwnershipBlock.new(key_ownership)
-        self.person_did_manager.add_info_block(block)
+        self.add_info_block(block)
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
@@ -383,7 +540,7 @@ class IdentityAccess:
                 return
             private_key = None
             try:
-                key = self.person_did_manager.key_store.get_key(key_id)
+                key = self.key_store.get_key(key_id)
                 private_key = key.private_key
             except UnknownKeyError:
                 private_key = None
@@ -544,7 +701,7 @@ class IdentityAccess:
         private_key = key.decrypt(bytes.fromhex(response["private_key"]))
         key = Key.from_key_id(key_id)
         key.unlock(private_key)
-        self.person_did_manager.key_store.add_key(key)
+        self.key_store.add_key(key)
         self.publish_key_ownership(key)
         logger.debug(f"RK: Got key!: {key.get_key_id()}")
         return key
@@ -552,17 +709,17 @@ class IdentityAccess:
     def get_published_candidate_keys(self) -> dict["str", list[str]]:
         """Update our list of candidate control keys and their owners."""
         candidate_keys: dict[str, list[str]] = {}
-        for block_id in self.person_did_manager.blockchain.block_ids[::-1]:
+        for block_id in self.blockchain.block_ids[::-1]:
             metadata = decode_short_id(block_id)
             if KeyOwnershipBlock.walytis_block_topic not in metadata["topics"]:
                 continue
             key_expiry = (
-                self.person_did_manager.get_control_key().creation_time +
+                self.get_control_key().creation_time +
                 timedelta(hours=CTRL_KEY_RENEWAL_AGE_HR)
             )
             if metadata["creation_time"] < key_expiry:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
-                    self.person_did_manager.blockchain.get_block(
+                    self.blockchain.get_block(
                         block_id).content
                 ).get_key_ownership()
                 key_id = key_ownership["key_id"]
@@ -595,7 +752,7 @@ class IdentityAccess:
             Whether or not we are now prepared to renew control keys
         """
         # logger.debug("Checking control key update preparation...")
-        ctrl_key_timestamp = self.person_did_manager.get_control_key().creation_time
+        ctrl_key_timestamp = self.get_control_key().creation_time
         ctrl_key_age_hr = (
             datetime.utcnow() - ctrl_key_timestamp
         ).total_seconds() / 60 / 60
@@ -613,7 +770,7 @@ class IdentityAccess:
         if self.candidate_keys:
             # try get the private keys of any candidate keys we don't yet own
             for key_id, members in list(self.candidate_keys.items()):
-                if key_id not in self.person_did_manager.key_store.keys.keys():
+                if key_id not in self.key_store.keys.keys():
                     for member in members:
                         if self._terminate:
                             return True
@@ -626,7 +783,7 @@ class IdentityAccess:
             return True
 
         key = Key.create(CRYPTO_FAMILY)
-        self.person_did_manager.key_store.add_key(key)
+        self.key_store.add_key(key)
         self.candidate_keys.update(
             {key.get_key_id(): [self.member_did_manager.did]}
         )
@@ -641,7 +798,7 @@ class IdentityAccess:
         if not self.candidate_keys:
             return False
 
-        ctrl_key_timestamp = self.person_did_manager.get_control_key().creation_time
+        ctrl_key_timestamp = self.get_control_key().creation_time
         ctrl_key_age_hr = (
             datetime.utcnow() - ctrl_key_timestamp
         ).total_seconds() / 60 / 60
@@ -664,103 +821,23 @@ class IdentityAccess:
             if num_key_owners < len(self.get_members()):
                 return False
 
-        self.person_did_manager.renew_control_key(new_control_key)
+        self.renew_control_key(new_control_key)
         self.candidate_keys = {}
         self.save_appdata()
         return True
-
-    def encrypt(
-        self,
-        data: bytes,
-        encryption_options: str = ""
-    ) -> bytes:
-        """Encrypt the provided data using the specified public key.
-
-        Args:
-            data (bytes): the data to encrypt
-            encryption_options (str): specification code for which
-                                    encryption/decryption protocol should be used
-        Returns:
-            bytes: the encrypted data
-        """
-        return self.person_did_manager.encrypt(
-            data=data,
-            encryption_options=encryption_options,
-        )
-
-    def decrypt(
-        self,
-        data: bytes,
-    ) -> bytes:
-        """Decrypt the provided data using the specified private key.
-
-        Args:
-            data (bytes): the data to decrypt
-        Returns:
-            bytes: the decrypted data
-        """
-        return self.person_did_manager.decrypt(
-            data=data,
-        )
-
-    def sign(self, data: bytes, signature_options: str = "") -> bytes:
-        """Sign the provided data using the specified private key.
-
-        Args:
-            data (bytes): the data to sign
-            private_key (bytes): the private key to be used for the signing
-            signature_options (str): specification code for which
-                                signature/verification protocol should be used
-        Returns:
-            bytes: the signature
-        """
-        return self.person_did_manager.sign(
-            data=data,
-            signature_options=signature_options,
-        )
-
-    def verify_signature(
-        self,
-        signature: bytes,
-        data: bytes,
-    ) -> bool:
-        """Verify the given signature of the given data using the given key.
-
-        Args:
-            signature (bytes): the signaure to verify
-            data (bytes): the data to sign
-            public_key (bytes): the public key to verify the signature against
-        Returns:
-            bool: whether or not the signature matches the data
-        """
-        return self.person_did_manager.verify_signature(
-            signature=signature,
-            data=data,
-        )
-
-    @property
-    def blockchain(self) -> Blockchain:
-        """The blockchain of this IdentityAccess' Identity.
-
-        Same as `.person_did_manager.blockchain`
-        NOT TO BE CONFUSED with `.member_did_manager.blockchain`
-        which is the blockchain of the DidManager we use to access this
-        IdentityAccess' Identity.
-        """
-        return self.person_did_manager.blockchain
 
     def delete(self) -> None:
         """Delete this Identity."""
         self.terminate()
         self.member_did_manager.delete()
-        self.person_did_manager.delete()
+        DidManager.delete(self)
 
     def terminate(self) -> None:
         """Stop this Identity object, cleaning up resources."""
         if not self._terminate:
             self._terminate = True
             self.member_did_manager.terminate()
-            self.person_did_manager.terminate()
+            DidManager.terminate(self)
             self.key_requests_listener.terminate()
 
             self.control_key_manager_thr.join()
@@ -778,4 +855,12 @@ class NotMemberError(Exception):
     """When a peer isn't among our members."""
 
 
+class IdentityJoinError(Exception):
+    """When `DidManager.create_member()` fails."""
+
+    def __init__(self, message: str):
+        self.message = message
+
+    def __str__(self):
+        return self.message
 # decorate_all_functions(strictly_typed, __name__)

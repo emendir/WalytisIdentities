@@ -447,6 +447,8 @@ def get_members(blockchain: Blockchain) -> dict:
     members: dict[str, dict] = {}
     for block in blocks:
         member = block.get_member()
+
+        # match this block's type: MemberJoiningBlock, MemberUpdateBlock etc.
         match block.walytis_block_topic:
             case MemberJoiningBlock.walytis_block_topic:
                 if member["did"] in members.keys():
