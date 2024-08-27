@@ -62,7 +62,7 @@ def test_create_person_identity():
 
 
 def test_load_person_identity():
-    p_id_access = GroupDidManager.load_from_appdata(
+    p_id_access = GroupDidManager(
         pytest.person_config_dir,
         pytest.CRYPT
     )

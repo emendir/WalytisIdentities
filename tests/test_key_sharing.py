@@ -62,8 +62,8 @@ def cleanup():
     for container in pytest.containers:
         container.delete()
     if pytest.member_2:
-        pytest.member_2.terminate()
-        pytest.member_2.member_did_manager.delete()
+        pytest.member_2.delete()
+        # pytest.member_2.member_did_manager.delete()
     if pytest.member_1:
         pytest.member_1.delete()
     shutil.rmtree(pytest.member_1_config_dir)
@@ -92,7 +92,7 @@ def check_new_member(did: str):
     TO BE RUN IN DOCKER CONTAINER.
     """
     logger.debug("CND: Loading GroupDidManager...")
-    pytest.member_1 = GroupDidManager.load_from_appdata(
+    pytest.member_1 = GroupDidManager(
         "/opt",
         pytest.CRYPT,
     )
@@ -129,7 +129,7 @@ def renew_control_key():
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    pytest.member_1 = GroupDidManager.load_from_appdata(
+    pytest.member_1 = GroupDidManager(
         "/opt",
         pytest.CRYPT,
     )
@@ -238,7 +238,7 @@ def test_get_control_key():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        "dev = test_key_sharing.GroupDidManager.load_from_appdata("
+        "dev = test_key_sharing.GroupDidManager("
         "    '/opt',"
         "    test_key_sharing.pytest.CRYPT,"
         ");"
@@ -273,7 +273,7 @@ def test_renew_control_key():
         "test_key_sharing.test_preparations();",
         "test_key_sharing.renew_control_key();",
     ])
-
+    pytest.containers[0].run_shell_command("rm /opt/.GroupDidManager.lock")
     output = pytest.containers[0].run_python_code(
         python_code, print_output=True
     ).split("\n")
@@ -304,7 +304,7 @@ def test_renew_control_key():
             "test_key_sharing.REBUILD_DOCKER=False;"
             "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
             "test_key_sharing.test_preparations();"
-            "dev = test_key_sharing.GroupDidManager.load_from_appdata("
+            "dev = test_key_sharing.GroupDidManager("
             "    '/opt',"
             "    test_key_sharing.pytest.CRYPT,"
             ");"

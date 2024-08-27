@@ -55,6 +55,7 @@ class DidManager:
         blockchain: Blockchain | str,
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
+        appdata_dir: str = "",
     ):
         """Load a DidManager from a Walytis blockchain.
 
@@ -65,19 +66,28 @@ class DidManager:
                 `blockchain` that aren't related to this DID-Manager work
         """
         if isinstance(blockchain, str):
-            blockchain = Blockchain(blockchain)
+            blockchain_id = blockchain
 
         # restart the blockchain object if it isn't connected to Brenthy
-        if blockchain._terminate:
-            blockchain = Blockchain(blockchain.blockchain_id)
-        self.blockchain = blockchain
+        # if blockchain._terminate:
+        else:
+            blockchain_id = blockchain.blockchain_id
+        self.blockchain = Blockchain(
+            blockchain_id,
+            appdata_dir=appdata_dir,
+            auto_load_missed_blocks=False,
+            block_received_handler=self.on_block_received,
+            update_blockids_before_handling=True,
+        )
         self.other_blocks_handler = other_blocks_handler
-        self.blockchain.block_received_handler = self.on_block_received
-        self.blockchain.update_blockids_before_handling = True
         self.key_store = key_store
         self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
         # logger.debug("DM: Getting DID-Doc...")
+        import walytis_beta_api as waly
+        self.blockchain.load_missed_blocks(
+            waly.blockchain_model.N_STARTUP_BLOCKS
+        )
         self.did_doc = get_latest_did_doc(self.blockchain)
         if not self.did_doc:
             raise NotValidDidBlockchainError()
@@ -210,7 +220,6 @@ class DidManager:
     def on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
-
         match block_type:
             case (
                 did_manager_blocks.ControlKeyBlock
@@ -218,11 +227,10 @@ class DidManager:
             ):
                 # update self._control_key_id from the blockchain
                 self.check_control_key()
+                logger.debug(self._control_key_id)
             case did_manager_blocks.DidDocBlock:
                 self.did_doc = get_latest_did_doc(self.blockchain)
             case 0:
-                logger.warning(
-                    f"DM: Did not recognise block type: {block_type}")
                 # if user defined an event-handler for non-DID blocks, call it
                 if self.other_blocks_handler:
                     self.other_blocks_handler(block)

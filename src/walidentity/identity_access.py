@@ -25,7 +25,7 @@ from walytis_beta_api import (
     decode_short_id,
     list_blockchain_ids,
 )
-
+import walytis_beta_api as waly
 from . import did_manager_blocks
 from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
@@ -70,17 +70,20 @@ class _GroupDidManager(DidManager):
         blockchain: Blockchain | str,
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
+        appdata_dir: str = "",
     ):
         self.other_blocks_handler = other_blocks_handler
         DidManager.__init__(
             self,
-            blockchain,
-            key_store,
-            self.on_block_received  # we handle member management blocks
+            blockchain=blockchain,
+            key_store=key_store,
+            # we handle member management blocks
+            other_blocks_handler=self.on_block_received_members,
+            appdata_dir=appdata_dir,
         )
         self.members_list = list(get_members(self.blockchain).values())
 
-    def on_block_received(self, block: Block) -> None:
+    def on_block_received_members(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
 
@@ -209,26 +212,45 @@ class GroupDidManager(_GroupDidManager):
 
     def __init__(
         self,
-        blockchain: Blockchain | str,
-        key_store: KeyStore,
         config_dir: str,
-        member_did_manager: DidManager,
+        key: Key,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ):
-        _GroupDidManager.__init__(
-            self,
-            blockchain,
-            key_store,
-            other_blocks_handler,
+        self._terminate = False
+        self.config_dir = config_dir
+        self.lock_file = os.path.join(config_dir, ".GroupDidManager.lock")
+        if os.path.exists(self.lock_file):
+            raise Exception(
+                "It looks like another application is currently working with "
+                "this DID-Manager's appdata!"
+            )
+        with open(self.lock_file, "w+") as lock_file:
+            lock_file.write("Running...")
+        self.config_file = os.path.join(self.config_dir, "group_did_metadata.json")
+        self.group_appdata_dir = os.path.join(self.config_dir, "group_did")
+        self.group_keystore_file = os.path.join(
+            self.group_appdata_dir, "group_did_keys.json"
+        )
+        self.member_appdata_dir = os.path.join(self.config_dir, "member_did")
+        self.member_keystore_file = os.path.join(
+            self.member_appdata_dir, "member_did_keys.json"
         )
 
-        self.member_did_manager = member_did_manager
-        self.config_dir = config_dir
-        self.config_file = os.path.join(config_dir, "person_id.json")
-        self.person_keystore_file = os.path.join(
-            config_dir, "person_keys.json")
-        self.member_keystore_file = os.path.join(
-            config_dir, "member_keys.json")
+        with open(self.config_file, "r") as file:
+            data = json.loads(file.read())
+
+        self.member_did_manager = DidManager(
+            blockchain=data["member_blockchain"],
+            key_store=KeyStore(self.member_keystore_file, key),
+        )
+
+        _GroupDidManager.__init__(
+            self,
+            blockchain=data["person_blockchain"],
+            key_store=KeyStore(self.group_keystore_file, key),
+            other_blocks_handler=other_blocks_handler,
+        )
+
         self.candidate_keys: dict[str, list[str]] = {}
         self.get_published_candidate_keys()
 
@@ -259,6 +281,11 @@ class GroupDidManager(_GroupDidManager):
     def assert_ownership(self) -> None:
         """If we don't yet own the control key, get it."""
         control_key = self.get_control_key()
+        # logger.debug(self.get_control_key())
+        # logger.debug(
+        #     get_latest_control_key(self.blockchain).get_key_id()
+        # )
+        # logger.debug(self.blockchain._terminate)
         if control_key.private_key:
             return
 
@@ -305,9 +332,21 @@ class GroupDidManager(_GroupDidManager):
         key: Key,   # for unlocking keystores in config dir
     ) -> _GroupDidManager:
         """Create a new GroupDidManager object."""
-        person_keystore_file = os.path.join(config_dir, "person_keys.json")
-        member_keystore_file = os.path.join(config_dir, "member_keys.json")
-        key_store = KeyStore(person_keystore_file, key)
+        config_file = os.path.join(config_dir, "group_did_metadata.json")
+        group_appdata_dir = os.path.join(config_dir, "group_did")
+        group_keystore_file = os.path.join(
+            group_appdata_dir, "group_did_keys.json"
+        )
+        member_appdata_dir = os.path.join(config_dir, "member_did")
+        member_keystore_file = os.path.join(
+            member_appdata_dir, "member_did_keys.json"
+        )
+        if not os.path.exists(group_appdata_dir):
+            os.makedirs(group_appdata_dir)
+        if not os.path.exists(member_appdata_dir):
+            os.makedirs(member_appdata_dir)
+
+        key_store = KeyStore(group_keystore_file, key)
         # logger.debug("Creating Person-Did-Manager...")
         g_did_manager = _GroupDidManager.create(key_store)
         # logger.debug("Creating Device-Did-Manager...")
@@ -319,49 +358,17 @@ class GroupDidManager(_GroupDidManager):
             member_keystore_file=member_keystore_file,
             key=key,
         )
+        cls.init_appdata(config_file, g_did_manager, member_did_manager)
 
         g_did_manager.terminate()  # group_did_manager will take over
-
+        member_did_manager.terminate()
         # logger.debug("Creating Identity...")
-        group_did_manager = cls.from_did_managers(
-            g_did_manager,
-            member_did_manager,
+        group_did_manager = cls(
             config_dir,
+            key=key,
         )
-        group_did_manager.save_appdata()
         group_did_manager.member_did_manager.update_did_doc(
             group_did_manager.generate_member_did_doc())
-        return group_did_manager
-
-    @classmethod
-    def load_from_appdata(
-        cls: Type[_GroupDidManager],
-        config_dir: str,
-        key: Key,
-    ) -> _GroupDidManager:
-        """Load a saved GroupDidManager object from appdata."""
-        config_file = os.path.join(config_dir, "person_id.json")
-        person_keystore_file = os.path.join(config_dir, "person_keys.json")
-        member_keystore_file = os.path.join(config_dir, "member_keys.json")
-
-        with open(config_file, "r") as file:
-            data = json.loads(file.read())
-
-        g_did_manager = _GroupDidManager(
-            blockchain=data["person_blockchain"],
-            key_store=KeyStore(person_keystore_file, key),
-        )
-        member_did_manager = DidManager(
-            blockchain=data["member_blockchain"],
-            key_store=KeyStore(member_keystore_file, key),
-        )
-        g_did_manager.terminate()   # group_did_manager wil take over from here
-        group_did_manager = cls.from_did_managers(
-            g_did_manager,
-            member_did_manager,
-            config_dir,
-        )
-
         return group_did_manager
 
     @classmethod
@@ -386,10 +393,19 @@ class GroupDidManager(_GroupDidManager):
             blockchain = Blockchain.join(blockchain_invitation)
         except BlockchainAlreadyExistsError:
             blockchain = Blockchain(blockchain_invitation["blockchain_id"])
-
-        member_keystore_file = os.path.join(config_dir, "member_keys.json")
-        person_keystore_file = os.path.join(config_dir, "person_keys.json")
-
+        config_file = os.path.join(config_dir, "group_did_metadata.json")
+        group_appdata_dir = os.path.join(config_dir, "group_did")
+        group_keystore_file = os.path.join(
+            group_appdata_dir, "group_did_keys.json"
+        )
+        member_appdata_dir = os.path.join(config_dir, "member_did")
+        member_keystore_file = os.path.join(
+            member_appdata_dir, "member_did_keys.json"
+        )
+        if not os.path.exists(group_appdata_dir):
+            os.makedirs(group_appdata_dir)
+        if not os.path.exists(member_appdata_dir):
+            os.makedirs(member_appdata_dir)
         # create member did manager
         member_did_manager = cls.create_member(
             invitation=invitation,
@@ -397,18 +413,19 @@ class GroupDidManager(_GroupDidManager):
             member_keystore_file=member_keystore_file,
             key=key,
         )
-        key_store = KeyStore(person_keystore_file, key)
+        key_store = KeyStore(group_keystore_file, key)
+        blockchain.terminate()
         g_did_manager = _GroupDidManager(
-            blockchain,
-            key_store
+            blockchain.blockchain_id,
+            key_store,
         )
+        cls.init_appdata(config_file, g_did_manager, member_did_manager)
         g_did_manager.terminate()   # group_did_manager will take over from here
-        group_did_manager = cls.from_did_managers(
-            g_did_manager,
-            member_did_manager,
+        member_did_manager.terminate()
+        group_did_manager = cls(
             config_dir,
+            key=key,
         )
-        group_did_manager.save_appdata()
         group_did_manager.member_did_manager.update_did_doc(
             group_did_manager.generate_member_did_doc())
 
@@ -420,6 +437,20 @@ class GroupDidManager(_GroupDidManager):
             "person_blockchain": self.blockchain.blockchain_id,
             "member_blockchain": self.member_did_manager.blockchain.blockchain_id,
         }
+
+    @staticmethod
+    def init_appdata(
+        config_file,
+        group_did_manager: _GroupDidManager,
+        member_did_manager: DidManager
+    ) -> None:
+        """Create appdata file for new GroupDidManager object."""
+        data = json.dumps({
+            "person_blockchain": group_did_manager.blockchain.blockchain_id,
+            "member_blockchain": member_did_manager.blockchain.blockchain_id,
+        })
+        with open(config_file, "w+") as file:
+            file.write(data)
 
     def save_appdata(self) -> None:
         """Write this identy's appdata to a file."""
@@ -527,7 +558,8 @@ class GroupDidManager(_GroupDidManager):
                 }).encode())
                 conv.terminate()
                 if not success:
-                    logger.warning("KRH: Failed sending response NotMemberError")
+                    logger.warning(
+                        "KRH: Failed sending response NotMemberError")
                 return
             logger.debug("KRH: got peer's key.")
 
@@ -540,7 +572,8 @@ class GroupDidManager(_GroupDidManager):
                 conv.terminate()
                 logger.warning("KRH: authentication failed.")
                 if not success:
-                    logger.warning("KRH: Failed sending response authentication failed.")
+                    logger.warning(
+                        "KRH: Failed sending response authentication failed.")
                 return
             private_key = None
             try:
@@ -554,9 +587,12 @@ class GroupDidManager(_GroupDidManager):
                     "peer_key_id": peer_key.get_key_id()
                 }).encode())
                 conv.terminate()
-                logger.warning(f"KRH: Don't have requested key: {peer_key.get_key_id()}")
+                logger.warning(
+                    f"KRH: Don't have requested key: {peer_key.get_key_id()}"
+                )
                 if not success:
-                    logger.warning("KRH: Failed sending response I don't own this key")
+                    logger.warning(
+                        "KRH: Failed sending response I don't own this key")
                 return
 
             success = conv.say(json.dumps({
@@ -664,7 +700,8 @@ class GroupDidManager(_GroupDidManager):
                 )
             except ipfs_datatransmission.CommunicationTimeout:
                 logger.warning(
-                    f"RK: Failed at key request (timeout): KeyRequest-{key_id}, "
+                    "RK: Failed at key request (timeout): "
+                    f"KeyRequest-{key_id}, "
                     f"{peer_id}, {did}-KeyRequests"
                 )
                 conv.close()
@@ -681,7 +718,8 @@ class GroupDidManager(_GroupDidManager):
             sleep(0.15)
             success = conv.say(json.dumps(key_request_message).encode(), )
             if not success:
-                logger.warning("RK: Timeout communicating when requesting key.")
+                logger.warning(
+                    "RK: Timeout communicating when requesting key.")
                 conv.close()
                 return None
             try:
@@ -840,11 +878,23 @@ class GroupDidManager(_GroupDidManager):
         """Stop this Identity object, cleaning up resources."""
         if not self._terminate:
             self._terminate = True
-            self.member_did_manager.terminate()
-            DidManager.terminate(self)
-            self.key_requests_listener.terminate()
-
-            self.control_key_manager_thr.join()
+            try:
+                self.key_requests_listener.terminate()
+            except:
+                pass
+            try:
+                self.member_did_manager.terminate()
+            except:
+                pass
+            try:
+                DidManager.terminate(self)
+            except:
+                pass
+            try:
+                self.control_key_manager_thr.join()
+            except:
+                pass
+            os.remove(self.lock_file)
 
     def __del__(self):
         """Stop this Identity object, cleaning up resources."""
