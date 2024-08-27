@@ -9,7 +9,7 @@ import pytest
 import walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
 from walidentity.did_objects import Key
-from walidentity.identity_access import GroupDidManager
+from walidentity.group_did_manager import GroupDidManager
 from walidentity.utils import logger
 from multi_crypt import Crypt
 from walytis_auth_docker.walytis_auth_docker import (

@@ -10,25 +10,25 @@ class ContactsChain:
 
     def __init__(
         self,
-        identity_access: GroupDidManager,
+        group_did_manager: GroupDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ):
-        self.identity_access = identity_access
+        self.group_did_manager = group_did_manager
 
         self._gdm_other_blocks_handler = other_blocks_handler
-        if self.identity_access._gdm_other_blocks_handler is not None:
+        if self.group_did_manager._gdm_other_blocks_handler is not None:
             raise Exception(
                 "The GroupDidManager' person-DID-Manager's "
                 "`._gdm_other_blocks_handler` field has been set and would be "
                 "overriden by ContactsChain.\n"
-                "Remove your setting `identity_access."
+                "Remove your setting `group_did_manager."
                 "._gdm_other_blocks_handler`, using the `other_blocks_handler` "
                 "parameter of the `ContactsChain` constructor instead."
             )
         self._dm_other_blocks_handler = other_blocks_handler
 
         self.blockchain = PrivateBlockchain(
-            blockchain_identity=self.identity_access,
+            blockchain_identity=self.group_did_manager,
             block_received_handler=self._on_block_received,
             virtual_layer_name=CONTACTS_CHAIN_TOPIC,
             other_blocks_handler=self._dm_other_blocks_handler,
@@ -73,14 +73,14 @@ class ContactsChain:
     def delete(self):
         self.blockchain.delete()
         try:
-            self.identity_access.delete()
+            self.group_did_manager.delete()
         except:
             pass
 
     def terminate(self):
         self.blockchain.terminate()
         try:
-            self.identity_access.terminate()
+            self.group_did_manager.terminate()
         except:
             pass
 

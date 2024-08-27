@@ -7,7 +7,7 @@ import walidentity
 import pytest
 import walytis_beta_api
 from _testing_utils import mark
-from walidentity.identity_access import GroupDidManager
+from walidentity.group_did_manager import GroupDidManager
 from walidentity.key_store import CodePackage
 from multi_crypt import Crypt
 from walidentity import key_store

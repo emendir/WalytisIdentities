@@ -1,6 +1,6 @@
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
-from walidentity.identity_access import GroupDidManager
+from walidentity.group_did_manager import GroupDidManager
 from multi_crypt import Crypt
 
 

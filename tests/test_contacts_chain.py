@@ -9,7 +9,7 @@ import walidentity
 import walytis_beta_api
 from _testing_utils import mark, test_threads_cleanup
 from multi_crypt import Crypt
-from walidentity.identity_access import GroupDidManager
+from walidentity.group_did_manager import GroupDidManager
 from waly_contacts import (
     ContactsChain,
     identity_management,
