@@ -83,6 +83,7 @@ def test_create_contacts_manager():
 
 def test_add_contact():
     print("Creating identity...")
+    pytest.me1.terminate()
     pytest.me2 = identity_management.create_person_identity(
         pytest.person1_config_dir, pytest.CRYPT
     )

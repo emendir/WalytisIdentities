@@ -15,23 +15,23 @@ class ContactsChain:
     ):
         self.identity_access = identity_access
 
-        self.other_blocks_handler = other_blocks_handler
-        if self.identity_access.other_blocks_handler is not None:
+        self._gdm_other_blocks_handler = other_blocks_handler
+        if self.identity_access._gdm_other_blocks_handler is not None:
             raise Exception(
                 "The GroupDidManager' person-DID-Manager's "
-                "`other_blocks_handler` field has been set and would be "
+                "`._gdm_other_blocks_handler` field has been set and would be "
                 "overriden by ContactsChain.\n"
                 "Remove your setting `identity_access."
-                "other_blocks_handler`, using the `other_blocks_handler` "
+                "._gdm_other_blocks_handler`, using the `other_blocks_handler` "
                 "parameter of the `ContactsChain` constructor instead."
             )
-        self.other_blocks_handler = other_blocks_handler
+        self._dm_other_blocks_handler = other_blocks_handler
 
         self.blockchain = PrivateBlockchain(
             blockchain_identity=self.identity_access,
             block_received_handler=self._on_block_received,
             virtual_layer_name=CONTACTS_CHAIN_TOPIC,
-            other_blocks_handler=self.other_blocks_handler,
+            other_blocks_handler=self._dm_other_blocks_handler,
         )
         self.current_contacts = []
 

@@ -52,7 +52,7 @@ class DidManager:
 
     def __init__(
         self,
-        blockchain: Blockchain | str,
+        blockchain_id: str,
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
         appdata_dir: str = "",
@@ -65,13 +65,9 @@ class DidManager:
             other_blocks_handler: eventhandler for blocks published on
                 `blockchain` that aren't related to this DID-Manager work
         """
-        if isinstance(blockchain, str):
-            blockchain_id = blockchain
 
         # restart the blockchain object if it isn't connected to Brenthy
         # if blockchain._terminate:
-        else:
-            blockchain_id = blockchain.blockchain_id
         self.blockchain = Blockchain(
             blockchain_id,
             appdata_dir=appdata_dir,
@@ -79,7 +75,7 @@ class DidManager:
             block_received_handler=self.on_block_received,
             update_blockids_before_handling=True,
         )
-        self.other_blocks_handler = other_blocks_handler
+        self._dm_other_blocks_handler = other_blocks_handler
         self.key_store = key_store
         self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
@@ -133,8 +129,8 @@ class DidManager:
         )
         # logger.debug("DM: Instantiating...")
 
-        did_manager = cls(blockchain, key_store=key_store)
         blockchain.terminate()
+        did_manager = cls(blockchain.blockchain_id, key_store=key_store)
 
         # logger.debug("DM: created DID-Manager!")
         return did_manager
@@ -168,11 +164,11 @@ class DidManager:
         )
 
         self._control_key_id = new_ctrl_key.get_key_id()
-        logger.info(
-            "Renewed Control key:\n"
-            f"    old: {old_ctrl_key.get_key_id()}\n"
-            f"    new: {new_ctrl_key.get_key_id()}"
-        )
+        # logger.info(
+        #     "Renewed control key:\n"
+        #     f"    old: {old_ctrl_key.get_key_id()}\n"
+        #     f"    new: {new_ctrl_key.get_key_id()}"
+        # )
 
     def add_info_block(self, block: InfoBlock) -> None:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
@@ -232,8 +228,8 @@ class DidManager:
                 self.did_doc = get_latest_did_doc(self.blockchain)
             case 0:
                 # if user defined an event-handler for non-DID blocks, call it
-                if self.other_blocks_handler:
-                    self.other_blocks_handler(block)
+                if self._dm_other_blocks_handler:
+                    self._dm_other_blocks_handler(block)
 
     def unlock(self, private_key: bytes | bytearray | str) -> None:
         control_key = self.get_control_key()

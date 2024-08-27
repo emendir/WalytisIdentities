@@ -67,15 +67,15 @@ class _GroupDidManager(DidManager):
 
     def __init__(
         self,
-        blockchain: Blockchain | str,
+        blockchain_id: str,
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
         appdata_dir: str = "",
     ):
-        self.other_blocks_handler = other_blocks_handler
+        self._gdm_other_blocks_handler = other_blocks_handler
         DidManager.__init__(
             self,
-            blockchain=blockchain,
+            blockchain_id=blockchain_id,
             key_store=key_store,
             # we handle member management blocks
             other_blocks_handler=self.on_block_received_members,
@@ -98,8 +98,8 @@ class _GroupDidManager(DidManager):
                 logger.warning(
                     f"DM: Did not recognise block type: {block_type}")
                 # if user defined an event-handler for non-DID blocks, call it
-                if self.other_blocks_handler:
-                    self.other_blocks_handler(block)
+                if self._dm_other_blocks_handler:
+                    self._dm_other_blocks_handler(block)
 
     def get_members(self) -> list[dict]:
         """Get the current list of member-members."""
@@ -240,13 +240,13 @@ class GroupDidManager(_GroupDidManager):
             data = json.loads(file.read())
 
         self.member_did_manager = DidManager(
-            blockchain=data["member_blockchain"],
+            blockchain_id=data["member_blockchain"],
             key_store=KeyStore(self.member_keystore_file, key),
         )
 
         _GroupDidManager.__init__(
             self,
-            blockchain=data["person_blockchain"],
+            blockchain_id=data["person_blockchain"],
             key_store=KeyStore(self.group_keystore_file, key),
             other_blocks_handler=other_blocks_handler,
         )
