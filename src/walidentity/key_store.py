@@ -14,10 +14,10 @@ _CodePackage = TypeVar('_CodePackage', bound='CodePackage')
 @dataclass
 class CodePackage:
     """Package of encrypted data or a signature with crypto-key-metadata."""
-    code: bytes
+    code: bytes  # cipher or signature
     public_key: bytes
     family: str
-    operation_options: str
+    operation_options: str  # additional cryptographic signing or encryption options
 
     @classmethod
     def deserialise(cls: Type[_CodePackage], data: str) -> _CodePackage:

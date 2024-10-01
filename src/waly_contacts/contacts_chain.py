@@ -1,3 +1,4 @@
+from loguru import logger
 from walidentity import GroupDidManager
 from walytis_beta_api import Block
 from private_blocks import PrivateBlockchain
@@ -34,13 +35,20 @@ class ContactsChain:
             other_blocks_handler=self._dm_other_blocks_handler,
         )
         self.current_contacts = []
+        self._terminate = False
 
     def get_contacts(self) -> list[str]:
         if not self.current_contacts:
             try:
-                self._on_block_received(
-                    self.blockchain.get_block(-1)
-                )
+                # logger.info("Trying to load latest block...")
+                for i in range(-1, -1*len(self.blockchain.block_ids)):
+                    try:
+                        self._on_block_received(
+                            self.blockchain.get_block(-1)
+                        )
+                        break
+                    except:
+                        pass
             except IndexError:
                 pass
         return self.current_contacts
@@ -68,9 +76,26 @@ class ContactsChain:
         )
 
     def _on_block_received(self, block: Block):
-        self.current_contacts = json.loads(bytes.decode(bytes(block.content)))
+        if self._terminate:
+            return
+        try:
+            block_content = json.loads(bytes.decode(bytes(block.content)))
+            if isinstance(block_content, list):
+                for item in block_content:
+                    if not isinstance(item, str) or not item.startswith("did:"):
+                        raise Exception("This block doesn't contain a list of DIDs.")
+            self.current_contacts = block_content
+        except Exception as e:
+            error_message = (
+                "ContactsChain: failed to parse block content:\n"
+                f"Block topics: {block.topics}\n"
+                f"{block.content}\n"
+            )
+            logger.error(error_message)
+            raise e
 
     def delete(self):
+        self.terminate()
         self.blockchain.delete()
         try:
             self.group_did_manager.delete()
@@ -78,6 +103,9 @@ class ContactsChain:
             pass
 
     def terminate(self):
+        if self._terminate:
+            return
+        self._terminate = True
         self.blockchain.terminate()
         try:
             self.group_did_manager.terminate()
