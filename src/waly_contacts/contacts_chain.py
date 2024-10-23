@@ -41,7 +41,7 @@ class ContactsChain:
         if not self.current_contacts:
             try:
                 # logger.info("Trying to load latest block...")
-                for i in range(-1, -1*len(self.blockchain.block_ids)):
+                for i in range(-1, -1*self.blockchain.get_num_blocks()):
                     try:
                         self._on_block_received(
                             self.blockchain.get_block(-1)

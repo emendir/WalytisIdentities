@@ -59,8 +59,8 @@ class ControlKeyBlock:
     def get_signature_data(self) -> bytes:
         """Get the portion of this block's content that will be signed."""
         return (
-            f"{self.old_key_type}:{self.old_key};"
-            f"{self.new_key_type}:{self.new_key}"
+            f"{self.old_key_type}: {self.old_key}"
+            f"{self.new_key_type}: {self.new_key}"
         ).encode()
 
     def sign(self, crypt: Crypt) -> None:
@@ -266,10 +266,10 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
     # get all key blocks from blockchain
     ctrl_key_blocks = [
         ControlKeyBlock.load_from_block_content(
-            blockchain.get_block(block_id).content
+            block.content
         )
-        for block_id in blockchain.block_ids
-        if get_block_type(walytis_api.decode_short_id(block_id)['topics']) == ControlKeyBlock
+        for block in blockchain.get_blocks()
+        if get_block_type(block.topics) == ControlKeyBlock
     ]
 
     # ensure the first ControlKeyBlock has identical current and new keys
@@ -322,8 +322,8 @@ def get_info_blocks(
     valid_blocks = []
 
     # logger.debug(f"WAB: Getting latest {block_type} block...")
-    for block_id in blockchain.block_ids:
-        block_type = get_block_type(walytis_api.decode_short_id(block_id)['topics'])
+    for block in blockchain.get_blocks():
+        block_type = get_block_type(block.topics)
         # logger.debug("WAB: Analysing block...")
         # if this block is a control key update block
         if not block_type:
@@ -332,7 +332,7 @@ def get_info_blocks(
             # load block content
             # logger.debug("WAB: Getting Control Key block...")
             ctrl_key_block = ControlKeyBlock.load_from_block_content(
-                blockchain.get_block(block_id).content
+                block.content
             )
             # logger.debug("WAB: Processing block...")
             # if we haven't processed this blockchain's first ctrl key yet
@@ -356,24 +356,26 @@ def get_info_blocks(
                 print("Found Control Key Block with invalid signature")
         elif block_type == MemberInvitationBlock:
             invitation_block = MemberInvitationBlock.load_from_block_content(
-                blockchain.get_block(block_id).content
+                block.content
             )
             invitation = invitation_block.get_member_invitation()
             if (last_key_block and
                     invitation_block.verify_signature(last_key_block.get_new_key())):
 
                 # set this to the latest info-block
-                valid_member_invitations.update({invitation["invitation_key"]: invitation})
+                valid_member_invitations.update(
+                    {invitation["invitation_key"]: invitation})
                 if block_type in block_types:
                     valid_blocks.append(invitation_block)
             else:
                 print("Found info-block Block with invalid signature")
         elif block_type == MemberJoiningBlock and block_type in block_types:
             joining_block = block_type.load_from_block_content(
-                blockchain.get_block(block_id).content
+                block.content
             )
             member = joining_block.get_member()
-            _invitation = valid_member_invitations.get(member["invitation_key"])
+            _invitation = valid_member_invitations.get(
+                member["invitation_key"])
             if _invitation and joining_block.verify_signature(
                 Key.from_key_id(_invitation["invitation_key"])
             ):
@@ -386,7 +388,7 @@ def get_info_blocks(
             # load block content
             # logger.debug("WAB: Getting block...")
             info_block = block_type.load_from_block_content(
-                blockchain.get_block(block_id).content
+                block.content
             )
             # logger.debug("WAB: Processing block...")
             # if its signature is validated by the last ctrl key

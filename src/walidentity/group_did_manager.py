@@ -751,18 +751,16 @@ class GroupDidManager(_GroupDidManager):
     def get_published_candidate_keys(self) -> dict["str", list[str]]:
         """Update our list of candidate control keys and their owners."""
         candidate_keys: dict[str, list[str]] = {}
-        for block_id in self.blockchain.block_ids[::-1]:
-            metadata = decode_short_id(block_id)
-            if KeyOwnershipBlock.walytis_block_topic not in metadata["topics"]:
+        for block in (self.blockchain.get_blocks(reverse=True)):
+            if KeyOwnershipBlock.walytis_block_topic not in block.topics:
                 continue
             key_expiry = (
                 self.get_control_key().creation_time +
                 timedelta(hours=CTRL_KEY_RENEWAL_AGE_HR)
             )
-            if metadata["creation_time"] < key_expiry:
+            if block.creation_time < key_expiry:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
-                    self.blockchain.get_block(
-                        block_id).content
+                    block.content
                 ).get_key_ownership()
                 key_id = key_ownership["key_id"]
                 owner = key_ownership["owner"]
