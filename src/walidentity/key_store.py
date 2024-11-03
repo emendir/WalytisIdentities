@@ -58,7 +58,9 @@ class KeyStore:
     def _load_appdata(self):
         if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError(
-                "The directory of the keystore path doesn't exist.")
+                "The directory of the keystore path doesn't exist:\n"
+                f"{os.path.dirname(self.key_store_path)}"
+            )
         if not os.path.exists(self.key_store_path):
             self.keys: dict[str, Key] = {}
             return
@@ -160,7 +162,8 @@ class KeyStore:
         Returns:
             bytes: the decrypted data
         """
-        key = self.get_key_from_public(code_package.public_key, code_package.family)
+        key = self.get_key_from_public(
+            code_package.public_key, code_package.family)
         encrypted_data = code_package.code
         return key.decrypt(
             encrypted_data=encrypted_data,
@@ -209,7 +212,8 @@ class KeyStore:
         Returns:
             bytes: the decrypted data
         """
-        key = self.get_key_from_public(code_package.public_key, code_package.family)
+        key = self.get_key_from_public(
+            code_package.public_key, code_package.family)
         signature = code_package.code
         return key.verify_signature(
             signature=signature,

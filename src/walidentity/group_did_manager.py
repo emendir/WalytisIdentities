@@ -110,30 +110,29 @@ class _GroupDidManager(DidManager):
 
         return self.members_list
 
-    def add_member_invitation(self, member_invitation: dict) -> None:
+    def add_member_invitation(self, member_invitation: dict) -> Block:
         member_invitation_block = MemberInvitationBlock.new(member_invitation)
-        self.add_info_block(member_invitation_block)
+        return self.add_info_block(member_invitation_block)
 
-    def add_member_update(self, member: dict) -> None:
+    def add_member_update(self, member: dict) -> Block:
         block = MemberUpdateBlock.new(member)
-        self.add_info_block(block)
-
-    def add_member_leaving(self, member: dict) -> None:
+        return self.add_info_block(block)
+    def add_member_leaving(self, member: dict) -> Block:
         block = MemberLeavingBlock.new(member)
-        self.add_info_block(block)
+        return self.add_info_block(block)
 
     def invite_member(self) -> dict:
         """Create and register a member invitation on the blockchain."""
         # generate a key to be used by new member when registering themselves
         key = Key.create(CRYPTO_FAMILY)
 
-        person_blockchain_invitation = json.loads(
+        group_blockchain_invitation = json.loads(
             self.blockchain.create_invitation(
                 one_time=False, shared=True
             )
         )
         member_invitation = {
-            "blockchain_invitation": person_blockchain_invitation,
+            "blockchain_invitation": group_blockchain_invitation,
             "invitation_key": key.get_key_id()
         }
         signature = bytes_to_string(key.sign(str.encode(json.dumps(
@@ -141,11 +140,49 @@ class _GroupDidManager(DidManager):
         ))))
         member_invitation.update({"signature": signature})
 
-        self.add_member_invitation(member_invitation)
+        invitation_block = self.add_member_invitation(member_invitation)
         member_invitation.update({"private_key": key.get_private_key()})
+        member_invitation.update(
+            {"invitation_block_id": bytes_to_string(invitation_block.long_id)}
+        )
 
         return member_invitation
 
+    def add_member(
+        self,
+        member:DidManager
+    )->None:
+        """Adds an existing DID-Manager as a member to this Group-DID.
+
+        """
+        invitation_key = Key.create(CRYPTO_FAMILY)
+
+        group_blockchain_invitation = json.loads(
+            self.blockchain.create_invitation(
+                one_time=False, shared=True
+            )
+        )
+        member_invitation = {
+            "blockchain_invitation": group_blockchain_invitation,
+            "invitation_key":invitation_key.get_key_id()
+        }
+        signature = bytes_to_string(invitation_key.sign(str.encode(json.dumps(
+            member_invitation
+        ))))
+        member_invitation.update({"signature": signature})
+
+        self.add_member_invitation(member_invitation)
+
+        joining_block = MemberJoiningBlock.new({
+            "did": member.did,
+            "invitation": member.blockchain.create_invitation(
+                one_time=False, shared=True
+            ),  # invitation for other's to join our member DID blockchain
+            "invitation_key": invitation_key.get_key_id()  # Key object
+        })
+        joining_block.sign(invitation_key)
+        self.add_info_block(joining_block)
+        member.key_store.add_key(self.get_control_key())
     @staticmethod
     def create_member(
         invitation: dict,
@@ -166,23 +203,15 @@ class _GroupDidManager(DidManager):
                 "Invalid invitation: public-private key mismatch"
             )
 
-        # find the block on the blockchain to which our invitation corresponds
-        member_invitation_blocks = get_info_blocks(
-            blockchain, MemberInvitationBlock
+        # make sure the Group-DID-Manager has the invitation block
+        invitation_block = MemberInvitationBlock.load_from_block_content(
+            
+            blockchain.get_block(
+                string_to_bytes(invitation["invitation_block_id"])
+            ).content
         )
-        member_invitation_blocks.reverse()
-        member_invitation_block = None
-        # TODO: filter by creation time
-        for invitation_block in member_invitation_blocks:
-            if invitation_block.get_member_invitation()["invitation_key"] == invitation["invitation_key"]:
-                member_invitation_block = invitation_block
-                break
-
-        if not member_invitation_block:
-            # TODO: wait little and try again
-            raise IdentityJoinError(
-                "The Person's blockchain doesn't have our invitation in it!"
-            )
+        if invitation_block.get_member_invitation()["invitation_key"] != invitation["invitation_key"]:
+            raise IdentityJoinError("Looks like a corrupt invitation")
 
         member_keystore = KeyStore(member_keystore_file, key)
         member_did_manager = DidManager.create(member_keystore)
@@ -267,13 +296,13 @@ class GroupDidManager(_GroupDidManager):
     @classmethod
     def from_did_managers(
         cls,
-        person_did_manager: DidManager,
+        group_did_manager: DidManager,
         member_did_manager: DidManager,
         config_dir: str,
     ):
         return cls(
-            person_did_manager.blockchain,
-            person_did_manager.key_store,
+            group_did_manager.blockchain,
+            group_did_manager.key_store,
             config_dir=config_dir,
             member_did_manager=member_did_manager,
         )
@@ -330,34 +359,41 @@ class GroupDidManager(_GroupDidManager):
         cls: Type[_GroupDidManager],
         config_dir: str,
         key: Key,   # for unlocking keystores in config dir
+        member:DidManager|None=None
     ) -> _GroupDidManager:
         """Create a new GroupDidManager object."""
+        
         config_file = os.path.join(config_dir, "group_did_metadata.json")
         group_appdata_dir = os.path.join(config_dir, "group_did")
         group_keystore_file = os.path.join(
             group_appdata_dir, "group_did_keys.json"
         )
-        member_appdata_dir = os.path.join(config_dir, "member_did")
-        member_keystore_file = os.path.join(
-            member_appdata_dir, "member_did_keys.json"
-        )
         if not os.path.exists(group_appdata_dir):
             os.makedirs(group_appdata_dir)
-        if not os.path.exists(member_appdata_dir):
-            os.makedirs(member_appdata_dir)
 
         key_store = KeyStore(group_keystore_file, key)
         # logger.debug("Creating Person-Did-Manager...")
         g_did_manager = _GroupDidManager.create(key_store)
         # logger.debug("Creating Device-Did-Manager...")
 
-        # create member did manager
-        member_did_manager = cls.create_member(
-            invitation=g_did_manager.invite_member(),
-            blockchain=g_did_manager.blockchain,
-            member_keystore_file=member_keystore_file,
-            key=key,
-        )
+        member_appdata_dir = os.path.join(config_dir, "member_did")
+        member_keystore_file = os.path.join(
+                member_appdata_dir, "member_did_keys.json"
+            )
+        if not os.path.exists(member_appdata_dir):
+            os.makedirs(member_appdata_dir)
+        if member:
+            member_did_manager= member
+            os.symlink(member.key_store.key_store_path, member_keystore_file)
+            g_did_manager.add_member(member)
+        else:
+            # create member did manager
+            member_did_manager = cls.create_member(
+                invitation=g_did_manager.invite_member(),
+                blockchain=g_did_manager.blockchain,
+                member_keystore_file=member_keystore_file,
+                key=key,
+            )
         cls.init_appdata(config_file, g_did_manager, member_did_manager)
 
         g_did_manager.terminate()  # group_did_manager will take over
@@ -377,8 +413,12 @@ class GroupDidManager(_GroupDidManager):
         invitation: str | dict,
         config_dir: str,
         key: Key,
+        member:DidManager|None=None
     ) -> _GroupDidManager:
-        """Join an exisiting Group-DID-Manager, creating a new member DID.
+        """Join an exisiting Group-DID-Manager.
+        
+        Uses the provided DidManager as the member if provided,
+        otherwise creates a new member DID.
 
         Returns an GroupDidManager object.
         """
@@ -393,28 +433,34 @@ class GroupDidManager(_GroupDidManager):
             blockchain = Blockchain.join(blockchain_invitation)
         except BlockchainAlreadyExistsError:
             blockchain = Blockchain(blockchain_invitation["blockchain_id"])
+            
+        member_appdata_dir = os.path.join(config_dir, "member_did")
+        member_keystore_file = os.path.join(
+                member_appdata_dir, "member_did_keys.json"
+            )
+        if not os.path.exists(member_appdata_dir):
+            os.makedirs(member_appdata_dir)
+        if member:
+            member_did_manager= member
+            os.symlink(member.key_store.key_store_path, member_keystore_file)
+        else:
+                # create member did manager
+                member_did_manager = cls.create_member(
+                    invitation=invitation,
+                    blockchain=blockchain,
+                    member_keystore_file=member_keystore_file,
+                    key=key,
+                )
         config_file = os.path.join(config_dir, "group_did_metadata.json")
         group_appdata_dir = os.path.join(config_dir, "group_did")
         group_keystore_file = os.path.join(
             group_appdata_dir, "group_did_keys.json"
         )
-        member_appdata_dir = os.path.join(config_dir, "member_did")
-        member_keystore_file = os.path.join(
-            member_appdata_dir, "member_did_keys.json"
-        )
         if not os.path.exists(group_appdata_dir):
             os.makedirs(group_appdata_dir)
-        if not os.path.exists(member_appdata_dir):
-            os.makedirs(member_appdata_dir)
-        # create member did manager
-        member_did_manager = cls.create_member(
-            invitation=invitation,
-            blockchain=blockchain,
-            member_keystore_file=member_keystore_file,
-            key=key,
-        )
         key_store = KeyStore(group_keystore_file, key)
         blockchain.terminate()
+        
         g_did_manager = _GroupDidManager(
             blockchain.blockchain_id,
             key_store,
@@ -426,6 +472,7 @@ class GroupDidManager(_GroupDidManager):
             config_dir,
             key=key,
         )
+        
         group_did_manager.member_did_manager.update_did_doc(
             group_did_manager.generate_member_did_doc())
 

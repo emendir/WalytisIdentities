@@ -170,11 +170,11 @@ class DidManager:
         #     f"    new: {new_ctrl_key.get_key_id()}"
         # )
 
-    def add_info_block(self, block: InfoBlock) -> None:
+    def add_info_block(self, block: InfoBlock) -> Block:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
         if not block.signature:
             block.sign(self.get_control_key())
-        self.blockchain.add_block(
+        return self.blockchain.add_block(
             block.generate_block_content(), block.walytis_block_topic
         )
 
