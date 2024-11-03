@@ -223,7 +223,7 @@ class DidManager:
             ):
                 # update self._control_key_id from the blockchain
                 self.check_control_key()
-                logger.debug(self._control_key_id)
+                # logger.debug(self._control_key_id)
             case did_manager_blocks.DidDocBlock:
                 self.did_doc = get_latest_did_doc(self.blockchain)
             case 0:

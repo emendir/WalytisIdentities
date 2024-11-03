@@ -515,7 +515,7 @@ class GroupDidManager(_GroupDidManager):
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
-        logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
+        # logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
         conv = Conversation()
         # logger.debug("Joining conv...")
         try:
@@ -529,10 +529,10 @@ class GroupDidManager(_GroupDidManager):
             conv.close()
             return
         # logger.debug("Joined conv!")
-        logger.debug("KRH: Joined conversation.")
+        # logger.debug("KRH: Joined conversation.")
         success = conv.say("Hello there!".encode())
         if not success:
-            logger.debug("KRH: failed at salutation.")
+            # logger.debug("KRH: failed at salutation.")
             conv.terminate()
             return
         try:
@@ -542,7 +542,7 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning("Timeout waiting for key request.")
                 conv.close()
                 return None
-            logger.debug("KRH: got key request.")
+            # logger.debug("KRH: got key request.")
             peer_did = message["did"]
             key_id = message["key_id"]
             sig = bytes.fromhex(message["signature"])
@@ -561,7 +561,7 @@ class GroupDidManager(_GroupDidManager):
                     logger.warning(
                         "KRH: Failed sending response NotMemberError")
                 return
-            logger.debug("KRH: got peer's key.")
+            # logger.debug("KRH: got peer's key.")
 
             if not peer_key.verify_signature(sig, json.dumps(message).encode()):
 
@@ -600,8 +600,8 @@ class GroupDidManager(_GroupDidManager):
             }).encode())
             if not success:
                 logger.warning("KRH: Failed sending response with key.")
-            else:
-                logger.debug(f"KRH: Shared key!: {key.get_key_id()}")
+            # else:
+                # logger.debug(f"KRH: Shared key!: {key.get_key_id()}")
             conv.terminate()
 
         except Exception as error:
@@ -689,7 +689,7 @@ class GroupDidManager(_GroupDidManager):
             json.dumps(key_request_message).encode()).hex()})
 
         peer_id = self.get_member_ipfs_id(did)
-        logger.debug("RK: Requesting key...")
+        # logger.debug("RK: Requesting key...")
         try:
             conv = Conversation()
             try:
@@ -706,7 +706,7 @@ class GroupDidManager(_GroupDidManager):
                 )
                 conv.close()
                 return None
-            logger.debug("RK: started conversation")
+            # logger.debug("RK: started conversation")
 
             try:
                 salutation = conv.listen(timeout=5)
@@ -714,7 +714,7 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning("RK: Timeout waiting for salutation.")
                 conv.close()
                 return None
-            logger.debug(salutation)
+            # logger.debug(salutation)
             sleep(0.15)
             success = conv.say(json.dumps(key_request_message).encode(), )
             if not success:
@@ -728,7 +728,7 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning("RK: Timeout waiting for key response.")
                 conv.close()
                 return None
-            logger.debug("RK: Got Response!")
+            # logger.debug("RK: Got Response!")
             conv.close()
 
         except Exception as error:
@@ -745,7 +745,7 @@ class GroupDidManager(_GroupDidManager):
         key.unlock(private_key)
         self.key_store.add_key(key)
         self.publish_key_ownership(key)
-        logger.debug(f"RK: Got key!: {key.get_key_id()}")
+        # logger.debug(f"RK: Got key!: {key.get_key_id()}")
         return key
 
     def get_published_candidate_keys(self) -> dict["str", list[str]]:

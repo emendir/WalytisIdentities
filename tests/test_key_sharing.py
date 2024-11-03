@@ -70,7 +70,7 @@ def cleanup():
     shutil.rmtree(pytest.member_2_config_dir)
 
 
-def create_identity_and_invitation():
+def docker_create_identity_and_invitation():
     """Create an identity and invitation for it.
 
     TO BE RUN IN DOCKER CONTAINER.
@@ -86,7 +86,7 @@ def create_identity_and_invitation():
     # mark(isinstance(pytest.member_1, GroupDidManager), "Created GroupDidManager")
 
 
-def check_new_member(did: str):
+def docker_check_new_member(did: str):
     """Add a new member to pytest.member_1.
 
     TO BE RUN IN DOCKER CONTAINER.
@@ -96,7 +96,6 @@ def check_new_member(did: str):
         "/opt",
         pytest.CRYPT,
     )
-
     # pytest.member_1.add_member(
     #     did,
     #     invitation
@@ -124,7 +123,7 @@ def check_new_member(did: str):
         print("\nDocker: Person Members:\n", pytest.member_1.get_members())
 
 
-def renew_control_key():
+def docker_renew_control_key():
     """Renew the control key of pytest.member_1.
 
     TO BE RUN IN DOCKER CONTAINER.
@@ -136,7 +135,9 @@ def renew_control_key():
     old_key = pytest.member_1.get_control_key()
     pytest.member_1.renew_control_key()
     new_key = pytest.member_1.get_control_key()
-    logger.info(f"Renewed control key! {new_key.private_key}")
+    logger.info(f"Renewed control key! {new_key.get_key_id()}")
+    logger.info(f"Old key: {old_key.get_key_id()}")
+    logger.info(f"New key: {new_key.get_key_id()}")
     pytest.member_1.terminate()
     import threading
     import time
@@ -155,7 +156,7 @@ def test_create_identity_and_invitation():
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
         "test_key_sharing.test_preparations();",
-        "test_key_sharing.create_identity_and_invitation();",
+        "test_key_sharing.docker_create_identity_and_invitation();",
         "test_key_sharing.pytest.member_1.terminate()",
         # "test_key_sharing.cleanup()"
     ])
@@ -168,7 +169,8 @@ def test_create_identity_and_invitation():
     # print("Got output!")
     # print(output)
     try:
-        pytest.invitation = json.loads(output.split("\n")[-1])
+
+        pytest.invitation = [json.loads(line) for line in output.split("\n") if line.startswith('{"blockchain_invitation":')][-1]
     except:
         print(f"\n{python_code}\n")
         pass
@@ -204,7 +206,7 @@ def test_add_member_identity():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        f"test_key_sharing.check_new_member('{pytest.member_2_did}');"
+        f"test_key_sharing.docker_check_new_member('{pytest.member_2_did}');"
         f"logger.debug('Checked new member');"
         "test_key_sharing.pytest.member_1.terminate();"
         f"logger.debug('Terminated...');"
@@ -244,12 +246,11 @@ def test_get_control_key():
         ");"
         "from time import sleep;"
         "[(sleep(10), logger.debug('waiting...')) "
-        "for i in range({wait_dur_s // 10})];"
+        f"for i in range({wait_dur_s // 10})];"
         "dev.terminate();"
     )
     bash_code = (f'/bin/python -c "{python_code}"')
-    pytest.containers[0].run_shell_command(
-        bash_code, background=True, print_output=False)
+    pytest.containers[0].run_shell_command(bash_code, background=True, print_output=False)
     # print(bash_code)
     print("Waiting for key sharing...")
     polite_wait(wait_dur_s)
@@ -257,8 +258,10 @@ def test_get_control_key():
         pytest.member_2.get_control_key().private_key,
         "Got control key ownership"
     )
+    # wait a little to allow proper resources cleanup on docker container
+    sleep(5)
 
-
+from time import sleep
 def test_renew_control_key():
     success = True
     wait_dur_s = 30
@@ -271,16 +274,19 @@ def test_renew_control_key():
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
         "test_key_sharing.test_preparations();",
-        "test_key_sharing.renew_control_key();",
+        "test_key_sharing.docker_renew_control_key();",
+        "logger.info('DOCKER: Finished control key renewal part 1!');",
+        
     ])
-    pytest.containers[0].run_shell_command("rm /opt/.GroupDidManager.lock")
     output = pytest.containers[0].run_python_code(
         python_code, print_output=True
     ).split("\n")
     old_key = ""
     new_key = ""
     if output and output[-1]:
-        keys = output[-1].split(" ")
+        keys = [
+            line.strip("\r") for line in output if pytest.CRYPTO_FAMILY in line
+        ][-1].split(" ")
         if len(keys) == 2 and keys[0] != keys[1]:
             try:
                 old_key = Key.from_key_id(keys[0])
