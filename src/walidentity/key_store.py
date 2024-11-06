@@ -69,7 +69,7 @@ class KeyStore:
         appdata_encryption_public_key = data["appdata_encryption_public_key"]
         encrypted_keys = data["keys"]
 
-        if appdata_encryption_public_key != self.key.public_key.hex():
+        if appdata_encryption_public_key != self.key.get_key_id():
             raise ValueError(
                 "Wrong cryptographic key for unlocking keystore.\n"
                 f"{appdata_encryption_public_key}\n"
@@ -90,7 +90,7 @@ class KeyStore:
             )
             encrypted_keys.append(encrypted_serialised_key)
         data = {
-            "appdata_encryption_public_key": self.key.public_key.hex(),
+            "appdata_encryption_public_key": self.key.get_key_id(),
             "keys": encrypted_keys
         }
 
@@ -220,6 +220,13 @@ class KeyStore:
             data=data,
             signature_options=code_package.operation_options,
         )
+    @staticmethod
+    def get_keystore_pubkey(key_store_path:str)->str:
+        """Given a keystore appdata file, get its encryption key ID."""
+        with open(key_store_path, "r") as file:
+            data = json.loads(file.read())
+        key_id = data["appdata_encryption_public_key"]
+        return key_id
 
 
 class UnknownKeyError(Exception):

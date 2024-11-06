@@ -12,6 +12,8 @@ from walidentity.key_store import CodePackage
 from multi_crypt import Crypt
 from walidentity import key_store
 from walidentity import did_manager
+from walidentity.did_objects import Key
+
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
 )
@@ -36,7 +38,7 @@ def pytest_configure():
 
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
-    pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
+    pytest.CRYPT = Key.create(pytest.CRYPTO_FAMILY)
 
 
 def pytest_unconfigure():

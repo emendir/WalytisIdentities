@@ -14,7 +14,7 @@ from waly_contacts import (
     ContactsChain,
     identity_management,
 )
-
+from walidentity.did_objects import Key
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
 )
@@ -33,7 +33,7 @@ def pytest_configure():
     pytest.tempdir = tempfile.mkdtemp()
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
-    pytest.CRYPT = Crypt.new(pytest.CRYPTO_FAMILY)
+    pytest.CRYPT = Key.create(pytest.CRYPTO_FAMILY)
 
 
 def pytest_unconfigure():
@@ -85,7 +85,7 @@ def test_add_contact():
     print("Creating identity...")
     pytest.me1.terminate()
     pytest.me2 = identity_management.create_person_identity(
-        pytest.person1_config_dir, pytest.CRYPT
+        pytest.person2_config_dir, pytest.CRYPT
     )
     print("Befriending...")
     pytest.contacts_chain.add_contact(pytest.me2.did)
@@ -103,7 +103,7 @@ def test_remove_contact():
 
 
 def run_tests():
-    print("\nRunning tests for IdentityManager:")
+    print("\nRunning tests for ContactsChain:")
     _testing_utils.PYTEST = False
 
     pytest_configure()

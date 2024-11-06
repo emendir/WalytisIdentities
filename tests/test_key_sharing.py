@@ -3,13 +3,12 @@ import os
 import shutil
 import tempfile
 from time import sleep
-
+from datetime import datetime
 import _testing_utils
 import pytest
 import walidentity
 import walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
-from multi_crypt import Crypt
 from walidentity.did_manager import DidManager
 from walidentity.did_objects import Key
 from walidentity.group_did_manager import GroupDidManager
@@ -55,8 +54,12 @@ def test_preparations():
 
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
-    pytest.CRYPT = Crypt(
-        pytest.CRYPTO_FAMILY, b"\'\n%\xa3\xca\x0c\xc9\x97\xfd\xb3D$\x16\x06\xebrv\xc2\xb2\x15\'\xc5\xc1\x04\xe7\xf6i\xf4\xd53W\xc7")
+    pytest.KEY= Key(
+        family=pytest.CRYPTO_FAMILY,
+        public_key=b'\x04\xa6#\x1a\xcf\xa7\xbe\xa8\xbf\xd9\x7fd\xa7\xab\xba\xeb{Wj\xe2\x8fH\x08*J\xda\xebS\x94\x06\xc9\x02\x8c9>\xf45\xd3=Zg\x92M\x84\xb3\xc2\xf2\xf4\xe6\xa8\xf9i\x82\xdb\xd8\x82_\xcaIT\x14\x9cA\xd3\xe1',
+        private_key=b'\xd9\xd1\\D\x80\xd7\x1a\xe6E\x0bt\xdf\xd0z\x88\xeaQ\xe8\x04\x91\x11\xaf\\%wC\x83~\x0eGP\xd8',
+        creation_time=datetime(2024, 11, 6, 19, 17, 45, 713000)
+    )
     pytest.containers: list[ContactsDocker] = []
     pytest.invitation = None
 
@@ -98,7 +101,7 @@ def docker_create_identity_and_invitation():
     logger.debug("DockerTest: creating identity...")
     pytest.group_1 = GroupDidManager.create(
         "/opt",
-        pytest.CRYPT,
+        pytest.KEY,
     )
     logger.debug("DockerTest: creating invitation...")
     invitation = pytest.group_1.invite_member()
@@ -115,7 +118,7 @@ def docker_check_new_member(did: str):
     logger.debug("CND: Loading GroupDidManager...")
     pytest.group_1 = GroupDidManager(
         "/opt",
-        pytest.CRYPT,
+        pytest.KEY,
     )
     # pytest.group_1.add_member(
     #     did,
@@ -153,7 +156,7 @@ def docker_renew_control_key():
     """
     pytest.group_1 = GroupDidManager(
         "/opt",
-        pytest.CRYPT,
+        pytest.KEY,
     )
     old_key = pytest.group_1.get_control_key()
     pytest.group_1.renew_control_key()
@@ -205,12 +208,12 @@ def test_create_identity_and_invitation():
 def test_add_member_identity():
     try:
         pytest.group_2 = GroupDidManager.join(
-            pytest.invitation, pytest.group_2_config_dir, pytest.CRYPT
+            pytest.invitation, pytest.group_2_config_dir, pytest.KEY
         )
     except walytis_api.JoinFailureError:
         try:
             pytest.group_2 = GroupDidManager.join(
-                pytest.invitation, pytest.group_2_config_dir, pytest.CRYPT)
+                pytest.invitation, pytest.group_2_config_dir, pytest.KEY)
         except walytis_api.JoinFailureError as error:
             print(error)
             breakpoint()
@@ -262,7 +265,7 @@ def test_get_control_key():
         "test_key_sharing.test_preparations();"
         "dev = test_key_sharing.GroupDidManager("
         "    '/opt',"
-        "    test_key_sharing.pytest.CRYPT,"
+        "    test_key_sharing.pytest.KEY,"
         ");"
         "from time import sleep;"
         "[(sleep(10), logger.debug('waiting...')) "
@@ -333,7 +336,7 @@ def test_renew_control_key():
             "test_key_sharing.test_preparations();"
             "dev = test_key_sharing.GroupDidManager("
             "    '/opt',"
-            "    test_key_sharing.pytest.CRYPT,"
+            "    test_key_sharing.pytest.KEY,"
             ");"
             "logger.info('DOCKER: Loaded GroupDidManager.');"
             "from time import sleep;"
@@ -362,10 +365,10 @@ def test_renew_control_key():
 
 
 def test_join_with_existing_member() -> None:
-    key_store = KeyStore(pytest.member_3_keystore_file, pytest.CRYPT)
+    key_store = KeyStore(pytest.member_3_keystore_file, pytest.KEY)
     pytest.member_3 = DidManager.create(key_store)
     pytest.group_3 = GroupDidManager.join(
-        pytest.invitation, pytest.group_3_config_dir, pytest.CRYPT,
+        pytest.invitation, pytest.group_3_config_dir, pytest.KEY,
         member=pytest.member_3
     )
     mark(
@@ -375,10 +378,10 @@ def test_join_with_existing_member() -> None:
 
 
 def test_create_group_with_existing_member() -> None:
-    key_store = KeyStore(pytest.member_4_keystore_file, pytest.CRYPT)
+    key_store = KeyStore(pytest.member_4_keystore_file, pytest.KEY)
     pytest.member_4 = DidManager.create(key_store)
     pytest.group_4 = GroupDidManager.join(
-        pytest.invitation, pytest.group_4_config_dir, pytest.CRYPT,
+        pytest.invitation, pytest.group_4_config_dir, pytest.KEY,
         member=pytest.member_4
     )
     mark(
