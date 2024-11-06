@@ -275,7 +275,7 @@ class GroupDidManager(_GroupDidManager):
 
         _GroupDidManager.__init__(
             self,
-            blockchain_id=data["person_blockchain"],
+            blockchain_id=data["group_blockchain"],
             key_store=KeyStore(self.group_keystore_file, key),
             other_blocks_handler=other_blocks_handler,
         )
@@ -481,7 +481,7 @@ class GroupDidManager(_GroupDidManager):
     def serialise(self) -> dict:
         """Generate this Identity's appdata."""
         return {
-            "person_blockchain": self.blockchain.blockchain_id,
+            "group_blockchain": self.blockchain.blockchain_id,
             "member_blockchain": self.member_did_manager.blockchain.blockchain_id,
         }
 
@@ -493,7 +493,7 @@ class GroupDidManager(_GroupDidManager):
     ) -> None:
         """Create appdata file for new GroupDidManager object."""
         data = json.dumps({
-            "person_blockchain": group_did_manager.blockchain.blockchain_id,
+            "group_blockchain": group_did_manager.blockchain.blockchain_id,
             "member_blockchain": member_did_manager.blockchain.blockchain_id,
         })
         with open(config_file, "w+") as file:

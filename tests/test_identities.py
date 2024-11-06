@@ -116,14 +116,14 @@ def test_signing():
 
 
 def test_delete_person_identity():
-    person_blockchain = pytest.p_id_access.blockchain.blockchain_id
+    group_blockchain = pytest.p_id_access.blockchain.blockchain_id
     member_blockchain = pytest.p_id_access.member_did_manager.blockchain.blockchain_id
     pytest.p_id_access.delete()
 
     # ensure the blockchains of both the person and the member identities
     # have been deleted
     mark(
-        person_blockchain not in walytis_beta_api.list_blockchain_ids() and
+        group_blockchain not in walytis_beta_api.list_blockchain_ids() and
         member_blockchain not in walytis_beta_api.list_blockchain_ids(),
         "Delete GroupDidManager"
     )

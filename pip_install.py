@@ -28,7 +28,7 @@ def run() -> None:
             shutil.rmtree(abs_dir)
 
     # run pip install for this package
-    pip.main(["install", "--break-system-packages", project_dir])
+    pip.main(["install", "--break-system-packages", "-e", project_dir])
 
 
 if __name__ == "__main__":
