@@ -65,7 +65,14 @@ class DidManager:
             other_blocks_handler: eventhandler for blocks published on
                 `blockchain` that aren't related to this DID-Manager work
         """
-        # TODO: if we remove the blockchain_id paramter, cleanup the code below
+        if not isinstance(key_store, KeyStore):
+            raise TypeError(
+                "The parameter `key_store` must be of type KeyStore, "
+                f"not {type(key_store)}"
+            )
+        # assert that the key_store is unlocked
+        key_store.key.get_private_key()
+        
 
         # load blockchain_id from the KeyStore's metadata
         keystore_did = key_store.get_custom_metadata().get(KEYSTORE_DID)
@@ -159,9 +166,9 @@ class DidManager:
 
         # logger.debug("DM: created DID-Manager!")
         return did_manager
-    
+
     @staticmethod
-    def assign_keystore(key_store:KeyStore|str, blockchain_id:str)->KeyStore:
+    def assign_keystore(key_store: KeyStore | str, blockchain_id: str) -> KeyStore:
         """Mark a key_store as belonging to a DidManager.
 
         Args:
@@ -187,6 +194,7 @@ class DidManager:
             {KEYSTORE_DID: did_from_blockchain_id(blockchain_id)}
         )
         return key_store
+
     @property
     def did(self) -> str:
         """Get this DID-Manager's DID."""

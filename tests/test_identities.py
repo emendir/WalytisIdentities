@@ -3,22 +3,15 @@ import shutil
 import tempfile
 
 import _testing_utils
-import walidentity
 import pytest
+import walidentity
 import walytis_beta_api
 from _testing_utils import mark
-from walidentity.group_did_manager import GroupDidManager
-from walidentity.key_store import CodePackage
-from multi_crypt import Crypt
-from walidentity import key_store
-from walidentity import did_manager
-from walidentity.did_objects import Key
-
-
-import os
-from walidentity.key_store import KeyStore
+from walidentity import did_manager, key_store
 from walidentity.did_manager import DidManager
 from walidentity.did_objects import Key
+from walidentity.group_did_manager import GroupDidManager
+from walidentity.key_store import CodePackage, KeyStore
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
@@ -34,7 +27,7 @@ _testing_utils.assert_is_loaded_from_source(
 _testing_utils.BREAKPOINTS = True
 
 
-def pytest_configure():
+def test_preparations() -> None:
     """Setup resources in preparation for tests."""
     # declare 'global' variables
     pytest.person_config_dir = tempfile.mkdtemp()
@@ -47,15 +40,17 @@ def pytest_configure():
     pytest.KEY = Key.create(pytest.CRYPTO_FAMILY)
 
 
-def pytest_unconfigure():
+def test_cleanup() -> None:
     """Clean up resources used during tests."""
     shutil.rmtree(pytest.person_config_dir)
     shutil.rmtree(pytest.person_config_dir2)
 
 
-def test_create_person_identity():
-    device_keystore_path = os.path.join(pytest.person_config_dir, "device_keystore.json")
-    profile_keystore_path = os.path.join(pytest.person_config_dir, "profile_keystore.json")
+def test_create_person_identity() -> None:
+    device_keystore_path = os.path.join(
+        pytest.person_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        pytest.person_config_dir, "profile_keystore.json")
 
     device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
     profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
@@ -63,9 +58,6 @@ def test_create_person_identity():
     pytest.group_1 = GroupDidManager.create(
         profile_did_keystore, pytest.member_1
     )
-    
-    
-
 
     members = pytest.group_1.get_members()
     mark(
@@ -77,9 +69,11 @@ def test_create_person_identity():
     pytest.group_1.terminate()
 
 
-def test_load_person_identity():
-    device_keystore_path = os.path.join(pytest.person_config_dir, "device_keystore.json")
-    profile_keystore_path = os.path.join(pytest.person_config_dir, "profile_keystore.json")
+def test_load_person_identity() -> None:
+    device_keystore_path = os.path.join(
+        pytest.person_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        pytest.person_config_dir, "profile_keystore.json")
 
     device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
     profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
@@ -104,7 +98,7 @@ def test_load_person_identity():
 PLAIN_TEXT = "Hello there!".encode()
 
 
-def test_encryption():
+def test_encryption() -> None:
     cipher_1 = pytest.group_1.encrypt(PLAIN_TEXT)
     pytest.group_1.renew_control_key()
     cipher_2 = pytest.group_1.encrypt(PLAIN_TEXT)
@@ -120,7 +114,7 @@ def test_encryption():
     )
 
 
-def test_signing():
+def test_signing() -> None:
     signature_1 = pytest.group_1.sign(PLAIN_TEXT)
     pytest.group_1.renew_control_key()
     signature_2 = pytest.group_1.sign(PLAIN_TEXT)
@@ -136,7 +130,7 @@ def test_signing():
     )
 
 
-def test_delete_person_identity():
+def test_delete_person_identity() -> None:
     group_blockchain = pytest.group_1.blockchain.blockchain_id
     member_blockchain = pytest.group_1.member_did_manager.blockchain.blockchain_id
     pytest.group_1.delete()
@@ -150,10 +144,48 @@ def test_delete_person_identity():
     )
 
 
-def run_tests():
+def test_create_member_given_path() -> None:
+    """Test DidManager instantiation given a path instead of a Keystore."""
+    conf_dir = tempfile.mkdtemp()
+    pytest.member = DidManager.create(conf_dir)
+    pytest.member.terminate()
+    key_store_path = os.path.join(
+        conf_dir, pytest.member.blockchain.blockchain_id + ".json")
+    key = pytest.member.key_store.key
+    reloaded = DidManager(KeyStore(key_store_path, key))
+    reloaded.terminate()
+    mark(
+        os.path.exists(key_store_path)
+        and reloaded.get_control_key().private_key
+        == pytest.member.get_control_key().private_key,
+        "Created member given a directory."
+    )
+
+
+def test_create_group_given_path() -> None:
+    """Test DidManager instantiation given a path instead of a Keystore."""
+    conf_dir = tempfile.mkdtemp()
+    pytest.group = GroupDidManager.create(conf_dir, pytest.member)
+    pytest.group.terminate()
+    key_store_path = os.path.join(
+        conf_dir, pytest.group.blockchain.blockchain_id + ".json")
+    key = pytest.group.key_store.key
+
+    reloaded = GroupDidManager(KeyStore(key_store_path, key), pytest.member)
+    reloaded.terminate()
+
+    mark(
+        os.path.exists(key_store_path)
+        and reloaded.get_control_key().private_key
+        == pytest.group.get_control_key().private_key,
+        "Created group given a directory."
+    )
+
+
+def run_tests() -> None:
     print("\nRunning tests for Identities:")
     _testing_utils.PYTEST = False
-    pytest_configure()  # run test preparations
+    test_preparations()  # run test preparations
 
     # run tests
     test_create_person_identity()
@@ -161,7 +193,10 @@ def run_tests():
     test_encryption()
     test_signing()
     test_delete_person_identity()
-    pytest_unconfigure()  # run test cleanup
+
+    test_create_member_given_path()
+    test_create_group_given_path()
+    test_cleanup()  # run test cleanup
 
 
 if __name__ == "__main__":

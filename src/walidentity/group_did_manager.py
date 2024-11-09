@@ -230,20 +230,36 @@ class GroupDidManager(_GroupDidManager):
 
     def __init__(
         self,
-        group_keystore: KeyStore,
-        member_keystore: KeyStore,
+        group_key_store: KeyStore,
+        member: KeyStore | DidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ):
         self._terminate = False
-
-        self.member_did_manager = DidManager(
-            key_store=member_keystore,
-        )
-        # TODO: assert that member_did_manager is indeed a member of the GroupDidManager(group_keystore, member_keystore)
+        
+        if not isinstance(group_key_store, KeyStore):
+            raise TypeError(
+                "The parameter `key_store` must be of type KeyStore, "
+                f"not {type(group_key_store)}"
+            )
+        # assert that the key_store is unlocked
+        group_key_store.key.get_private_key()
+        
+        if isinstance(member, KeyStore):
+            self.member_did_manager = DidManager(
+                key_store=member,
+            )
+        elif isinstance(member, DidManager):
+            self.member_did_manager = member
+        else:
+            raise TypeError(
+                "The parameter `member` must be of type KeyStore, "
+                f"not {type(member)}"
+            )
+        # TODO: assert that member_did_manager is indeed a member of the GroupDidManager(group_key_store, member)
 
         _GroupDidManager.__init__(
             self,
-            key_store=group_keystore,
+            key_store=group_key_store,
             other_blocks_handler=other_blocks_handler,
         )
 
@@ -264,7 +280,7 @@ class GroupDidManager(_GroupDidManager):
     def create(
         cls,
         group_key_store: KeyStore | str,
-        member: DidManager
+        member: DidManager | KeyStore
     ):
         """Create a new GroupDidManager object.
         Args:
@@ -272,13 +288,22 @@ class GroupDidManager(_GroupDidManager):
                     If a directory is passed, a KeyStore is created in there
                     named after the blockchain ID of the created DidManager.
         """
-        # assert that the member's key_store is unlocked
-        member.key_store.key.get_private_key()
+
+        if isinstance(member, KeyStore):
+            member_did_manager = DidManager(
+                key_store=member,
+            )
+        elif isinstance(member, DidManager):
+            member_did_manager = member
+        else:
+            raise TypeError(
+                "The parameter `member` must be of type KeyStore, "
+                f"not {type(member)}"
+            )
 
         # logger.debug("Creating Person-Did-Manager...")
         g_did_manager = _GroupDidManager.create(group_key_store)
         # logger.debug("Creating Device-Did-Manager...")
-        member_did_manager = member
         g_did_manager.add_member(member)
 
         member_did_manager.key_store.add_key(g_did_manager.key_store.key)
@@ -314,8 +339,17 @@ class GroupDidManager(_GroupDidManager):
 
         """
 
-        # assert that the key_stores are unlocked
-        member.key_store.key.get_private_key()
+        if isinstance(member, KeyStore):
+            member = DidManager(
+                key_store=member,
+            )
+        elif isinstance(member, DidManager):
+            member = member
+        else:
+            raise TypeError(
+                "The parameter `member` must be of type KeyStore, "
+                f"not {type(member)}"
+            )
 
         if isinstance(invitation, str):
             _invitation = json.loads(invitation)
