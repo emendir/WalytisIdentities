@@ -51,21 +51,34 @@ class KeyStore:
 
     def __init__(self, key_store_path: str, key: Key):
         self.key_store_path = key_store_path
+        self.lock_file_path = key_store_path + ".lock"
         self.key = key
         self.keys: dict[str, Key] = {}
+        self._custom_metadata = {}
         self._load_appdata()
 
     def _load_appdata(self):
+
         if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError(
                 "The directory of the keystore path doesn't exist:\n"
                 f"{os.path.dirname(self.key_store_path)}"
             )
+
+        if os.path.exists(self.lock_file_path):
+            raise Exception(
+                "It looks like another application is currently working with "
+                "this DID-Manager's appdata!"
+            )
+        with open(self.lock_file_path, "w+") as lock_file:
+            lock_file.write("Running...")
+
         if not os.path.exists(self.key_store_path):
             self.keys: dict[str, Key] = {}
             return
         with open(self.key_store_path, "r") as file:
             data = json.loads(file.read())
+
         appdata_encryption_public_key = data["appdata_encryption_public_key"]
         encrypted_keys = data["keys"]
 
@@ -81,6 +94,19 @@ class KeyStore:
             key = Key.deserialise(encrypted_key, self.key)
             keys.update({key.get_key_id(): key})
         self.keys = keys
+        self._custom_metadata = data.get("custom_metadata", {})
+
+    def get_custom_metadata(self):
+        return self._custom_metadata
+
+    def set_custom_metadata(self, data: dict):
+        self._custom_metadata = data
+        self.save_appdata()
+
+    def update_custom_metadata(self, data: dict):
+        """Add new/modify existing fieds to/in custom metadata."""
+        self._custom_metadata.update(data)
+        self.save_appdata()
 
     def save_appdata(self):
         encrypted_keys = []
@@ -91,7 +117,8 @@ class KeyStore:
             encrypted_keys.append(encrypted_serialised_key)
         data = {
             "appdata_encryption_public_key": self.key.get_key_id(),
-            "keys": encrypted_keys
+            "keys": encrypted_keys,
+            "custom_metadata": self._custom_metadata
         }
 
         with open(self.key_store_path, "w+") as file:
@@ -220,13 +247,21 @@ class KeyStore:
             data=data,
             signature_options=code_package.operation_options,
         )
+
     @staticmethod
-    def get_keystore_pubkey(key_store_path:str)->str:
+    def get_keystore_pubkey(key_store_path: str) -> str:
         """Given a keystore appdata file, get its encryption key ID."""
         with open(key_store_path, "r") as file:
             data = json.loads(file.read())
         key_id = data["appdata_encryption_public_key"]
         return key_id
+
+    def terminate(self):
+        if os.path.exists(self.lock_file_path):
+            os.remove(self.lock_file_path)
+
+    def __del__(self):
+        self.terminate()
 
 
 class UnknownKeyError(Exception):

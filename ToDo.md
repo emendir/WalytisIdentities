@@ -1,3 +1,15 @@
+## Current:
+We're in the middle debugging having removed config_dir and appdata from GroupDidManager.
+
+### KeyStore
+- encrypted and unencrypted custom metadata
+
+### DidManager
+- remove `blockchain_id` parameter from constructor
+- add method `from_blockchain(blockchain_id:str, current_control_key:Key, new_keytore:KeyStore)`
+
+
+
 ## WalIdentity
 
 - Ensure full conformity with DID specifications
@@ -5,12 +17,15 @@
 - when instantiating Blockchain objects, specify app_name
 
 - How to make the same GroupDidManager accessible from multiple applications at once?
-  - run a WalIdentity server in Brenthy
+  - Ideas:
+      - run a WalIdentity server in Brenthy
+      - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
   - same solution for PrivateBlockchain?
 
 ### Debug
 
 - pytest gets stuck
+- walytis join fails relatively often
 
 ### Next Steps:
 

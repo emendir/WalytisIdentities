@@ -32,7 +32,20 @@ REBUILD_DOCKER = True
 DELETE_ALL_BRENTHY_DOCKERS = True
 
 
-def test_preparations():
+def make_dir(dir_path: str) -> str:
+    if not os.path.isdir(dir_path):
+        os.makedirs(dir_path)
+    return dir_path
+
+
+def delete_path(path):
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    elif os.path.exists(path):
+        os.remove(path)
+
+
+def test_preparations(delete_files: bool = False):
     if DELETE_ALL_BRENTHY_DOCKERS:
         delete_containers(image="local/walytis_auth_testing")
 
@@ -43,18 +56,32 @@ def test_preparations():
     pytest.group_1 = None
     pytest.group_2 = None
     pytest.group_3 = None
+    pytest.group_4 = None
     pytest.member_3 = None
     pytest.member_4 = None
-    pytest.group_1_config_dir = tempfile.mkdtemp()
-    pytest.group_2_config_dir = tempfile.mkdtemp()
-    pytest.group_3_config_dir = tempfile.mkdtemp()
-    pytest.group_4_config_dir = tempfile.mkdtemp()
-    pytest.member_3_keystore_file = os.path.join(tempfile.mkdtemp(), "ks.json")
-    pytest.member_4_keystore_file = os.path.join(tempfile.mkdtemp(), "ks.json")
+    pytest.group_1_config_dir = "/tmp/group_1"
+    pytest.group_2_config_dir = "/tmp/group_2"
+    pytest.group_3_config_dir = "/tmp/group_3"
+    pytest.group_4_config_dir = "/tmp/group_4"
+    pytest.member_3_keystore_file = os.path.join("/tmp/member_3", "ks.json")
+    pytest.member_4_keystore_file = os.path.join("/tmp/member_4", "ks.json")
 
+    if delete_files:
+        delete_path(pytest.group_1_config_dir)
+        delete_path(pytest.group_2_config_dir)
+        delete_path(pytest.group_3_config_dir)
+        delete_path(pytest.group_4_config_dir)
+        delete_path(pytest.member_3_keystore_file)
+        delete_path(pytest.member_4_keystore_file)
+    make_dir(pytest.group_1_config_dir)
+    make_dir(pytest.group_2_config_dir)
+    make_dir(pytest.group_3_config_dir)
+    make_dir(pytest.group_4_config_dir)
+    make_dir(pytest.member_3_keystore_file)
+    make_dir(pytest.member_4_keystore_file)
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
-    pytest.KEY= Key(
+    pytest.KEY = Key(
         family=pytest.CRYPTO_FAMILY,
         public_key=b'\x04\xa6#\x1a\xcf\xa7\xbe\xa8\xbf\xd9\x7fd\xa7\xab\xba\xeb{Wj\xe2\x8fH\x08*J\xda\xebS\x94\x06\xc9\x02\x8c9>\xf45\xd3=Zg\x92M\x84\xb3\xc2\xf2\xf4\xe6\xa8\xf9i\x82\xdb\xd8\x82_\xcaIT\x14\x9cA\xd3\xe1',
         private_key=b'\xd9\xd1\\D\x80\xd7\x1a\xe6E\x0bt\xdf\xd0z\x88\xeaQ\xe8\x04\x91\x11\xaf\\%wC\x83~\x0eGP\xd8',
@@ -99,26 +126,44 @@ def docker_create_identity_and_invitation():
     TO BE RUN IN DOCKER CONTAINER.
     """
     logger.debug("DockerTest: creating identity...")
+
+    device_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
+    device_did_manager = DidManager.create(device_did_keystore)
+
     pytest.group_1 = GroupDidManager.create(
-        "/opt",
-        pytest.KEY,
+        profile_did_keystore, device_did_manager
     )
     logger.debug("DockerTest: creating invitation...")
     invitation = pytest.group_1.invite_member()
     pytest.group_1.terminate()
+    device_did_manager.terminate()
     print(json.dumps(invitation))
+
     # mark(isinstance(pytest.group_1, GroupDidManager), "Created GroupDidManager")
 
 
 def docker_check_new_member(did: str):
-    """Add a new member to pytest.group_1.
+    """Check that the given member DID manager is part of the group_1 group
 
     TO BE RUN IN DOCKER CONTAINER.
     """
     logger.debug("CND: Loading GroupDidManager...")
+
+    device_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
     pytest.group_1 = GroupDidManager(
-        "/opt",
-        pytest.KEY,
+        profile_did_keystore, device_did_keystore
     )
     # pytest.group_1.add_member(
     #     did,
@@ -126,7 +171,6 @@ def docker_check_new_member(did: str):
     # )
 
     logger.debug("CND: Getting members...")
-    members = pytest.group_1.get_members()
     success = (
         did in [
             member["did"]
@@ -142,10 +186,28 @@ def docker_check_new_member(did: str):
     if success:
         print("Member has joined!")
     else:
-        print("\nDocker: DID-MAnager Members:\n",
-              pytest.group_1.get_members())
-        print("\nDocker: Person Members:\n", pytest.group_1.get_members())
+        print("\nDocker: Members:\n", pytest.group_1.get_members())
 
+    pytest.group_1.terminate()
+
+
+def docker_be_online_30s():
+    logger.debug("CND: Loading GroupDidManager...")
+
+    device_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
+    pytest.group_1 = GroupDidManager(
+        profile_did_keystore, device_did_keystore
+    )
+    from time import sleep
+    for i in range(wait_dur_s // 10):
+        sleep(10)
+        logger.debug('waiting...')
     pytest.group_1.terminate()
 
 
@@ -154,9 +216,17 @@ def docker_renew_control_key():
 
     TO BE RUN IN DOCKER CONTAINER.
     """
+    logger.debug("CND: Loading GroupDidManager...")
+
+    device_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        pytest.group_1_config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
     pytest.group_1 = GroupDidManager(
-        "/opt",
-        pytest.KEY,
+        profile_did_keystore, device_did_keystore
     )
     old_key = pytest.group_1.get_control_key()
     pytest.group_1.renew_control_key()
@@ -188,7 +258,7 @@ def test_create_identity_and_invitation():
     # print(python_code)
     # breakpoint()
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=False
+        python_code, print_output=True
     )
     # print("Got output!")
     # print(output)
@@ -206,14 +276,23 @@ def test_create_identity_and_invitation():
 
 
 def test_add_member_identity():
+    """Test that a new member can be added to an existing group DID manager."""
+    group_keystore = KeyStore(
+        os.path.join(pytest.group_2_config_dir, "group_2.json"),
+        pytest.KEY
+    )
     try:
+
+        member = DidManager.create(pytest.group_2_config_dir)
+
         pytest.group_2 = GroupDidManager.join(
-            pytest.invitation, pytest.group_2_config_dir, pytest.KEY
+            pytest.invitation, group_keystore, member
         )
     except walytis_api.JoinFailureError:
         try:
             pytest.group_2 = GroupDidManager.join(
-                pytest.invitation, pytest.group_2_config_dir, pytest.KEY)
+                pytest.invitation, group_keystore, member
+            )
         except walytis_api.JoinFailureError as error:
             print(error)
             breakpoint()
@@ -232,14 +311,14 @@ def test_add_member_identity():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        f"test_key_sharing.docker_check_new_member('{pytest.group_2_did}');"
+        f"test_key_sharing.docker_check_new_member('{member.did}');"
         f"logger.debug(threading.enumerate());"
 
 
     )
     # print(f"\n{python_code}\n")
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=False
+        python_code, print_output=True
     )
 
     # print(output)
@@ -250,10 +329,11 @@ def test_add_member_identity():
     )
 
 
+
+
 def test_get_control_key():
     # create an GroupDidManager object to run on the docker container in the
     # background to handle a key request from pytest.group_2
-    wait_dur_s = 30
     python_code = (
         "import sys;"
         "sys.path.append('/opt/WalIdentity/tests');"
@@ -263,14 +343,7 @@ def test_get_control_key():
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
         "test_key_sharing.test_preparations();"
-        "dev = test_key_sharing.GroupDidManager("
-        "    '/opt',"
-        "    test_key_sharing.pytest.KEY,"
-        ");"
-        "from time import sleep;"
-        "[(sleep(10), logger.debug('waiting...')) "
-        f"for i in range({wait_dur_s // 10})];"
-        "dev.terminate();"
+        "test_key_sharing.docker_be_online_30s()"
     )
     bash_code = (f'/bin/python -c "{python_code}"')
     pytest.containers[0].run_shell_command(
@@ -286,9 +359,9 @@ def test_get_control_key():
     sleep(5)
 
 
+wait_dur_s = 30
 def test_renew_control_key():
     success = True
-    wait_dur_s = 30
     python_code = "\n".join([
         "import sys;",
         "sys.path.append('/opt/WalIdentity/tests');",
@@ -334,15 +407,7 @@ def test_renew_control_key():
             "test_key_sharing.REBUILD_DOCKER=False;"
             "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
             "test_key_sharing.test_preparations();"
-            "dev = test_key_sharing.GroupDidManager("
-            "    '/opt',"
-            "    test_key_sharing.pytest.KEY,"
-            ");"
-            "logger.info('DOCKER: Loaded GroupDidManager.');"
-            "from time import sleep;"
-            "[(sleep(10), logger.debug('waiting...')) "
-            f"for i in range({wait_dur_s // 10})];"
-            "dev.terminate();"
+            "test_key_sharing.docker_be_online_30s();"
             "logger.info('DOCKER: Finished Control Key Renewal test part 2.');"
 
         )
@@ -364,35 +429,10 @@ def test_renew_control_key():
     )
 
 
-def test_join_with_existing_member() -> None:
-    key_store = KeyStore(pytest.member_3_keystore_file, pytest.KEY)
-    pytest.member_3 = DidManager.create(key_store)
-    pytest.group_3 = GroupDidManager.join(
-        pytest.invitation, pytest.group_3_config_dir, pytest.KEY,
-        member=pytest.member_3
-    )
-    mark(
-        pytest.group_3.member_did_manager.get_control_key().private_key == pytest.member_3.get_control_key().private_key !=None,
-        "Joined Group DID-Manager with existing member DID-Manager"
-    )
-
-
-def test_create_group_with_existing_member() -> None:
-    key_store = KeyStore(pytest.member_4_keystore_file, pytest.KEY)
-    pytest.member_4 = DidManager.create(key_store)
-    pytest.group_4 = GroupDidManager.join(
-        pytest.invitation, pytest.group_4_config_dir, pytest.KEY,
-        member=pytest.member_4
-    )
-    mark(
-        pytest.group_4.member_did_manager.get_control_key().private_key == pytest.member_4.get_control_key().private_key !=None,
-        "Created Group DID-Manager with existing member DID-Manager"
-    )
-    pytest.group_4.terminate()
-
 def run_tests():
     print("\nRunning tests for Key Sharing:")
-    test_preparations()
+    test_preparations(delete_files=True)
+
     test_create_docker_containers()
 
     # on docker container, create identity
@@ -405,11 +445,8 @@ def run_tests():
     # locally join the identity created on docker
     test_add_member_identity()
     test_get_control_key()
-    # test_renew_control_key()
+    test_renew_control_key()
 
-    test_join_with_existing_member()
-    test_create_group_with_existing_member()
-    
     cleanup()
     test_threads_cleanup()
 

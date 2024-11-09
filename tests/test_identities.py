@@ -14,6 +14,12 @@ from walidentity import key_store
 from walidentity import did_manager
 from walidentity.did_objects import Key
 
+
+import os
+from walidentity.key_store import KeyStore
+from walidentity.did_manager import DidManager
+from walidentity.did_objects import Key
+
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
 )
@@ -38,7 +44,7 @@ def pytest_configure():
 
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
-    pytest.CRYPT = Key.create(pytest.CRYPTO_FAMILY)
+    pytest.KEY = Key.create(pytest.CRYPTO_FAMILY)
 
 
 def pytest_unconfigure():
@@ -48,79 +54,92 @@ def pytest_unconfigure():
 
 
 def test_create_person_identity():
-    pytest.p_id_access = GroupDidManager.create(
-        pytest.person_config_dir,
-        pytest.CRYPT,
-    )
+    device_keystore_path = os.path.join(pytest.person_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(pytest.person_config_dir, "profile_keystore.json")
 
-    members = pytest.p_id_access.get_members()
+    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
+    pytest.member_1 = DidManager.create(device_did_keystore)
+    pytest.group_1 = GroupDidManager.create(
+        profile_did_keystore, pytest.member_1
+    )
+    
+    
+
+
+    members = pytest.group_1.get_members()
     mark(
-        isinstance(pytest.p_id_access, GroupDidManager)
+        isinstance(pytest.group_1, GroupDidManager)
         and len(members) == 1
-        and pytest.p_id_access.member_did_manager.did in members[0]["did"],
+        and pytest.group_1.member_did_manager.did in members[0]["did"],
         "Create GroupDidManager"
     )
-    pytest.p_id_access.terminate()
+    pytest.group_1.terminate()
 
 
 def test_load_person_identity():
-    p_id_access = GroupDidManager(
-        pytest.person_config_dir,
-        pytest.CRYPT
+    device_keystore_path = os.path.join(pytest.person_config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(pytest.person_config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
+    group_1 = GroupDidManager(
+        profile_did_keystore,
+        device_did_keystore
     )
-    member_did = pytest.p_id_access.member_did_manager.did
-    person_did = pytest.p_id_access.did
-    members = p_id_access.get_members()
+    member_did = pytest.group_1.member_did_manager.did
+    person_did = pytest.group_1.did
+    members = group_1.get_members()
     mark(
-        p_id_access.member_did_manager.did == member_did
-        and p_id_access.did == person_did
+        group_1.member_did_manager.did == member_did
+        and group_1.did == person_did
         and len(members) == 1
-        and p_id_access.member_did_manager.did in members[0]["did"],
+        and group_1.member_did_manager.did in members[0]["did"],
         "Load GroupDidManager"
     )
-    # p_id_access.terminate()
-    pytest.p_id_access = p_id_access
+    # group_1.terminate()
+    pytest.group_1 = group_1
 
 
 PLAIN_TEXT = "Hello there!".encode()
 
 
 def test_encryption():
-    cipher_1 = pytest.p_id_access.encrypt(PLAIN_TEXT)
-    pytest.p_id_access.renew_control_key()
-    cipher_2 = pytest.p_id_access.encrypt(PLAIN_TEXT)
+    cipher_1 = pytest.group_1.encrypt(PLAIN_TEXT)
+    pytest.group_1.renew_control_key()
+    cipher_2 = pytest.group_1.encrypt(PLAIN_TEXT)
 
     mark(
         (
             CodePackage.deserialise_bytes(cipher_1).public_key !=
             CodePackage.deserialise_bytes(cipher_2).public_key
-            and pytest.p_id_access.decrypt(cipher_1) == PLAIN_TEXT
-            and pytest.p_id_access.decrypt(cipher_2) == PLAIN_TEXT
+            and pytest.group_1.decrypt(cipher_1) == PLAIN_TEXT
+            and pytest.group_1.decrypt(cipher_2) == PLAIN_TEXT
         ),
         "Encryption across key renewal works"
     )
 
 
 def test_signing():
-    signature_1 = pytest.p_id_access.sign(PLAIN_TEXT)
-    pytest.p_id_access.renew_control_key()
-    signature_2 = pytest.p_id_access.sign(PLAIN_TEXT)
+    signature_1 = pytest.group_1.sign(PLAIN_TEXT)
+    pytest.group_1.renew_control_key()
+    signature_2 = pytest.group_1.sign(PLAIN_TEXT)
 
     mark(
         (
             CodePackage.deserialise_bytes(signature_1).public_key !=
             CodePackage.deserialise_bytes(signature_2).public_key
-            and pytest.p_id_access.verify_signature(signature_1, PLAIN_TEXT)
-            and pytest.p_id_access.verify_signature(signature_2, PLAIN_TEXT)
+            and pytest.group_1.verify_signature(signature_1, PLAIN_TEXT)
+            and pytest.group_1.verify_signature(signature_2, PLAIN_TEXT)
         ),
         "Signature verification across key renewal works"
     )
 
 
 def test_delete_person_identity():
-    group_blockchain = pytest.p_id_access.blockchain.blockchain_id
-    member_blockchain = pytest.p_id_access.member_did_manager.blockchain.blockchain_id
-    pytest.p_id_access.delete()
+    group_blockchain = pytest.group_1.blockchain.blockchain_id
+    member_blockchain = pytest.group_1.member_did_manager.blockchain.blockchain_id
+    pytest.group_1.delete()
 
     # ensure the blockchains of both the person and the member identities
     # have been deleted

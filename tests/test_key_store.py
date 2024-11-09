@@ -44,7 +44,8 @@ def test_add_get_key():
 
     c1 = pytest.keystore.get_key(pytest.crypt1.get_key_id())
     c2 = pytest.keystore.get_key(pytest.crypt2.get_key_id())
-
+    
+    pytest.keystore.terminate()
     mark(
         c1.public_key == pytest.crypt1.public_key
         and c1.private_key == pytest.crypt1.private_key

@@ -2,12 +2,12 @@
 
 Doesn't include machinery for managing other members.
 """
+import os
 from dataclasses import dataclass
-from typing import Callable, Type, TypeVar
+from typing import Callable, TypeVar
 
 import walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
-from loguru import logger
 from multi_crypt import Crypt
 from walytis_beta_api import Block, Blockchain
 
@@ -30,6 +30,7 @@ DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section
 CRYPTO_FAMILY = "EC-secp256k1"
 
 _DidManager = TypeVar('_DidManager', bound='DidManager')
+KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
 
 
 @dataclass
@@ -52,7 +53,6 @@ class DidManager:
 
     def __init__(
         self,
-        blockchain_id: str,
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
         appdata_dir: str = "",
@@ -65,9 +65,25 @@ class DidManager:
             other_blocks_handler: eventhandler for blocks published on
                 `blockchain` that aren't related to this DID-Manager work
         """
+        # TODO: if we remove the blockchain_id paramter, cleanup the code below
 
-        # restart the blockchain object if it isn't connected to Brenthy
-        # if blockchain._terminate:
+        # load blockchain_id from the KeyStore's metadata
+        keystore_did = key_store.get_custom_metadata().get(KEYSTORE_DID)
+
+        if not keystore_did:
+            raise Exception(
+                "The KeyStore passed doesn't have "
+                f"{KEYSTORE_DID} in its custom metadata"
+            )
+        blockchain_id = blockchain_id_from_did(keystore_did)
+
+        # ensure we aren't using another ekystore
+        if blockchain_id != blockchain_id_from_did(keystore_did):
+            raise Exception(
+                "The blockchain_id passed doesn't match the the DID encoded "
+                "in the keystore's custom metadata"
+            )
+
         self.blockchain = Blockchain(
             blockchain_id,
             appdata_dir=appdata_dir,
@@ -91,12 +107,17 @@ class DidManager:
         # logger.debug("DM: Built DID-Manager object!")
 
     @classmethod
-    def create(cls: Type[_DidManager], key_store: KeyStore) -> _DidManager:
-        """Create a new DID-Manager."""
+    def create(cls, key_store: KeyStore | str):
+        """Create a new DID-Manager.
+
+        Args:
+            key_store: KeyStore for this DidManager to store private keys.
+                    If a directory is passed, a KeyStore is created in there
+                    named after the blockchain ID of the created DidManager.
+        """
         # logger.debug("DM: Creating DID-Manager...")
         # create crypto keys
         ctrl_key = Key.create(CRYPTO_FAMILY)
-        key_store.add_key(ctrl_key)
         # logger.debug("DM: Createing DID-Manager's blockchain...")
         # create blockchain
         # logger.debug("DM: Creating Blockchain...")
@@ -104,6 +125,10 @@ class DidManager:
         blockchain = Blockchain.create(
             blockchain_name=f"waco-{bytes_to_string(ctrl_key.public_key)}"
         )
+
+        key_store = cls.assign_keystore(key_store, blockchain.blockchain_id)
+        key_store.add_key(ctrl_key)
+
         # logger.debug("DM: Initialising cryptography...")
 
         # publish first key on blockchain
@@ -130,11 +155,38 @@ class DidManager:
         # logger.debug("DM: Instantiating...")
 
         blockchain.terminate()
-        did_manager = cls(blockchain.blockchain_id, key_store=key_store)
+        did_manager = cls(key_store)
 
         # logger.debug("DM: created DID-Manager!")
         return did_manager
+    
+    @staticmethod
+    def assign_keystore(key_store:KeyStore|str, blockchain_id:str)->KeyStore:
+        """Mark a key_store as belonging to a DidManager.
 
+        Args:
+            key_store: KeyStore for this DidManager to store private keys.
+                    If a directory is passed, a KeyStore is created in there
+                    named after the blockchain ID of the created DidManager.
+        """
+        if isinstance(key_store, str):
+            if not os.path.isdir(key_store):
+                raise ValueError(
+                    "If a string is passed for the `key_store` parameter, "
+                    "it should be a valid directory"
+                )
+            # use blockchain ID instead of DID
+            # as some filesystems don't support colons
+            key_store_path = os.path.join(
+                key_store, blockchain_id + ".json"
+            )
+            key_store = KeyStore(key_store_path, Key.create(CRYPTO_FAMILY))
+        # TODO: assert that key store has control key
+        # encode our DID into the keystore
+        key_store.update_custom_metadata(
+            {KEYSTORE_DID: did_from_blockchain_id(blockchain_id)}
+        )
+        return key_store
     @property
     def did(self) -> str:
         """Get this DID-Manager's DID."""
@@ -326,6 +378,7 @@ class DidManager:
     def terminate(self) -> None:
         """Stop this DID-Manager, cleaning up resources."""
         try:
+            self.key_store.terminate()
             self.blockchain.terminate()
         except waly.exceptions.NoSuchBlockchainError:
             pass

@@ -81,7 +81,6 @@ def test_update_did_doc():
 
 def test_reload_did_manager():
     did_manager_copy = DidManager(
-        pytest.did_manager.blockchain.blockchain_id,
         pytest.keystore
     )
 
