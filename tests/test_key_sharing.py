@@ -258,7 +258,7 @@ def test_create_identity_and_invitation():
     # print(python_code)
     # breakpoint()
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=True
+        python_code, print_output=False
     )
     # print("Got output!")
     # print(output)
@@ -318,7 +318,7 @@ def test_add_member_identity():
     )
     # print(f"\n{python_code}\n")
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=True
+        python_code, print_output=False
     )
 
     # print(output)
@@ -376,7 +376,7 @@ def test_renew_control_key():
 
     ])
     output = pytest.containers[0].run_python_code(
-        python_code, print_output=True
+        python_code, print_output=False
     ).split("\n")
     old_key = ""
     new_key = ""

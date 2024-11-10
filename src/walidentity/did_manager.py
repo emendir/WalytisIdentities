@@ -2,6 +2,9 @@
 
 Doesn't include machinery for managing other members.
 """
+from collections.abc import Generator
+from walytis_beta_api._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
 import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
@@ -31,10 +34,11 @@ CRYPTO_FAMILY = "EC-secp256k1"
 
 _DidManager = TypeVar('_DidManager', bound='DidManager')
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
+WALYTIS_BLOCK_TOPIC = "DidManager"
 
 
 @dataclass
-class DidManager:
+class DidManager(GenericBlockchain):
     """Manage DID documents using a Walytis blockchain.
 
     Publishes DID documents on a blockchain, secured by an updatable
@@ -72,7 +76,6 @@ class DidManager:
             )
         # assert that the key_store is unlocked
         key_store.key.get_private_key()
-        
 
         # load blockchain_id from the KeyStore's metadata
         keystore_did = key_store.get_custom_metadata().get(KEYSTORE_DID)
@@ -95,9 +98,10 @@ class DidManager:
             blockchain_id,
             appdata_dir=appdata_dir,
             auto_load_missed_blocks=False,
-            block_received_handler=self.on_block_received,
+            block_received_handler=self._dm_on_block_received,
             update_blockids_before_handling=True,
         )
+        self._init_blocks_list()
         self._dm_other_blocks_handler = other_blocks_handler
         self.key_store = key_store
         self._control_key_id = ""
@@ -147,7 +151,7 @@ class DidManager:
         keyblock.sign(ctrl_key)
         blockchain.add_block(
             keyblock.generate_block_content(),
-            topics=keyblock.walytis_block_topic
+            topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic]
         )
 
         # logger.debug("DM: Adding DID-Doc block...")
@@ -157,7 +161,7 @@ class DidManager:
         did_doc_block.sign(ctrl_key)
         blockchain.add_block(
             did_doc_block.generate_block_content(),
-            did_doc_block.walytis_block_topic
+            [WALYTIS_BLOCK_TOPIC, did_doc_block.walytis_block_topic]
         )
         # logger.debug("DM: Instantiating...")
 
@@ -166,6 +170,21 @@ class DidManager:
 
         # logger.debug("DM: created DID-Manager!")
         return did_manager
+
+    @classmethod
+    def from_blockchain_id(cls, blockchain_id: str):
+        """Create an observing DidManager object given a blockchain ID.
+
+        This object cannot control the DID for lack of keys.
+        The KeyStore's file is in a temporary folder.
+        """
+        import tempfile
+        key = Key.create(CRYPTO_FAMILY)
+        key_store_path = os.path.join(
+            tempfile.mkdtemp(), blockchain_id + ".json"
+        )
+        key_store = KeyStore(key_store_path, key)
+        return cls(key_store)
 
     @staticmethod
     def assign_keystore(key_store: KeyStore | str, blockchain_id: str) -> KeyStore:
@@ -220,7 +239,7 @@ class DidManager:
 
         self.blockchain.add_block(
             keyblock.generate_block_content(),
-            topics=keyblock.walytis_block_topic
+            topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic]
         )
 
         self._control_key_id = new_ctrl_key.get_key_id()
@@ -235,7 +254,8 @@ class DidManager:
         if not block.signature:
             block.sign(self.get_control_key())
         return self.blockchain.add_block(
-            block.generate_block_content(), block.walytis_block_topic
+            block.generate_block_content(),
+            [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic]
         )
 
     def check_control_key(self) -> Key:
@@ -273,23 +293,31 @@ class DidManager:
             self.did_doc = get_latest_did_doc(self.blockchain)
         return self.did_doc
 
-    def on_block_received(self, block: Block) -> None:
+    def _dm_on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
-        block_type = get_block_type(block.topics)
-        match block_type:
-            case (
-                did_manager_blocks.ControlKeyBlock
-                | did_manager_blocks.KeyOwnershipBlock
-            ):
-                # update self._control_key_id from the blockchain
-                self.check_control_key()
-                # logger.debug(self._control_key_id)
-            case did_manager_blocks.DidDocBlock:
-                self.did_doc = get_latest_did_doc(self.blockchain)
-            case 0:
-                # if user defined an event-handler for non-DID blocks, call it
-                if self._dm_other_blocks_handler:
-                    self._dm_other_blocks_handler(block)
+        if WALYTIS_BLOCK_TOPIC in block.topics:
+            block_type = get_block_type(block.topics)
+            match block_type:
+                case (
+                    did_manager_blocks.ControlKeyBlock
+                    | did_manager_blocks.KeyOwnershipBlock
+                ):
+                    # update self._control_key_id from the blockchain
+                    self.check_control_key()
+                    # logger.debug(self._control_key_id)
+                case did_manager_blocks.DidDocBlock:
+                    self.did_doc = get_latest_did_doc(self.blockchain)
+                case _:
+                    print(
+                        "This block is marked as belong to DidManager, "
+                        "but it's InfoBlock type is not recognised: ",
+                        f"{block.topics}"
+                    )
+        else:
+            self._blocks_list.add_block(BlockLazilyLoaded.from_block(block))
+            # if user defined an event-handler for non-DID blocks, call it
+            if self._dm_other_blocks_handler:
+                self._dm_other_blocks_handler(block)
 
     def unlock(self, private_key: bytes | bytearray | str) -> None:
         control_key = self.get_control_key()
@@ -395,7 +423,77 @@ class DidManager:
         """Stop this DID-Manager, cleaning up resources."""
         self.terminate()
 
+    @property
+    def blockchain_id(self) -> str:
+        return self.blockchain.blockchain_id
 
+    @property
+    def block_received_handler(self) -> Callable[[GenericBlock], None] | None:
+        return self._dm_other_blocks_handler
+
+    def add_block(
+        self, content: bytes, topics: list[str] | str | None = None
+    ) -> GenericBlock:
+        return self.blockchain.add_block(content, topics)
+
+    def _init_blocks_list(self):
+        # present to other programs all blocks not created by this DidManager
+        blocks = [
+            block for block in self.blockchain.get_blocks()
+            if self.WALYTIS_BLOCK_TOPIC not in block.topics
+        ]
+        self._blocks_list = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
+
+    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+        return self._blocks_list.get_blocks(reverse=reverse)
+
+    def get_block_ids(self) -> list[bytes]:
+        return self._blocks_list.get_long_ids()
+
+    def get_num_blocks(self) -> int:
+        return self._blocks_list.get_num_blocks()
+
+    def get_block(self, id: bytes) -> GenericBlock:
+
+        # if index is passed instead of block_id, get block_id from index
+        if isinstance(id, int):
+            try:
+                id = self.get_block_ids()[id]
+            except IndexError:
+                message = (
+                    "Walytis_BetaAPI.Blockchain: Get Block from index: "
+                    "Index out of range."
+                )
+                raise IndexError(message)
+        else:
+            id_bytearray = bytearray(id)
+            len_id = len(id_bytearray)
+            if bytearray([0, 0, 0, 0]) not in id_bytearray:  # if a short ID was passed
+                short_id = None
+                for long_id in self.get_block_ids():
+                    if bytearray(long_id)[:len_id] == id_bytearray:
+                        short_id = long_id
+                        break
+                if not short_id:
+                    raise BlockNotFoundError()
+                id = bytes(short_id)
+        if isinstance(id, bytearray):
+            id = bytes(id)
+        try:
+            block = self._blocks_list[id]
+            return block
+        except KeyError:
+
+            error = BlockNotFoundError(
+                "This block isn't recorded (by brenthy_api.Blockchain) as being "
+                "part of this blockchain."
+            )
+            raise error
+
+    def get_peers(self) -> list[str]:
+        return self.blockchain.get_peers()
+
+from walytis_beta_api.exceptions import BlockNotFoundError
 def blockchain_id_from_did(did: str) -> str:
     """Given a DID, get its Walytis blockchain's ID."""
     did_parts = did.split(":")
