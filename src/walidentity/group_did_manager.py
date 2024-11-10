@@ -67,18 +67,22 @@ class _GroupDidManager(DidManager):
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
         appdata_dir: str = "",
+        auto_load_missed_blocks: bool = True,
+
     ):
         self._gdm_other_blocks_handler = other_blocks_handler
         DidManager.__init__(
             self,
             key_store=key_store,
             # we handle member management blocks
-            other_blocks_handler=self.on_block_received_members,
+            other_blocks_handler=self._gdm_on_block_received,
             appdata_dir=appdata_dir,
+            auto_load_missed_blocks=auto_load_missed_blocks,
+
         )
         self.members_list = list(get_members(self.blockchain).values())
 
-    def on_block_received_members(self, block: Block) -> None:
+    def _gdm_on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
 
@@ -233,9 +237,10 @@ class GroupDidManager(_GroupDidManager):
         group_key_store: KeyStore,
         member: KeyStore | DidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
+        auto_load_missed_blocks: bool = True,
     ):
         self._terminate = False
-        
+
         if not isinstance(group_key_store, KeyStore):
             raise TypeError(
                 "The parameter `key_store` must be of type KeyStore, "
@@ -243,7 +248,7 @@ class GroupDidManager(_GroupDidManager):
             )
         # assert that the key_store is unlocked
         group_key_store.key.get_private_key()
-        
+
         if isinstance(member, KeyStore):
             self.member_did_manager = DidManager(
                 key_store=member,
@@ -261,6 +266,7 @@ class GroupDidManager(_GroupDidManager):
             self,
             key_store=group_key_store,
             other_blocks_handler=other_blocks_handler,
+            auto_load_missed_blocks=auto_load_missed_blocks,
         )
 
         self.candidate_keys: dict[str, list[str]] = {}

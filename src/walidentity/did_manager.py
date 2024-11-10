@@ -2,6 +2,7 @@
 
 Doesn't include machinery for managing other members.
 """
+from walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
 from walytis_beta_api._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
 from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
@@ -60,6 +61,7 @@ class DidManager(GenericBlockchain):
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
         appdata_dir: str = "",
+        auto_load_missed_blocks: bool = True,
     ):
         """Load a DidManager from a Walytis blockchain.
 
@@ -107,15 +109,18 @@ class DidManager(GenericBlockchain):
         self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
         # logger.debug("DM: Getting DID-Doc...")
-        import walytis_beta_api as waly
+
+        if auto_load_missed_blocks:
+            self.load_missed_blocks()
+
+        # logger.debug("DM: Built DID-Manager object!")
+    def load_missed_blocks(self):
         self.blockchain.load_missed_blocks(
             waly.blockchain_model.N_STARTUP_BLOCKS
         )
         self.did_doc = get_latest_did_doc(self.blockchain)
         if not self.did_doc:
             raise NotValidDidBlockchainError()
-
-        # logger.debug("DM: Built DID-Manager object!")
 
     @classmethod
     def create(cls, key_store: KeyStore | str):
@@ -493,7 +498,7 @@ class DidManager(GenericBlockchain):
     def get_peers(self) -> list[str]:
         return self.blockchain.get_peers()
 
-from walytis_beta_api.exceptions import BlockNotFoundError
+
 def blockchain_id_from_did(did: str) -> str:
     """Given a DID, get its Walytis blockchain's ID."""
     did_parts = did.split(":")

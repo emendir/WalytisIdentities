@@ -29,7 +29,7 @@ class ContactsChain:
         self._dm_other_blocks_handler = other_blocks_handler
 
         self.blockchain = PrivateBlockchain(
-            blockchain_identity=self.group_did_manager,
+            base_blockchain=self.group_did_manager,
             block_received_handler=self._on_block_received,
             virtual_layer_name=CONTACTS_CHAIN_TOPIC,
             other_blocks_handler=self._dm_other_blocks_handler,
