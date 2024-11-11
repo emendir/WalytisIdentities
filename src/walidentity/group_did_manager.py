@@ -36,11 +36,14 @@ from .did_manager_blocks import (
     get_latest_control_key,
     get_latest_did_doc,
     get_members,
+    InfoBlock,
 )
 from .did_objects import Key
 from .key_store import KeyStore, UnknownKeyError
 from .settings import CTRL_KEY_MAX_RENEWAL_DUR_HR, CTRL_KEY_RENEWAL_AGE_HR
 from .utils import validate_did_doc
+
+WALYTIS_BLOCK_TOPIC = "GroupDidManager"
 
 DID_METHOD_NAME = "wlaytis-contacts"
 DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
@@ -82,23 +85,42 @@ class _GroupDidManager(DidManager):
         )
         self.members_list = list(get_members(self.blockchain).values())
 
+    def _gdm_add_info_block(self, block: InfoBlock) -> Block:
+        """Add an InfoBlock type block to this DID-Block's blockchain."""
+        if not block.signature:
+            block.sign(self.get_control_key())
+        return self.blockchain.add_block(
+            block.generate_block_content(),
+            [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic]
+        )
+
     def _gdm_on_block_received(self, block: Block) -> None:
         # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
 
-        match block_type:
-            case (
-                did_manager_blocks.MemberJoiningBlock
-                | did_manager_blocks.MemberUpdateBlock
-                | did_manager_blocks.MemberLeavingBlock
-            ):
-                self.members_list = list(get_members(self.blockchain).values())
-            case 0:
-                logger.warning(
-                    f"DM: Did not recognise block type: {block_type}")
-                # if user defined an event-handler for non-DID blocks, call it
-                if self._dm_other_blocks_handler:
-                    self._dm_other_blocks_handler(block)
+        if WALYTIS_BLOCK_TOPIC in block.topics:
+            match block_type:
+                case (
+                    did_manager_blocks.MemberJoiningBlock
+                    | did_manager_blocks.MemberUpdateBlock
+                    | did_manager_blocks.MemberLeavingBlock
+                ):
+                    self.members_list = list(
+                        get_members(self.blockchain).values())
+                case did_manager_blocks.KeyOwnershipBlock:
+                    self.check_control_key()
+                case did_manager_blocks.MemberInvitationBlock:
+                    pass
+                case _:
+                    logger.warning(
+                        "This block is marked as belong to GroupDidManager, "
+                        "but it's InfoBlock type is not handled: "
+                        f"{block.topics}"
+                    )
+        else:
+            # if user defined an event-handler for non-DID blocks, call it
+            if self._gdm_other_blocks_handler:
+                self._gdm_other_blocks_handler(block)
 
     def get_members(self) -> list[dict]:
         """Get the current list of member-members."""
@@ -109,15 +131,15 @@ class _GroupDidManager(DidManager):
 
     def add_member_invitation(self, member_invitation: dict) -> Block:
         member_invitation_block = MemberInvitationBlock.new(member_invitation)
-        return self.add_info_block(member_invitation_block)
+        return self._gdm_add_info_block(member_invitation_block)
 
     def add_member_update(self, member: dict) -> Block:
         block = MemberUpdateBlock.new(member)
-        return self.add_info_block(block)
+        return self._gdm_add_info_block(block)
 
     def add_member_leaving(self, member: dict) -> Block:
         block = MemberLeavingBlock.new(member)
-        return self.add_info_block(block)
+        return self._gdm_add_info_block(block)
 
     def invite_member(self) -> dict:
         """Create and register a member invitation on the blockchain."""
@@ -179,7 +201,7 @@ class _GroupDidManager(DidManager):
             "invitation_key": invitation_key.get_key_id()  # Key object
         })
         joining_block.sign(invitation_key)
-        self.add_info_block(joining_block)
+        self._gdm_add_info_block(joining_block)
         member.key_store.add_key(self.get_control_key())
 
     def make_member(
@@ -525,7 +547,7 @@ class GroupDidManager(_GroupDidManager):
         sig = bytes_to_string(key.sign(json.dumps(key_ownership).encode()))
         key_ownership.update({"proof": sig})
         block = KeyOwnershipBlock.new(key_ownership)
-        self.add_info_block(block)
+        self._gdm_add_info_block(block)
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""

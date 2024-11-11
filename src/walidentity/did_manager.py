@@ -254,7 +254,7 @@ class DidManager(GenericBlockchain):
         #     f"    new: {new_ctrl_key.get_key_id()}"
         # )
 
-    def add_info_block(self, block: InfoBlock) -> Block:
+    def _dm_add_info_block(self, block: InfoBlock) -> Block:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
         if not block.signature:
             block.sign(self.get_control_key())
@@ -288,7 +288,7 @@ class DidManager(GenericBlockchain):
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
         did_doc_block = DidDocBlock.new(did_doc)
-        self.add_info_block(did_doc_block)
+        self._dm_add_info_block(did_doc_block)
 
         self.did_doc = did_doc
 
@@ -312,10 +312,11 @@ class DidManager(GenericBlockchain):
                     # logger.debug(self._control_key_id)
                 case did_manager_blocks.DidDocBlock:
                     self.did_doc = get_latest_did_doc(self.blockchain)
+
                 case _:
                     print(
                         "This block is marked as belong to DidManager, "
-                        "but it's InfoBlock type is not recognised: ",
+                        "but it's InfoBlock type is not handled: "
                         f"{block.topics}"
                     )
         else:

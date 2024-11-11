@@ -183,7 +183,7 @@ def test_create_group_given_path() -> None:
 
 
 def run_tests() -> None:
-    print("\nRunning tests for Identities:")
+    print("\nRunning tests for GroupDidManager:")
     _testing_utils.PYTEST = False
     test_preparations()  # run test preparations
 
