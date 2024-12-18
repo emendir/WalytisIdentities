@@ -13,7 +13,7 @@ import pyperclip
 from brenthy_docker import BrenthyDocker, delete_containers
 
 
-class ContactsDocker(BrenthyDocker):
+class WalIdentityDocker(BrenthyDocker):
     def __init__(
         self,
         image: str = "local/walytis_auth_testing",
@@ -29,21 +29,21 @@ class ContainerNotRunningError(Exception):
 # Example usage:
 if __name__ == "__main__":
     # Create an instance of DockerContainer with the desired image
-    delete_containers(container_name_substr="Demo")
-    docker_container = ContactsDocker(
-        container_name="Demo",
+    delete_containers(container_name_substr="DemoWalidentity")
+    docker_container = WalIdentityDocker(
+        container_name="DemoWalidentity",
         auto_run=False
     )
 
     container_id = docker_container.container.id
     # Start the container
-    docker_container.start(await_brenthy=False, await_ipfs=True)
+    docker_container.start(await_brenthy=True, await_ipfs=True)
 
     print("Container's IPFS ID: ", docker_container.ipfs_id)
 
     # Execute shell command on the container
     shell_output = docker_container.run_shell_command(
-        "systemctl status brenthy")
+        "ls")
     print("Output of Shell command:", shell_output)
 
     # Execute Python command on the container

@@ -1,14 +1,5 @@
-## Current:
-We're in the middle debugging having removed config_dir and appdata from GroupDidManager.
-
 ### KeyStore
 - encrypted and unencrypted custom metadata
-
-### DidManager
-- remove `blockchain_id` parameter from constructor
-- add method `from_blockchain(blockchain_id:str, current_control_key:Key, new_keytore:KeyStore)`
-
-
 
 ## WalIdentity
 
@@ -21,6 +12,7 @@ We're in the middle debugging having removed config_dir and appdata from GroupDi
       - run a WalIdentity server in Brenthy
       - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
   - same solution for PrivateBlockchain?
+  - sign infoblocks using control key AND member author's key
 
 ### Debug
 

@@ -15,9 +15,11 @@ from walidentity.group_did_manager import GroupDidManager
 from walidentity.key_store import KeyStore
 from walidentity.utils import logger
 from walytis_auth_docker.walytis_auth_docker import (
-    ContactsDocker,
+    WalIdentityDocker,
     delete_containers,
 )
+from walytis_auth_docker.build_docker import build_docker_image
+
 
 walytis_api.log.PRINT_DEBUG = False
 print((os.path.dirname(__file__)))
@@ -50,7 +52,6 @@ def test_preparations(delete_files: bool = False):
         delete_containers(image="local/walytis_auth_testing")
 
     if REBUILD_DOCKER:
-        from walytis_auth_docker.build_docker import build_docker_image
 
         build_docker_image(verbose=False)
     pytest.group_1 = None
@@ -87,13 +88,13 @@ def test_preparations(delete_files: bool = False):
         private_key=b'\xd9\xd1\\D\x80\xd7\x1a\xe6E\x0bt\xdf\xd0z\x88\xeaQ\xe8\x04\x91\x11\xaf\\%wC\x83~\x0eGP\xd8',
         creation_time=datetime(2024, 11, 6, 19, 17, 45, 713000)
     )
-    pytest.containers: list[ContactsDocker] = []
+    pytest.containers: list[WalIdentityDocker] = []
     pytest.invitation = None
 
 
 def test_create_docker_containers():
     for i in range(1):
-        pytest.containers.append(ContactsDocker())
+        pytest.containers.append(WalIdentityDocker())
 
 
 def cleanup():
