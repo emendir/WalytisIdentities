@@ -3,7 +3,7 @@ WORKDIR /opt/WalIdentity
 COPY . /opt/WalIdentity
 
 COPY tests/walytis_auth_docker/IPFS-Monitoring /opt/IPFS-Monitor
-RUN apt-get install -y iputils-ping
+RUN apt-get install -y iputils-ping rsync
 # run installer except for its last line, removing all use of `sudo`
 RUN cd /opt/IPFS-Monitor && head -n -1 /opt/IPFS-Monitor/install_linux_systemd.sh | sed 's/sudo //g' | bash
 

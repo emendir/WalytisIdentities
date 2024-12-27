@@ -7,8 +7,9 @@ try:
     logger.remove(0)
 except ValueError:
     pass
+LOG_PATH="/tmp/WalIdentity.log"
 logger.add(sys.stdout, format="<level>{message}</level>")
-logger.add("/tmp/WalIdentity.log", rotation="1 week")
+logger.add(LOG_PATH, rotation="1 week")
 
 
 def is_valid_uri(uri):

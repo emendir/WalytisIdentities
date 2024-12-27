@@ -91,9 +91,10 @@ def test_preparations(delete_files: bool = False):
     pytest.containers: list[WalIdentityDocker] = []
     pytest.invitation = None
 
+N_DOCKER_CONTAINERS=1
 
 def test_create_docker_containers():
-    for i in range(1):
+    for i in range(N_DOCKER_CONTAINERS):
         pytest.containers.append(WalIdentityDocker())
 
 

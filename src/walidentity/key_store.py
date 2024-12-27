@@ -260,6 +260,10 @@ class KeyStore:
         if os.path.exists(self.lock_file_path):
             os.remove(self.lock_file_path)
 
+    def reload(self) -> 'KeyStore':
+        self._load_appdata()
+        return self
+
     def __del__(self):
         self.terminate()
 

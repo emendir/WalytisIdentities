@@ -13,6 +13,7 @@
       - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
   - same solution for PrivateBlockchain?
   - sign infoblocks using control key AND member author's key
+- Proper caching (replace with thorough implementation of block handlers?)
 
 ### Debug
 
@@ -23,7 +24,6 @@
 
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
-- inherit GenericBlockchain
 
 ### Optimisations
 

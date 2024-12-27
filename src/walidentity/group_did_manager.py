@@ -95,8 +95,8 @@ class _GroupDidManager(DidManager):
         )
 
     def _gdm_on_block_received(self, block: Block) -> None:
-        # logger.debug("DM: Received block!")
         block_type = get_block_type(block.topics)
+        # logger.info(f"GDM: received block: {block.topics}")
 
         if WALYTIS_BLOCK_TOPIC in block.topics:
             match block_type:
@@ -118,13 +118,25 @@ class _GroupDidManager(DidManager):
                         f"{block.topics}"
                     )
         else:
+            # logger.info(f"GDM: passing on received block: {block.topics}")
+
             # if user defined an event-handler for non-DID blocks, call it
             if self._gdm_other_blocks_handler:
                 self._gdm_other_blocks_handler(block)
 
-    def get_members(self) -> list[dict]:
+    @property
+    def block_received_handler(self) -> Callable[[Block], None] | None:
+        return self._gdm_other_blocks_handler
+
+    @block_received_handler.setter
+    def block_received_handler(
+        self, block_received_handler: Callable[Block, None]
+    ) -> None:
+        self._gdm_other_blocks_handler = block_received_handler
+
+    def get_members(self, no_cache: bool = False) -> list[dict]:
         """Get the current list of member-members."""
-        if not self.members_list:
+        if no_cache or not self.members_list:
             self.members_list = list(get_members(self.blockchain).values())
 
         return self.members_list
@@ -308,7 +320,8 @@ class GroupDidManager(_GroupDidManager):
     def create(
         cls,
         group_key_store: KeyStore | str,
-        member: DidManager | KeyStore
+        member: DidManager | KeyStore,
+        other_blocks_handler: Callable[[Block], None] | None = None,
     ):
         """Create a new GroupDidManager object.
         Args:
@@ -331,17 +344,17 @@ class GroupDidManager(_GroupDidManager):
 
         # logger.debug("Creating Person-Did-Manager...")
         g_did_manager = _GroupDidManager.create(group_key_store)
-        # logger.debug("Creating Device-Did-Manager...")
         g_did_manager.add_member(member)
 
         member_did_manager.key_store.add_key(g_did_manager.key_store.key)
 
         g_did_manager.terminate()  # group_did_manager will take over
-        member_did_manager.terminate()
+        g_keystore = g_did_manager.key_store.reload()
         # logger.debug("Creating Identity...")
         group_did_manager = cls(
-            g_did_manager.key_store,
-            member.key_store
+            g_keystore,
+            member_did_manager,
+            other_blocks_handler=other_blocks_handler,
         )
         group_did_manager.member_did_manager.update_did_doc(
             group_did_manager.generate_member_did_doc())
@@ -352,7 +365,8 @@ class GroupDidManager(_GroupDidManager):
         cls: Type[GroupDidManagerType],
         invitation: str | dict,
         group_key_store: KeyStore | str,
-        member: DidManager
+        member: DidManager,
+        other_blocks_handler: Callable[[Block], None] | None = None,
     ) -> GroupDidManagerType:
         """Join an exisiting Group-DID-Manager.
 
@@ -417,10 +431,12 @@ class GroupDidManager(_GroupDidManager):
 
         member.key_store.add_key(g_did_manager.key_store.key)
         g_did_manager.terminate()   # group_did_manager will take over from here
-        member.terminate()
+        group_key_store.reload()
+        
         group_did_manager = cls(
             group_key_store,
-            member.key_store
+            member,
+            other_blocks_handler=other_blocks_handler,
         )
 
         group_did_manager.member_did_manager.update_did_doc(
@@ -650,7 +666,9 @@ class GroupDidManager(_GroupDidManager):
         """Get the IPFS content ID of another member."""
         results = [member for member in self.get_members()
                    if member["did"] == did]
-
+        if not results:
+            results = [member for member in self.get_members(no_cache=True)
+                       if member["did"] == did]
         if not results:
             logger.debug([member["did"] for member in self.get_members()])
             raise NotMemberError(f"This DID is not among our members.\n{did}")
@@ -691,8 +709,15 @@ class GroupDidManager(_GroupDidManager):
 
     def get_member_control_key(self, did: str) -> Key:
         """Get the DID control key of another member."""
-        members = [member for member in self.get_members()
-                   if member["did"] == did]
+        members = [
+            member for member in self.get_members()
+            if member["did"] == did
+        ]
+        if not members:
+            members = [
+                member for member in self.get_members(no_cache=True)
+                if member["did"] == did
+            ]
         if not members:
             raise NotMemberError("This DID is not among our members.")
         member = members[0]

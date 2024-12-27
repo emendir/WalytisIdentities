@@ -88,6 +88,7 @@ class DidManager(GenericBlockchain):
                 f"{KEYSTORE_DID} in its custom metadata"
             )
         blockchain_id = blockchain_id_from_did(keystore_did)
+        
 
         # ensure we aren't using another ekystore
         if blockchain_id != blockchain_id_from_did(keystore_did):
@@ -299,7 +300,6 @@ class DidManager(GenericBlockchain):
         return self.did_doc
 
     def _dm_on_block_received(self, block: Block) -> None:
-        # logger.debug("DM: Received block!")
         if WALYTIS_BLOCK_TOPIC in block.topics:
             block_type = get_block_type(block.topics)
             match block_type:
@@ -434,8 +434,14 @@ class DidManager(GenericBlockchain):
         return self.blockchain.blockchain_id
 
     @property
-    def block_received_handler(self) -> Callable[[GenericBlock], None] | None:
+    def block_received_handler(self) -> Callable[[Block], None] | None:
         return self._dm_other_blocks_handler
+
+    @block_received_handler.setter
+    def block_received_handler(
+        self, block_received_handler: Callable[Block, None]
+    ) -> None:
+        self._dm_other_blocks_handler = block_received_handler
 
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
