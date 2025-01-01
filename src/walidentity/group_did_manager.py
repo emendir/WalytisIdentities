@@ -80,9 +80,14 @@ class _GroupDidManager(DidManager):
             # we handle member management blocks
             other_blocks_handler=self._gdm_on_block_received,
             appdata_dir=appdata_dir,
-            auto_load_missed_blocks=auto_load_missed_blocks,
+            auto_load_missed_blocks=False,
 
         )
+        self.members_list:list[dict]=[]
+        if auto_load_missed_blocks:
+            _GroupDidManager.load_missed_blocks(self)
+    def load_missed_blocks(self):
+        DidManager.load_missed_blocks(self)
         self.members_list = list(get_members(self.blockchain).values())
 
     def _gdm_add_info_block(self, block: InfoBlock) -> Block:
@@ -300,21 +305,29 @@ class GroupDidManager(_GroupDidManager):
             self,
             key_store=group_key_store,
             other_blocks_handler=other_blocks_handler,
-            auto_load_missed_blocks=auto_load_missed_blocks,
+            auto_load_missed_blocks=False,
         )
-
         self.candidate_keys: dict[str, list[str]] = {}
-        self.get_published_candidate_keys()
-
-        self.key_requests_listener = ConversationListener(
-            f"{self.member_did_manager.did}-KeyRequests",
-            self.key_requests_handler
-        )
         self._terminate = False
+
         self.control_key_manager_thr = Thread(
             target=self.manage_control_key
         )
-        self.control_key_manager_thr.start()
+
+        if auto_load_missed_blocks:
+            GroupDidManager.load_missed_blocks(self)
+
+    def load_missed_blocks(self):
+        if not self.control_key_manager_thr.is_alive():
+            _GroupDidManager.load_missed_blocks(self)
+            self.get_published_candidate_keys()
+
+            self.key_requests_listener = ConversationListener(
+                f"{self.member_did_manager.did}-KeyRequests",
+                self.key_requests_handler
+            )
+
+            self.control_key_manager_thr.start()
 
     @classmethod
     def create(
@@ -432,7 +445,7 @@ class GroupDidManager(_GroupDidManager):
         member.key_store.add_key(g_did_manager.key_store.key)
         g_did_manager.terminate()   # group_did_manager will take over from here
         group_key_store.reload()
-        
+
         group_did_manager = cls(
             group_key_store,
             member,

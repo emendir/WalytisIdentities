@@ -91,7 +91,9 @@ def test_preparations(delete_files: bool = False):
     pytest.containers: list[WalIdentityDocker] = []
     pytest.invitation = None
 
-N_DOCKER_CONTAINERS=1
+
+N_DOCKER_CONTAINERS = 1
+
 
 def test_create_docker_containers():
     for i in range(N_DOCKER_CONTAINERS):
@@ -318,6 +320,7 @@ def test_add_member_identity():
 
 
     )
+
     # print(f"\n{python_code}\n")
     output = pytest.containers[0].run_python_code(
         python_code, print_output=False
@@ -329,8 +332,6 @@ def test_add_member_identity():
         "Member has joined!" in output,
         "Added member"
     )
-
-
 
 
 def test_get_control_key():
@@ -362,6 +363,8 @@ def test_get_control_key():
 
 
 wait_dur_s = 30
+
+
 def test_renew_control_key():
     success = True
     python_code = "\n".join([

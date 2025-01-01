@@ -104,7 +104,6 @@ class DidManager(GenericBlockchain):
             block_received_handler=self._dm_on_block_received,
             update_blockids_before_handling=True,
         )
-        self._init_blocks_list()
         self._dm_other_blocks_handler = other_blocks_handler
         self.key_store = key_store
         self._control_key_id = ""
@@ -112,10 +111,11 @@ class DidManager(GenericBlockchain):
         # logger.debug("DM: Getting DID-Doc...")
 
         if auto_load_missed_blocks:
-            self.load_missed_blocks()
+            DidManager.load_missed_blocks(self)
 
         # logger.debug("DM: Built DID-Manager object!")
     def load_missed_blocks(self):
+        self._init_blocks_list()
         self.blockchain.load_missed_blocks(
             waly.blockchain_model.N_STARTUP_BLOCKS
         )
@@ -452,7 +452,7 @@ class DidManager(GenericBlockchain):
         # present to other programs all blocks not created by this DidManager
         blocks = [
             block for block in self.blockchain.get_blocks()
-            if self.WALYTIS_BLOCK_TOPIC not in block.topics
+            if WALYTIS_BLOCK_TOPIC not in block.topics
         ]
         self._blocks_list = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
 
