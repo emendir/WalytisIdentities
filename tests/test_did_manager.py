@@ -76,7 +76,7 @@ def test_update_did_doc():
         ]
     }
     pytest.did_manager.update_did_doc(pytest.did_doc)
-    mark(pytest.did_manager.get_did_doc() == pytest.did_doc, "Update DID Doc")
+    mark(pytest.did_manager.did_doc == pytest.did_doc, "Update DID Doc")
 
 
 def test_reload_did_manager():
@@ -86,7 +86,7 @@ def test_reload_did_manager():
 
     mark((
         did_manager_copy.get_control_key().public_key == pytest.new_control_key.public_key
-        and did_manager_copy.get_did_doc() == pytest.did_doc
+        and did_manager_copy.did_doc == pytest.did_doc
     ),
         "Reload DID Manager"
     )

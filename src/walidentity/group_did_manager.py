@@ -69,7 +69,6 @@ class _GroupDidManager(DidManager):
         self,
         key_store: KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
-        appdata_dir: str = "",
         auto_load_missed_blocks: bool = True,
 
     ):
@@ -79,16 +78,16 @@ class _GroupDidManager(DidManager):
             key_store=key_store,
             # we handle member management blocks
             other_blocks_handler=self._gdm_on_block_received,
-            appdata_dir=appdata_dir,
             auto_load_missed_blocks=False,
 
         )
-        self.members_list:list[dict]=[]
+        self.members_list: list[dict] = []
+        self.members_list = list(get_members(self.blockchain).values())
         if auto_load_missed_blocks:
             _GroupDidManager.load_missed_blocks(self)
+
     def load_missed_blocks(self):
         DidManager.load_missed_blocks(self)
-        self.members_list = list(get_members(self.blockchain).values())
 
     def _gdm_add_info_block(self, block: InfoBlock) -> Block:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
@@ -101,7 +100,7 @@ class _GroupDidManager(DidManager):
 
     def _gdm_on_block_received(self, block: Block) -> None:
         block_type = get_block_type(block.topics)
-        # logger.info(f"GDM: received block: {block.topics}")
+        # logger.debug(f"GDM: received block: {block.topics}")
 
         if WALYTIS_BLOCK_TOPIC in block.topics:
             match block_type:
@@ -128,7 +127,8 @@ class _GroupDidManager(DidManager):
             # if user defined an event-handler for non-DID blocks, call it
             if self._gdm_other_blocks_handler:
                 self._gdm_other_blocks_handler(block)
-
+        # logger.debug(f"GDM: processed block")
+        
     @property
     def block_received_handler(self) -> Callable[[Block], None] | None:
         return self._gdm_other_blocks_handler
@@ -257,10 +257,8 @@ class _GroupDidManager(DidManager):
             "invitation_key": invitation["invitation_key"]  # Key object
         })
         joining_block.sign(invitation_key)
-        self.blockchain.add_block(
-            joining_block.generate_block_content(),
-            joining_block.walytis_block_topic
-        )
+        self._gdm_add_info_block(joining_block)
+
 
 
 class GroupDidManager(_GroupDidManager):
@@ -313,21 +311,20 @@ class GroupDidManager(_GroupDidManager):
         self.control_key_manager_thr = Thread(
             target=self.manage_control_key
         )
+        self.get_published_candidate_keys()
+
+        self.key_requests_listener = ConversationListener(
+            f"{self.member_did_manager.did}-KeyRequests",
+            self.key_requests_handler
+        )
+
+        self.control_key_manager_thr.start()
 
         if auto_load_missed_blocks:
             GroupDidManager.load_missed_blocks(self)
 
     def load_missed_blocks(self):
-        if not self.control_key_manager_thr.is_alive():
-            _GroupDidManager.load_missed_blocks(self)
-            self.get_published_candidate_keys()
-
-            self.key_requests_listener = ConversationListener(
-                f"{self.member_did_manager.did}-KeyRequests",
-                self.key_requests_handler
-            )
-
-            self.control_key_manager_thr.start()
+        _GroupDidManager.load_missed_blocks(self)
 
     @classmethod
     def create(

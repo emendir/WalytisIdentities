@@ -169,10 +169,7 @@ def docker_check_new_member(did: str):
     pytest.group_1 = GroupDidManager(
         profile_did_keystore, device_did_keystore
     )
-    # pytest.group_1.add_member(
-    #     did,
-    #     invitation
-    # )
+
 
     logger.debug("CND: Getting members...")
     success = (
@@ -285,10 +282,8 @@ def test_add_member_identity():
         os.path.join(pytest.group_2_config_dir, "group_2.json"),
         pytest.KEY
     )
+    member = DidManager.create(pytest.group_2_config_dir)
     try:
-
-        member = DidManager.create(pytest.group_2_config_dir)
-
         pytest.group_2 = GroupDidManager.join(
             pytest.invitation, group_keystore, member
         )
@@ -317,10 +312,7 @@ def test_add_member_identity():
         "test_key_sharing.test_preparations();"
         f"test_key_sharing.docker_check_new_member('{member.did}');"
         f"logger.debug(threading.enumerate());"
-
-
     )
-
     # print(f"\n{python_code}\n")
     output = pytest.containers[0].run_python_code(
         python_code, print_output=False
