@@ -9,6 +9,8 @@ RUN cd /opt/IPFS-Monitor && head -n -1 /opt/IPFS-Monitor/install_linux_systemd.s
 
 RUN pip install --break-system-packages --root-user-action ignore -r /opt/WalIdentity/requirements-dev.txt
 RUN pip install --break-system-packages --root-user-action ignore -r /opt/WalIdentity/requirements.txt
+RUN pip install --break-system-packages --root-user-action ignore -e /opt/WalIdentity/
+
 RUN for SUBFOLDER in /opt/WalIdentity/tests/walytis_auth_docker/python_packages/*; do pip install --break-system-packages --root-user-action ignore "$SUBFOLDER"; done
 
 
