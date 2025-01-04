@@ -18,48 +18,9 @@ from walidentity.utils import logger
 WALYTIS_BLOCK_TOPIC = "Endra"
 
 
-class DidManagerSuper:
-
-    def __init__(self, group_did_manager: GroupDidManager):
-        self.blockchain = group_did_manager
-
-    @classmethod
-    def create(
-        cls, group_key_store: KeyStore | str, member: DidManager
-    ) -> 'DidManagerSuper':
-
-        return cls(GroupDidManager.create(group_key_store, member))
-    def invite(self) -> dict:
-        return self.blockchain.invite_member()
-
-    @classmethod
-    def join(
-        cls, invitation: dict | str,
-        group_key_store: KeyStore | str,
-        member: DidManager
-    ) -> 'DidManagerSuper':
-        return cls(GroupDidManager.join(invitation, group_key_store, member))
-
-    def _on_block_received(self, block: Block):
-        logger.info(f"Endra-DidManagerSuper: Received block: {block.topics}")
-
-    def delete(self):
-        self.blockchain.delete()
-
-    def terminate(self):
-        self.blockchain.terminate()
-
-    def __del__(self):
-        self.blockchain.terminate()
-
-    @property
-    def did(self):
-        return self.blockchain.did
-
-
 @dataclass
 class SuperRegistration(InfoBlock):
-    """Block in a Profile's blockchain registering a DidManagerSuper."""
+    """Block in a Profile's blockchain registering a GroupDidManager."""
     walytis_block_topic = "endra_corresp_reg"
     info_content: dict
 
@@ -88,11 +49,11 @@ class SuperRegistration(InfoBlock):
         return self.info_content["invitation"]
 
 
-class CorrespondenceExistsError(Exception):
+class SuperExistsError(Exception):
     pass
 
 
-class CorrespondenceManager:
+class DidManagerWithSupers:
     """Manages a collection of correspondences, managing adding archiving them.
     """
 
@@ -104,10 +65,10 @@ class CorrespondenceManager:
         )
         self._terminate = False
 
-        # cached list of archived  DidManagerSuper IDs
+        # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
-        self.correspondences: dict[str, DidManagerSuper] = dict()
-        self._load_supers()  # load DidManagerSuper objects
+        self.correspondences: dict[str, GroupDidManager] = dict()
+        self._load_supers()  # load GroupDidManager objects
         self._process_invitations = False
         self.correspondences_to_join: dict[str,
                                            SuperRegistration | None] = {}
@@ -135,7 +96,7 @@ class CorrespondenceManager:
                 if not invitation:
                     error_message = (
                         "BUG: "
-                        "In trying to join already joined DidManagerSuper, "
+                        "In trying to join already joined GroupDidManager, "
                         "couldn't find a matching SuperRegistration."
 
                     )
@@ -150,31 +111,31 @@ class CorrespondenceManager:
 
         self._process_invitations = True
 
-    def add(self) -> DidManagerSuper:
+    def add(self) -> GroupDidManager:
         with self.lock:
             if self._terminate:
                 raise Exception(
-                    "CorrespondenceManager.add: we're shutting down"
+                    "DidManagerWithSupers.add: we're shutting down"
                 )
             # the GroupDidManager keystore file is located in self.key_store_dir
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
             # self.profile_did_manager.key_store
-            correspondence = DidManagerSuper.create(
+            correspondence = GroupDidManager.create(
                 self.key_store_dir,
                 member=self.profile_did_manager
             )
-            invitation = correspondence.invite()
-            # register DidManagerSuper on blockchain
+            invitation = correspondence.invite_member()
+            # register GroupDidManager on blockchain
             self._register_super(
                 correspondence.did, True, invitation
             )
 
-            # add to internal collection of DidManagerSuper objects
+            # add to internal collection of GroupDidManager objects
             self.correspondences.update({correspondence.did: correspondence})
             return correspondence
 
-    def join_from_invitation(self, invitation: dict | str, register=True) -> DidManagerSuper:
+    def join_from_invitation(self, invitation: dict | str, register=True) -> GroupDidManager:
         """
         Args:
             register: whether or not the new correspondence still needs to be
@@ -184,7 +145,7 @@ class CorrespondenceManager:
 
             if self._terminate:
                 raise Exception(
-                    "CorrespondenceManager.add: we're shutting down")
+                    "DidManagerWithSupers.add: we're shutting down")
 
             if isinstance(invitation, str):
                 invitation_d = json.loads(invitation)
@@ -194,32 +155,32 @@ class CorrespondenceManager:
                 invitation_d["blockchain_invitation"]["blockchain_id"]
             )
             if corresp_id in self.correspondences or corresp_id in self._archived_corresp_ids:
-                raise CorrespondenceExistsError()
+                raise SuperExistsError()
 
             # the GroupDidManager keystore file is located in self.key_store_dir
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
             # self.profile_did_manager.key_store
-            correspondence = DidManagerSuper.join(
+            correspondence = GroupDidManager.join(
                 invitation=invitation_d,
                 group_key_store=self.key_store_dir,
                 member=self.profile_did_manager
             )
 
             if register:
-                # register DidManagerSuper on blockchain
+                # register GroupDidManager on blockchain
                 self._register_super(
                     correspondence.did, True, invitation_d
                 )
-            # add to internal collection of DidManagerSuper objects
+            # add to internal collection of GroupDidManager objects
             self.correspondences.update({correspondence.did: correspondence})
 
             return correspondence
 
-    def join_already_joined(self, correspondence_id: str, registration: SuperRegistration) -> DidManagerSuper | None:
+    def join_already_joined(self, correspondence_id: str, registration: SuperRegistration) -> GroupDidManager | None:
         """Join a Coresp. which our Profile has joined but member hasn't."""
         with self.lock:
-            # logger.info("JAJ: Joining already joined DidManagerSuper...")
+            # logger.info("JAJ: Joining already joined GroupDidManager...")
             key_store_path = os.path.join(
                 self.key_store_dir,
                 blockchain_id_from_did(correspondence_id) + ".json"
@@ -243,11 +204,11 @@ class CorrespondenceManager:
             except JoinFailureError:
                 return None
             # logger.info("Loading correspondence...")
-            correspondence = DidManagerSuper(
-                group_did_manager=GroupDidManager(
+            correspondence = GroupDidManager(
+                
                     group_key_store=key_store,
                     member=self.profile_did_manager
-                )
+                
             )
 
             self.correspondences.update({correspondence.did: correspondence})
@@ -295,7 +256,7 @@ class CorrespondenceManager:
 
         Returns:
             tuple[set[str], set[str]]: list of active and list of archived
-                                        DidManagerSuper IDs
+                                        GroupDidManager IDs
         """
         active_supers: set[str] = set()
         archived_supers: set[str] = set()
@@ -333,7 +294,7 @@ class CorrespondenceManager:
     def get_archived_ids(self) -> set[str]:
         return self._archived_corresp_ids
 
-    def get_from_id(self, corresp_id: str) -> DidManagerSuper:
+    def get_from_id(self, corresp_id: str) -> GroupDidManager:
         return self.correspondences[corresp_id]
 
     def _load_supers(self) -> None:
@@ -359,11 +320,9 @@ class CorrespondenceManager:
                 )
                 # load the correspondence' KeyStore
                 key_store = KeyStore(key_store_path, key_store_key)
-                correspondence = DidManagerSuper(
-                    group_did_manager=GroupDidManager(
+                correspondence = GroupDidManager(
                         group_key_store=key_store,
                         member=self.profile_did_manager
-                    )
                 )
                 correspondences.append(correspondence)
             self.correspondences = dict([
@@ -382,7 +341,7 @@ class CorrespondenceManager:
         crsp_registration = SuperRegistration.load_from_block_content(
             block.content
         )
-        # logger.info(f"CorrespondenceManager: got registration for {
+        # logger.info(f"DidManagerWithSupers: got registration for {
         #             crsp_registration.correspondence_id}")
 
         # update lists of active and archived Correspondences
@@ -393,19 +352,19 @@ class CorrespondenceManager:
                         crsp_registration.correspondence_id: crsp_registration
                     })
                     # logger.info(
-                    #     "CorrespondenceManager: not yet joining DidManagerSuper")
+                    #     "DidManagerWithSupers: not yet joining GroupDidManager")
                 else:
                     self.join_from_invitation(
                         crsp_registration.invitation, register=False)
                     # logger.info(
-                    #     "CorrespondenceManager: added new DidManagerSuper")
+                    #     "DidManagerWithSupers: added new GroupDidManager")
             else:
                 self.archive(
                     crsp_registration.correspondence_id, register=False)
-                # logger.info("CorrespondenceManager: archived DidManagerSuper")
-        except CorrespondenceExistsError:
+                # logger.info("DidManagerWithSupers: archived GroupDidManager")
+        except SuperExistsError:
             # logger.info(
-            #     "CorrespondenceManager: we already have this DidManagerSuper!")
+            #     "DidManagerWithSupers: we already have this GroupDidManager!")
             pass
 
     def terminate(self):
@@ -435,7 +394,7 @@ class Profile:
         self.profile_did_manager = profile_did_manager
         self.profile_did_manager.block_received_handler = self._on_block_received
 
-        self.corresp_mngr = CorrespondenceManager(
+        self.corresp_mngr = DidManagerWithSupers(
             profile_did_manager=self.profile_did_manager
         )
         self.profile_did_manager.load_missed_blocks()
@@ -477,7 +436,7 @@ class Profile:
             profile_did_manager=profile_did_manager,
         )
 
-    def invite(self) -> dict:
+    def invite_member(self) -> dict:
         return self.profile_did_manager.invite_member()
 
     @classmethod

@@ -11,7 +11,7 @@ import walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walidentity.did_objects import Key
 from walidentity import did_manager_with_supers
-from walidentity.did_manager_with_supers import Profile, DidManagerSuper
+from walidentity.did_manager_with_supers import Profile, GroupDidManager
 walytis_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
@@ -66,7 +66,7 @@ def test_create_super():
     corresp_mngr = pytest.profile.corresp_mngr
     pytest.corresp = corresp_mngr.add()
     mark(
-        isinstance(pytest.corresp, DidManagerSuper),
+        isinstance(pytest.corresp, GroupDidManager),
         "Created correspondence."
     )
     mark(
@@ -90,7 +90,7 @@ def test_archive_super():
     corresp_mngr = pytest.profile.corresp_mngr
     corresp_mngr.archive(pytest.corresp.did)
     mark(
-        isinstance(pytest.corresp, DidManagerSuper),
+        isinstance(pytest.corresp, GroupDidManager),
         "Created correspondence."
     )
     mark(
