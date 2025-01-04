@@ -11,7 +11,7 @@ import walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walidentity.did_objects import Key
 from walidentity import did_manager_with_supers
-from walidentity.did_manager_with_supers import Profile, GroupDidManager
+from walidentity.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 walytis_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
@@ -28,7 +28,7 @@ DELETE_ALL_BRENTHY_DOCKERS = True
 
 
 def test_preparations():
-    pytest.corresp = None
+    pytest.super = None
     pytest.profile = None
     pytest.profile_config_dir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(
@@ -45,15 +45,15 @@ def test_preparations():
 
 
 def test_cleanup():
-    if pytest.corresp:
-        pytest.corresp.delete()
+    if pytest.super:
+        pytest.super.delete()
     if pytest.profile:
         pytest.profile.delete()
     shutil.rmtree(pytest.profile_config_dir)
 
 
 def test_create_profile():
-    pytest.profile = Profile.create(pytest.profile_config_dir, pytest.KEY)
+    pytest.profile = DidManagerWithSupers.create(pytest.profile_config_dir, pytest.KEY)
     existing_blockchain_ids = waly.list_blockchain_ids()
     mark(
         pytest.profile.profile_did_manager.blockchain.blockchain_id in existing_blockchain_ids
@@ -63,45 +63,45 @@ def test_create_profile():
 
 
 def test_create_super():
-    corresp_mngr = pytest.profile.corresp_mngr
-    pytest.corresp = corresp_mngr.add()
+    profile = pytest.profile
+    pytest.super = profile.add()
     mark(
-        isinstance(pytest.corresp, GroupDidManager),
+        isinstance(pytest.super, GroupDidManager),
         "Created correspondence."
     )
     mark(
-        pytest.corresp == corresp_mngr.get_from_id( pytest.corresp.did),
+        pytest.super == profile.get_from_id( pytest.super.did),
         "  -> get_from_id()"
     )
     mark(
-        pytest.corresp.did in corresp_mngr.get_active_ids()
-        and pytest.corresp.did not in corresp_mngr.get_archived_ids(),
+        pytest.super.did in profile.get_active_ids()
+        and pytest.super.did not in profile.get_archived_ids(),
         "  -> get_active_ids() & get_archived_ids()"
     )
-    active_ids, archived_ids = corresp_mngr._read_super_registry()
+    active_ids, archived_ids = profile._read_super_registry()
     mark(
-        pytest.corresp.did in active_ids
-        and pytest.corresp.did not in archived_ids,
+        pytest.super.did in active_ids
+        and pytest.super.did not in archived_ids,
         "  -> _read_super_registry()"
     )
 
 
 def test_archive_super():
-    corresp_mngr = pytest.profile.corresp_mngr
-    corresp_mngr.archive(pytest.corresp.did)
+    profile = pytest.profile
+    profile.archive(pytest.super.did)
     mark(
-        isinstance(pytest.corresp, GroupDidManager),
+        isinstance(pytest.super, GroupDidManager),
         "Created correspondence."
     )
     mark(
-        pytest.corresp.did not in corresp_mngr.get_active_ids()
-        and pytest.corresp.did  in corresp_mngr.get_archived_ids(),
+        pytest.super.did not in profile.get_active_ids()
+        and pytest.super.did  in profile.get_archived_ids(),
         "  -> get_active_ids() & get_archived_ids()"
     )
-    active_ids, archived_ids = corresp_mngr._read_super_registry()
+    active_ids, archived_ids = profile._read_super_registry()
     mark(
-        pytest.corresp.did not in active_ids
-        and pytest.corresp.did in archived_ids,
+        pytest.super.did not in active_ids
+        and pytest.super.did in archived_ids,
         "  -> _read_super_registry()"
     )
 

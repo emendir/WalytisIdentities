@@ -18,7 +18,7 @@ import walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walidentity.did_objects import Key
 from walidentity import did_manager_with_supers
-from walidentity.did_manager_with_supers import Profile, GroupDidManager
+from walidentity.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 
 from walytis_auth_docker.walytis_auth_docker import (
     WalIdentityDocker,
@@ -113,7 +113,10 @@ def test_cleanup():
     if os.path.exists(pytest.profile_config_dir):
         shutil.rmtree(pytest.profile_config_dir)
     for container in pytest.containers:
-        container.delete()
+        try:
+            container.delete()
+        except:
+            pass
     pytest.containers = []
     if pytest.corresp:
         pytest.corresp.delete()
@@ -122,13 +125,13 @@ def test_cleanup():
 
 
 def docker_create_profile():
-    logger.info("DOCKER: Creating Profile...")
-    pytest.profile = Profile.create(pytest.profile_config_dir, pytest.KEY)
+    logger.info("DOCKER: Creating DidManagerWithSupers...")
+    pytest.profile = DidManagerWithSupers.create(pytest.profile_config_dir, pytest.KEY)
 
 
 def docker_load_profile():
-    logger.info("DOCKER: Loading Profile...")
-    pytest.profile = Profile.load(pytest.profile_config_dir, pytest.KEY)
+    logger.info("DOCKER: Loading DidManagerWithSupers...")
+    pytest.profile = DidManagerWithSupers.load(pytest.profile_config_dir, pytest.KEY)
 
 
 def test_setup_profile(docker_container: WalIdentityDocker):
@@ -138,7 +141,7 @@ def test_setup_profile(docker_container: WalIdentityDocker):
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         "test_did_manager_with_supers_synchronisation.docker_create_profile()",
-        "print(f'DOCKER: Created Profile: {type(pytest.profile)}')",
+        "print(f'DOCKER: Created DidManagerWithSupers: {type(pytest.profile)}')",
         "pytest.profile.terminate()",
     ])
     output_lines = docker_container.run_python_code(
@@ -147,7 +150,7 @@ def test_setup_profile(docker_container: WalIdentityDocker):
     ).split("\n")
     last_line = output_lines[-1] if len(output_lines) > 0 else None
     mark(
-        last_line == "DOCKER: Created Profile: <class 'walidentity.did_manager_with_supers.Profile'>",
+        last_line == "DOCKER: Created DidManagerWithSupers: <class 'walidentity.did_manager_with_supers.DidManagerWithSupers'>",
         function_name()
     )
 
@@ -168,7 +171,7 @@ def test_load_profile(docker_container: WalIdentityDocker) -> dict | None:
         "test_did_manager_with_supers_synchronisation.docker_load_profile()",
         "invitation=pytest.profile.invite_member()",
         "print(json.dumps(invitation))",
-        "print(f'DOCKER: Loaded Profile: {type(pytest.profile)}')",
+        "print(f'DOCKER: Loaded DidManagerWithSupers: {type(pytest.profile)}')",
         "pytest.profile.terminate()",
     ])
     # breakpoint()
@@ -189,7 +192,7 @@ def test_load_profile(docker_container: WalIdentityDocker) -> dict | None:
         logger.warning(f"Error getting invitation: {output_lines[-2]}")
         invitation = None
     mark(
-        last_line == "DOCKER: Loaded Profile: <class 'walidentity.did_manager_with_supers.Profile'>",
+        last_line == "DOCKER: Loaded DidManagerWithSupers: <class 'walidentity.did_manager_with_supers.DidManagerWithSupers'>",
         function_name()
     )
 
@@ -204,7 +207,7 @@ CORRESP_JOIN_TIMEOUT_S = 15
 
 def docker_join_profile(invitation: str):
     logger.info("Joining Endra profile...")
-    pytest.profile = Profile.join(
+    pytest.profile = DidManagerWithSupers.join(
         invitation, pytest.profile_config_dir, pytest.KEY
     )
     logger.info("Joined Endra profile, waiting to get control key...")
@@ -267,14 +270,14 @@ def test_add_device(
 
 def docker_create_super() -> GroupDidManager:
     logger.info("DOCKER: Creating GroupDidManager...")
-    corresp = pytest.profile.corresp_mngr.add()
+    corresp = pytest.profile.add()
     print(corresp.did)
     return corresp
 
 
 def docker_join_super(invitation: str | dict):
     logger.info("DOCKER: Joining GroupDidManager...")
-    corresp = pytest.profile.corresp_mngr.join_from_invitation(invitation)
+    corresp = pytest.profile.join_super(invitation)
     print(corresp.did)
     logger.info("Joined Endra GroupDidManager, waiting to get control key...")
 
@@ -390,7 +393,7 @@ def test_auto_join_super(
         "test_did_manager_with_supers_synchronisation.docker_load_profile()",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "print('GroupDidManager DIDs:')",
-        "for c in pytest.profile.corresp_mngr.get_active_ids():",
+        "for c in pytest.profile.get_active_ids():",
         "    print(c)",
         "pytest.profile.terminate()",
     ])

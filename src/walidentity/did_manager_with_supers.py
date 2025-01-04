@@ -17,10 +17,12 @@ from walytis_beta_api import Block
 from walidentity.utils import logger
 WALYTIS_BLOCK_TOPIC = "Endra"
 
+CRYPTO_FAMILY = "EC-secp256k1"
+
 
 @dataclass
 class SuperRegistration(InfoBlock):
-    """Block in a Profile's blockchain registering a GroupDidManager."""
+    """Block in a DidManagerWithSupers's blockchain registering a GroupDidManager."""
     walytis_block_topic = "endra_corresp_reg"
     info_content: dict
 
@@ -57,7 +59,13 @@ class DidManagerWithSupers:
     """Manages a collection of correspondences, managing adding archiving them.
     """
 
-    def __init__(self, profile_did_manager: GroupDidManager):
+    def __init__(
+        self,
+        profile_did_manager: GroupDidManager,
+    ):
+
+        profile_did_manager.block_received_handler = self._on_block_received_dmws
+
         self.lock = Lock()
         self.profile_did_manager = profile_did_manager
         self.key_store_dir = os.path.dirname(
@@ -73,12 +81,16 @@ class DidManagerWithSupers:
         self.correspondences_to_join: dict[str,
                                            SuperRegistration | None] = {}
 
+        self.profile_did_manager.load_missed_blocks()
+        # start joining new correspondeces only after loading missed blocks
+        self.process_invitations()
+
     def process_invitations(self) -> None:
         # logger.debug(
         #     f"Processing invitations: {len(self.correspondences_to_join)}"
         # )
         _supers_to_join: dict[str,
-                                       SuperRegistration | None] = {}
+                              SuperRegistration | None] = {}
         for correspondence_id in self.correspondences_to_join.keys():
             registration = self.correspondences_to_join[correspondence_id]
             if not registration:
@@ -102,7 +114,7 @@ class DidManagerWithSupers:
                     )
                     logger.warning(error_message)
                     continue
-            correspondence = self.join_already_joined(
+            correspondence = self.join_already_joined_super(
                 correspondence_id, registration)
             if not correspondence:
                 _supers_to_join.update(
@@ -135,11 +147,11 @@ class DidManagerWithSupers:
             self.correspondences.update({correspondence.did: correspondence})
             return correspondence
 
-    def join_from_invitation(self, invitation: dict | str, register=True) -> GroupDidManager:
+    def join_super(self, invitation: dict | str, register=True) -> GroupDidManager:
         """
         Args:
             register: whether or not the new correspondence still needs to be
-                        registered on our Profile's blockchain
+                        registered on our DidManagerWithSupers's blockchain
         """
         with self.lock:
 
@@ -177,8 +189,11 @@ class DidManagerWithSupers:
 
             return correspondence
 
-    def join_already_joined(self, correspondence_id: str, registration: SuperRegistration) -> GroupDidManager | None:
-        """Join a Coresp. which our Profile has joined but member hasn't."""
+    def join_already_joined_super(
+        self, correspondence_id: str,
+        registration: SuperRegistration
+    ) -> GroupDidManager | None:
+        """Join a Coresp. which our DidManagerWithSupers has joined but member hasn't."""
         with self.lock:
             # logger.info("JAJ: Joining already joined GroupDidManager...")
             key_store_path = os.path.join(
@@ -205,10 +220,10 @@ class DidManagerWithSupers:
                 return None
             # logger.info("Loading correspondence...")
             correspondence = GroupDidManager(
-                
-                    group_key_store=key_store,
-                    member=self.profile_did_manager
-                
+
+                group_key_store=key_store,
+                member=self.profile_did_manager
+
             )
 
             self.correspondences.update({correspondence.did: correspondence})
@@ -321,8 +336,8 @@ class DidManagerWithSupers:
                 # load the correspondence' KeyStore
                 key_store = KeyStore(key_store_path, key_store_key)
                 correspondence = GroupDidManager(
-                        group_key_store=key_store,
-                        member=self.profile_did_manager
+                    group_key_store=key_store,
+                    member=self.profile_did_manager
                 )
                 correspondences.append(correspondence)
             self.correspondences = dict([
@@ -354,7 +369,7 @@ class DidManagerWithSupers:
                     # logger.info(
                     #     "DidManagerWithSupers: not yet joining GroupDidManager")
                 else:
-                    self.join_from_invitation(
+                    self.join_super(
                         crsp_registration.invitation, register=False)
                     # logger.info(
                     #     "DidManagerWithSupers: added new GroupDidManager")
@@ -374,35 +389,10 @@ class DidManagerWithSupers:
             self._terminate = True
             for correspondence in self.correspondences.values():
                 correspondence.terminate()
-
-    def delete(self):
-        pass
-
-
-CRYPTO_FAMILY = "EC-secp256k1"
-
-
-class Profile:
-    avatar: None
-    profile_did_manager: GroupDidManager
-
-    def __init__(
-        self,
-        profile_did_manager: GroupDidManager,
-    ):
-
-        self.profile_did_manager = profile_did_manager
-        self.profile_did_manager.block_received_handler = self._on_block_received
-
-        self.corresp_mngr = DidManagerWithSupers(
-            profile_did_manager=self.profile_did_manager
-        )
-        self.profile_did_manager.load_missed_blocks()
-        # start joining new correspondeces only after loading missed blocks
-        self.corresp_mngr.process_invitations()
+        self.profile_did_manager.terminate()
 
     @classmethod
-    def create(cls, config_dir: str, key: Key) -> 'Profile':
+    def create(cls, config_dir: str, key: Key) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
             config_dir, "profile_keystore.json")
@@ -419,7 +409,7 @@ class Profile:
         )
 
     @classmethod
-    def load(cls, config_dir: str, key: Key) -> 'Profile':
+    def load(cls, config_dir: str, key: Key) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
             config_dir, "profile_keystore.json")
@@ -442,7 +432,7 @@ class Profile:
     @classmethod
     def join(cls,
              invitation: str | dict, config_dir: str, key: Key
-             ) -> 'Profile':
+             ) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
             config_dir, "profile_keystore.json")
@@ -459,34 +449,26 @@ class Profile:
             profile_did_manager=profile_did_manager,
         )
 
-    def _on_block_received(self, block: Block):
+    def _on_block_received_dmws(self, block: Block):
         if WALYTIS_BLOCK_TOPIC == block.topics[0]:
             match block.topics[1]:
                 case SuperRegistration.walytis_block_topic:
-                    self.corresp_mngr.on_super_registration_received(
+                    self.on_super_registration_received(
                         block
                     )
                 case _:
                     logger.warning(
-                        "Endra Profile: Received unhandled block with topics: "
+                        "Endra DidManagerWithSupers: Received unhandled block with topics: "
                         f"{block.topics}"
                     )
         else:
             logger.warning(
-                "Endra Profile: Received unhandled block with topics: "
+                "Endra DidManagerWithSupers: Received unhandled block with topics: "
                 f"{block.topics}"
             )
 
     def delete(self):
         self.profile_did_manager.delete()
-        self.corresp_mngr.delete()
-
-    def terminate(self):
-        self.profile_did_manager.terminate()
-        self.corresp_mngr.terminate()
 
     def __del__(self):
         self.terminate()
-
-
-profiles: list[Profile]
