@@ -60,9 +60,9 @@ DOCKER_PYTHON_FINISH_TESTING_CODE = '''
 
 N_DOCKER_CONTAINERS = 4
 
-pytest.corresp = None
-pytest.profile = None
-pytest.profile_config_dir = "/tmp/wali_test_did_manager_with_supers_synchronisation"
+pytest.super = None
+pytest.dm = None
+pytest.dm_config_dir = "/tmp/wali_test_did_manager_with_supers_synchronisation"
 pytest.containers: list[WalIdentityDocker] = []
 
 
@@ -75,11 +75,11 @@ def test_preparations():
 
         build_docker_image(verbose=False)
 
-    if not os.path.exists(pytest.profile_config_dir):
-        os.makedirs(pytest.profile_config_dir)
+    if not os.path.exists(pytest.dm_config_dir):
+        os.makedirs(pytest.dm_config_dir)
 
     pytest.key_store_path = os.path.join(
-        pytest.profile_config_dir, "keystore.json")
+        pytest.dm_config_dir, "keystore.json")
 
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
@@ -110,39 +110,39 @@ def test_create_docker_containers():
 
 
 def test_cleanup():
-    if os.path.exists(pytest.profile_config_dir):
-        shutil.rmtree(pytest.profile_config_dir)
+    if os.path.exists(pytest.dm_config_dir):
+        shutil.rmtree(pytest.dm_config_dir)
     for container in pytest.containers:
         try:
             container.delete()
         except:
             pass
     pytest.containers = []
-    if pytest.corresp:
-        pytest.corresp.delete()
-    if pytest.profile:
-        pytest.profile.delete()
+    if pytest.super:
+        pytest.super.delete()
+    if pytest.dm:
+        pytest.dm.delete()
 
 
-def docker_create_profile():
+def docker_create_dm():
     logger.info("DOCKER: Creating DidManagerWithSupers...")
-    pytest.profile = DidManagerWithSupers.create(pytest.profile_config_dir, pytest.KEY)
+    pytest.dm = DidManagerWithSupers.create(pytest.dm_config_dir, pytest.KEY)
 
 
-def docker_load_profile():
+def docker_load_dm():
     logger.info("DOCKER: Loading DidManagerWithSupers...")
-    pytest.profile = DidManagerWithSupers.load(pytest.profile_config_dir, pytest.KEY)
+    pytest.dm = DidManagerWithSupers.load(pytest.dm_config_dir, pytest.KEY)
 
 
-def test_setup_profile(docker_container: WalIdentityDocker):
-    """In a docker container, create an Endra profile."""
+def test_setup_dm(docker_container: WalIdentityDocker):
+    """In a docker container, create an Endra dm."""
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
 
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_create_profile()",
-        "print(f'DOCKER: Created DidManagerWithSupers: {type(pytest.profile)}')",
-        "pytest.profile.terminate()",
+        "test_did_manager_with_supers_synchronisation.docker_create_dm()",
+        "print(f'DOCKER: Created DidManagerWithSupers: {type(pytest.dm)}')",
+        "pytest.dm.terminate()",
     ])
     output_lines = docker_container.run_python_code(
         python_code, print_output=False, timeout=PROFILE_CREATE_TIMEOUT_S,
@@ -155,24 +155,24 @@ def test_setup_profile(docker_container: WalIdentityDocker):
     )
 
 
-def test_load_profile(docker_container: WalIdentityDocker) -> dict | None:
-    """In a docker container, load an Endra profile & create an invitation.
+def test_load_dm(docker_container: WalIdentityDocker) -> dict | None:
+    """In a docker container, load an Endra dm & create an invitation.
 
-    The docker container must already have had the Endra profile set up.
+    The docker container must already have had the Endra dm set up.
 
     Args:
-        docker_container: the docker container in which to load the profile
+        docker_container: the docker container in which to load the dm
     Returns:
-        dict: an invitation to allow another device to join the profile
+        dict: an invitation to allow another device to join the dm
     """
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
-        "invitation=pytest.profile.invite_member()",
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "invitation=pytest.dm.invite_member()",
         "print(json.dumps(invitation))",
-        "print(f'DOCKER: Loaded DidManagerWithSupers: {type(pytest.profile)}')",
-        "pytest.profile.terminate()",
+        "print(f'DOCKER: Loaded DidManagerWithSupers: {type(pytest.dm)}')",
+        "pytest.dm.terminate()",
     ])
     # breakpoint()
     output_lines = docker_container.run_python_code(
@@ -205,45 +205,45 @@ PROFILE_JOIN_TIMEOUT_S = 20
 CORRESP_JOIN_TIMEOUT_S = 20
 
 
-def docker_join_profile(invitation: str):
-    logger.info("Joining Endra profile...")
-    pytest.profile = DidManagerWithSupers.join(
-        invitation, pytest.profile_config_dir, pytest.KEY
+def docker_join_dm(invitation: str):
+    logger.info("Joining Endra dm...")
+    pytest.dm = DidManagerWithSupers.join(
+        invitation, pytest.dm_config_dir, pytest.KEY
     )
-    logger.info("Joined Endra profile, waiting to get control key...")
+    logger.info("Joined Endra dm, waiting to get control key...")
 
     sleep(PROFILE_JOIN_TIMEOUT_S)
-    ctrl_key = pytest.profile.get_control_key()
+    ctrl_key = pytest.dm.get_control_key()
     logger.info(f"Joined: {type(ctrl_key)}")
     if ctrl_key.private_key:
         print("Got control key!")
 
 
-def test_add_device(
+def test_add_sub(
     docker_container_new: WalIdentityDocker,
     docker_container_old: WalIdentityDocker,
     invitation: dict
 ) -> None:
     """
-    Join an existing Endra profile on a new docker container.
+    Join an existing Endra dm on a new docker container.
 
     Args:
         docker_container_new: the container on which to set up Endra, joining
-            the existing Endra profile
-        docker_container_old; the container on which the Endra profile is
+            the existing Endra dm
+        docker_container_old; the container on which the Endra dm is
             already set up
         invitation: the invitation that allows the new docker container to join
-            the Endra profile
+            the Endra dm
     """
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
 
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
         "logger.info('Waiting to allow new device to join...')",
         f"sleep({PROFILE_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
-        "pytest.profile.terminate()",
+        "pytest.dm.terminate()",
         "logger.info('Exiting after waiting.')",
 
     ])
@@ -252,9 +252,9 @@ def test_add_device(
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        f"test_did_manager_with_supers_synchronisation.docker_join_profile('{
+        f"test_did_manager_with_supers_synchronisation.docker_join_dm('{
             json.dumps(invitation)}')",
-        "pytest.profile.terminate()",
+        "pytest.dm.terminate()",
     ])
     output_lines = docker_container_new.run_python_code(
         python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=False,
@@ -270,35 +270,35 @@ def test_add_device(
 
 def docker_create_super() -> GroupDidManager:
     logger.info("DOCKER: Creating GroupDidManager...")
-    corresp = pytest.profile.add()
-    print(corresp.did)
-    return corresp
+    super = pytest.dm.create_super()
+    print(super.did)
+    return super
 
 
 def docker_join_super(invitation: str | dict):
     logger.info("DOCKER: Joining GroupDidManager...")
-    corresp = pytest.profile.join_super(invitation)
-    print(corresp.did)
+    super = pytest.dm.join_super(invitation)
+    print(super.did)
     logger.info("Joined Endra GroupDidManager, waiting to get control key...")
 
     sleep(CORRESP_JOIN_TIMEOUT_S)
-    ctrl_key = corresp.get_control_key()
+    ctrl_key = super.get_control_key()
     logger.info(f"Joined: {type(ctrl_key)}")
     if ctrl_key.private_key:
         print("Got control key!")
-    return corresp
+    return super
 
 
 def test_create_super(docker_container: WalIdentityDocker) -> dict | None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
-        "corresp=test_did_manager_with_supers_synchronisation.docker_create_super()",
-        "invitation = corresp.invite_member()",
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "super=test_did_manager_with_supers_synchronisation.docker_create_super()",
+        "invitation = super.invite_member()",
         "print(json.dumps(invitation))",
-        "print(f'DOCKER: Created GroupDidManager: {type(corresp)}')",
-        "pytest.profile.terminate()",
+        "print(f'DOCKER: Created super: {type(super)}')",
+        "pytest.dm.terminate()",
     ])
     output_lines = docker_container.run_python_code(
         python_code, print_output=False,
@@ -314,14 +314,14 @@ def test_create_super(docker_container: WalIdentityDocker) -> dict | None:
     invitation = json.loads(output_lines[-2].strip().replace("'", '"'))
 
     mark(
-        last_line == "DOCKER: Created GroupDidManager: <class 'walidentity.group_did_manager.GroupDidManager'>",
+        last_line == "DOCKER: Created super: <class 'walidentity.group_did_manager.GroupDidManager'>",
         function_name()
     )
 
     return invitation
 
 
-def test_device_loaded_super(docker_container: WalIdentityDocker, corresp_id: str) -> None:
+def test_device_loaded_super(docker_container: WalIdentityDocker, super_id: str) -> None:
     pass
 
 
@@ -333,11 +333,11 @@ def test_join_super(
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
         "logger.info('Waiting to allow conversation join...')",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
-        "pytest.profile.terminate()",
+        "pytest.dm.terminate()",
         "logger.info('Exiting after waiting.')",
 
     ])
@@ -346,25 +346,25 @@ def test_join_super(
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
-        f"corresp = test_did_manager_with_supers_synchronisation.docker_join_super('{
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        f"super = test_did_manager_with_supers_synchronisation.docker_join_super('{
             json.dumps(invitation)}')",
-        "print(corresp.did)",
-        "pytest.profile.terminate()",
-        "corresp.terminate()",
+        "print(super.did)",
+        "pytest.dm.terminate()",
+        "super.terminate()",
     ])
     output_lines = docker_container_new.run_python_code(
         python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
         print_output=False, background=False
     ).split("\n")
     second_last_line = output_lines[-2].strip()
-    corresp_id = output_lines[-1].strip()
-    expected_corresp_id = did_from_blockchain_id(
+    super_id = output_lines[-1].strip()
+    expected_super_id = did_from_blockchain_id(
         invitation['blockchain_invitation']['blockchain_id'])
 
     mark(
         second_last_line == "Got control key!" and
-        corresp_id == expected_corresp_id,
+        super_id == expected_super_id,
         function_name()
     )
 
@@ -372,16 +372,16 @@ def test_join_super(
 def test_auto_join_super(
     docker_container_old: WalIdentityDocker,
     docker_container_new: WalIdentityDocker,
-    correspondence_id: str
+    superondence_id: str
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
         "logger.info('Waiting to allow auto conversation join...')",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
-        "pytest.profile.terminate()",
+        "pytest.dm.terminate()",
         "logger.info('Exiting after waiting.')",
 
     ])
@@ -390,12 +390,12 @@ def test_auto_join_super(
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_profile()",
+        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "print('GroupDidManager DIDs:')",
-        "for c in pytest.profile.get_active_ids():",
+        "for c in pytest.dm.get_active_supers():",
         "    print(c)",
-        "pytest.profile.terminate()",
+        "pytest.dm.terminate()",
     ])
     try:
         output = docker_container_new.run_python_code(
@@ -412,54 +412,50 @@ def test_auto_join_super(
         c_ids = [c_id for c_id in c_ids if c_id != ""]
 
     mark(
-        correspondence_id in c_ids,
+        superondence_id in c_ids,
         function_name()
     )
 
 
-def test_conv_add_third_partner():
-    print(coloured(f"\n\nRunning {function_name()}", "blue"))
-
-
 def run_tests():
-    print("\nRunning tests for Endra:")
+    print("\nRunning tests for DidManagerWithSupers:")
     test_cleanup()
     test_preparations()
     test_create_docker_containers()
 
-    # create first profile with multiple devices
-    test_setup_profile(pytest.containers[0])
-    invitation = test_load_profile(pytest.containers[0])
+    # create first dm with multiple devices
+    test_setup_dm(pytest.containers[0])
+    invitation = test_load_dm(pytest.containers[0])
     if invitation:
-        test_add_device(pytest.containers[1], pytest.containers[0], invitation)
-        test_load_profile(pytest.containers[1])
-    # create second profile with multiple devices
-    test_setup_profile(pytest.containers[2])
-    invitation = test_load_profile(pytest.containers[2])
+        test_add_sub(pytest.containers[1], pytest.containers[0], invitation)
+        test_load_dm(pytest.containers[1])
+    # create second dm with multiple devices
+    test_setup_dm(pytest.containers[2])
+    invitation = test_load_dm(pytest.containers[2])
     if invitation:
-        test_add_device(pytest.containers[3], pytest.containers[2], invitation)
-        test_load_profile(pytest.containers[3])
+        test_add_sub(pytest.containers[3], pytest.containers[2], invitation)
+        test_load_dm(pytest.containers[3])
 
-    # create correspondence & share accross profiles
+    # create superondence & share accross dms
     invitation = test_create_super(pytest.containers[0])
     if invitation:
-        corresp_id = did_from_blockchain_id(
+        super_id = did_from_blockchain_id(
             invitation['blockchain_invitation']['blockchain_id'])
-        # check that profile1's second device automatically joins the correspondence
+        # check that dm1's second device automatically joins the superondence
         test_auto_join_super(
-            pytest.containers[0], pytest.containers[1], corresp_id)
+            pytest.containers[0], pytest.containers[1], super_id)
 
-        # test that profile2 can join the correspondence given an invitation
+        # test that dm2 can join the superondence given an invitation
         test_join_super(
             pytest.containers[0], pytest.containers[2], invitation
         )
         test_auto_join_super(
             pytest.containers[2],
             pytest.containers[3],
-            corresp_id
+            super_id
         )
 
-    # create second profile with multiple devices
+    # create second dm with multiple devices
     test_cleanup()
     test_threads_cleanup()
 

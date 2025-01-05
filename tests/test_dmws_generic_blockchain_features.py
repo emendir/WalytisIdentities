@@ -49,7 +49,7 @@ def test_preparations() -> None:
 
     pytest.profile = DidManagerWithSupers.create(
         pytest.profile_config_dir, pytest.KEY)
-    pytest.super = pytest.profile.add()
+    pytest.super = pytest.profile.create_super()
     sleep(1)
     pytest.profile.terminate()
 

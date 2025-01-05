@@ -29,10 +29,10 @@ DELETE_ALL_BRENTHY_DOCKERS = True
 
 def test_preparations():
     pytest.super = None
-    pytest.profile = None
-    pytest.profile_config_dir = tempfile.mkdtemp()
+    pytest.dm = None
+    pytest.dm_config_dir = tempfile.mkdtemp()
     pytest.key_store_path = os.path.join(
-        pytest.profile_config_dir, "keystore.json")
+        pytest.dm_config_dir, "keystore.json")
 
     # the cryptographic family to use for the tests
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
@@ -47,44 +47,44 @@ def test_preparations():
 def test_cleanup():
     if pytest.super:
         pytest.super.delete()
-    if pytest.profile:
-        pytest.profile.delete()
-    shutil.rmtree(pytest.profile_config_dir)
+    if pytest.dm:
+        pytest.dm.delete()
+    shutil.rmtree(pytest.dm_config_dir)
 
 
-def test_create_profile():
-    pytest.profile = DidManagerWithSupers.create(
-        pytest.profile_config_dir, pytest.KEY)
+def test_create_dm():
+    pytest.dm = DidManagerWithSupers.create(
+        pytest.dm_config_dir, pytest.KEY)
     existing_blockchain_ids = waly.list_blockchain_ids()
     mark(
-        pytest.profile.blockchain.blockchain_id in existing_blockchain_ids
-        and pytest.profile.member_did_manager.blockchain.blockchain_id in existing_blockchain_ids,
-        "Created profile."
+        pytest.dm.blockchain.blockchain_id in existing_blockchain_ids
+        and pytest.dm.member_did_manager.blockchain.blockchain_id in existing_blockchain_ids,
+        "Created DidManagerWithSupers."
     )
-def test_reload_profile():
-    pytest.profile.terminate()
+def test_reload_dm():
+    pytest.dm.terminate()
     test_threads_cleanup()
-    pytest.profile = DidManagerWithSupers.load(
-        pytest.profile_config_dir, pytest.KEY
+    pytest.dm = DidManagerWithSupers.load(
+        pytest.dm_config_dir, pytest.KEY
     )
 
 def test_create_super():
-    profile = pytest.profile
-    pytest.super = profile.add()
+    dm = pytest.dm
+    pytest.super = dm.create_super()
     mark(
         isinstance(pytest.super, GroupDidManager),
-        "Created correspondence."
+        "Created super."
     )
     mark(
-        pytest.super == profile.get_from_id(pytest.super.did),
-        "  -> get_from_id()"
+        pytest.super == dm.get_super(pytest.super.did),
+        "  -> get_super()"
     )
     mark(
-        pytest.super.did in profile.get_active_ids()
-        and pytest.super.did not in profile.get_archived_ids(),
-        "  -> get_active_ids() & get_archived_ids()"
+        pytest.super.did in dm.get_active_supers()
+        and pytest.super.did not in dm.get_archived_supers(),
+        "  -> get_active_supers() & get_archived_supers()"
     )
-    active_ids, archived_ids = profile._read_super_registry()
+    active_ids, archived_ids = dm._read_super_registry()
     mark(
         pytest.super.did in active_ids
         and pytest.super.did not in archived_ids,
@@ -93,18 +93,18 @@ def test_create_super():
 
 
 def test_archive_super():
-    profile = pytest.profile
-    profile.archive(pytest.super.did)
+    dm = pytest.dm
+    dm.archive_super(pytest.super.did)
     mark(
         isinstance(pytest.super, GroupDidManager),
-        "Created correspondence."
+        "Created super."
     )
     mark(
-        pytest.super.did not in profile.get_active_ids()
-        and pytest.super.did in profile.get_archived_ids(),
-        "  -> get_active_ids() & get_archived_ids()"
+        pytest.super.did not in dm.get_active_supers()
+        and pytest.super.did in dm.get_archived_supers(),
+        "  -> get_active_supers() & get_archived_supers()"
     )
-    active_ids, archived_ids = profile._read_super_registry()
+    active_ids, archived_ids = dm._read_super_registry()
     mark(
         pytest.super.did not in active_ids
         and pytest.super.did in archived_ids,
@@ -112,26 +112,26 @@ def test_archive_super():
     )
 
 
-def test_delete_profile():
-    pytest.profile.delete()
+def test_delete_dm():
+    pytest.dm.delete()
     existing_blockchain_ids = waly.list_blockchain_ids()
     mark(
-        pytest.profile.blockchain.blockchain_id not in existing_blockchain_ids
-        and pytest.profile.member_did_manager.blockchain.blockchain_id not in existing_blockchain_ids,
-        "Deleted profile."
+        pytest.dm.blockchain.blockchain_id not in existing_blockchain_ids
+        and pytest.dm.member_did_manager.blockchain.blockchain_id not in existing_blockchain_ids,
+        "Deleted DidManagerWithSupers."
     )
 
 
 def run_tests():
     print("\nRunning tests for DidManagerWithSupers:")
     test_preparations()
-    test_create_profile()
+    test_create_dm()
     test_create_super()
 
     test_archive_super()
 
-    test_reload_profile()
-    test_delete_profile()
+    test_reload_dm()
+    test_delete_dm()
     test_cleanup()
     test_threads_cleanup()
 

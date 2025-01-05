@@ -85,14 +85,14 @@ class DidManagerWithSupers(GroupDidManager):
         self._archived_corresp_ids: set[str] = set()
         self.correspondences: dict[str, GroupDidManager] = dict()
         self._load_supers()  # load GroupDidManager objects
-        self._process_invitations = False
+        self.__process_invitations = False
         self.correspondences_to_join: dict[str, SuperRegistration | None] = {}
 
         self.load_missed_blocks()
         # start joining new correspondeces only after loading missed blocks
-        self.process_invitations()
+        self._process_invitations()
 
-    def process_invitations(self) -> None:
+    def _process_invitations(self) -> None:
         # logger.debug(
         #     f"Processing invitations: {len(self.correspondences_to_join)}"
         # )
@@ -121,16 +121,16 @@ class DidManagerWithSupers(GroupDidManager):
                     )
                     logger.warning(error_message)
                     continue
-            correspondence = self.join_already_joined_super(
+            correspondence = self._join_already_joined_super(
                 correspondence_id, registration)
             if not correspondence:
                 _supers_to_join.update(
                     {correspondence_id: correspondence})
         self.correspondences_to_join = _supers_to_join
 
-        self._process_invitations = True
+        self.__process_invitations = True
 
-    def add(self) -> GroupDidManager:
+    def create_super(self) -> GroupDidManager:
         with self.lock:
             if self._terminate_dmws:
                 raise Exception(
@@ -196,7 +196,31 @@ class DidManagerWithSupers(GroupDidManager):
 
             return correspondence
 
-    def join_already_joined_super(
+    def archive_super(self, correspondence_id: str, register=True):
+        with self.lock:
+            if correspondence_id not in self.correspondences:
+                return
+            self.correspondences[correspondence_id].terminate(
+                terminate_member=False)
+
+            if register:
+                # register archiving on blockchain
+                self._register_super(correspondence_id, False, None)
+
+            # manage internal lists of Correspondences
+            self.correspondences.pop(correspondence_id)
+            self._archived_corresp_ids.add(correspondence_id)
+
+    def get_active_supers(self) -> set[str]:
+        return set(self.correspondences.keys())
+
+    def get_archived_supers(self) -> set[str]:
+        return self._archived_corresp_ids
+
+    def get_super(self, corresp_id: str) -> GroupDidManager:
+        return self.correspondences[corresp_id]
+
+    def _join_already_joined_super(
         self, correspondence_id: str,
         registration: SuperRegistration
     ) -> GroupDidManager | None:
@@ -235,21 +259,6 @@ class DidManagerWithSupers(GroupDidManager):
 
             self.correspondences.update({correspondence.did: correspondence})
             return correspondence
-
-    def archive(self, correspondence_id: str, register=True):
-        with self.lock:
-            if correspondence_id not in self.correspondences:
-                return
-            self.correspondences[correspondence_id].terminate(
-                terminate_member=False)
-
-            if register:
-                # register archiving on blockchain
-                self._register_super(correspondence_id, False, None)
-
-            # manage internal lists of Correspondences
-            self.correspondences.pop(correspondence_id)
-            self._archived_corresp_ids.add(correspondence_id)
 
     def _register_super(
         self, correspondence_id: str, active: bool, invitation: dict | None
@@ -313,15 +322,6 @@ class DidManagerWithSupers(GroupDidManager):
 
         return active_supers, archived_supers
 
-    def get_active_ids(self) -> set[str]:
-        return set(self.correspondences.keys())
-
-    def get_archived_ids(self) -> set[str]:
-        return self._archived_corresp_ids
-
-    def get_from_id(self, corresp_id: str) -> GroupDidManager:
-        return self.correspondences[corresp_id]
-
     def _load_supers(self) -> None:
         with self.lock:
             correspondences = []
@@ -360,7 +360,7 @@ class DidManagerWithSupers(GroupDidManager):
                 (cid, None) for cid in new_supers
             ])
 
-    def on_super_registration_received(self, block: Block):
+    def _on_super_registration_received(self, block: Block):
         if self._terminate_dmws:
             return
         crsp_registration = SuperRegistration.load_from_block_content(
@@ -372,7 +372,7 @@ class DidManagerWithSupers(GroupDidManager):
         # update lists of active and archived Correspondences
         try:
             if crsp_registration.active:
-                if not self._process_invitations:
+                if not self.__process_invitations:
                     self.correspondences_to_join.update({
                         crsp_registration.correspondence_id: crsp_registration
                     })
@@ -384,13 +384,31 @@ class DidManagerWithSupers(GroupDidManager):
                     # logger.info(
                     #     "DidManagerWithSupers: added new GroupDidManager")
             else:
-                self.archive(
+                self.archive_super(
                     crsp_registration.correspondence_id, register=False)
                 # logger.info("DidManagerWithSupers: archived GroupDidManager")
         except SuperExistsError:
             # logger.info(
             #     "DidManagerWithSupers: we already have this GroupDidManager!")
             pass
+
+    def _on_block_received_dmws(self, block: Block):
+        if WALYTIS_BLOCK_TOPIC == block.topics[0]:
+            match block.topics[1]:
+                case SuperRegistration.walytis_block_topic:
+                    self._on_super_registration_received(
+                        block
+                    )
+                case _:
+                    logger.warning(
+                        "Endra DidManagerWithSupers: Received unhandled block with topics: "
+                        f"{block.topics}"
+                    )
+        else:
+            logger.warning(
+                "Endra DidManagerWithSupers: Received unhandled block with topics: "
+                f"{block.topics}"
+            )
 
     @classmethod
     def create(cls, config_dir: str, key: Key) -> 'DidManagerWithSupers':
@@ -447,24 +465,6 @@ class DidManagerWithSupers(GroupDidManager):
             group_key_store=profile_did_keystore,
             member=device_did_manager,
         )
-
-    def _on_block_received_dmws(self, block: Block):
-        if WALYTIS_BLOCK_TOPIC == block.topics[0]:
-            match block.topics[1]:
-                case SuperRegistration.walytis_block_topic:
-                    self.on_super_registration_received(
-                        block
-                    )
-                case _:
-                    logger.warning(
-                        "Endra DidManagerWithSupers: Received unhandled block with topics: "
-                        f"{block.topics}"
-                    )
-        else:
-            logger.warning(
-                "Endra DidManagerWithSupers: Received unhandled block with topics: "
-                f"{block.topics}"
-            )
 
     def terminate(self):
         if self._terminate_dmws:
