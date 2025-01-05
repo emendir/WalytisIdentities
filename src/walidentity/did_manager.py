@@ -423,6 +423,7 @@ class DidManager(GenericBlockchain):
         """Stop this DID-Manager, cleaning up resources."""
         try:
             self.key_store.terminate()
+            
             self.blockchain.terminate()
         except waly.exceptions.NoSuchBlockchainError:
             pass

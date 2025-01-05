@@ -128,7 +128,7 @@ class _GroupDidManager(DidManager):
             if self._gdm_other_blocks_handler:
                 self._gdm_other_blocks_handler(block)
         # logger.debug(f"GDM: processed block")
-        
+
     @property
     def block_received_handler(self) -> Callable[[Block], None] | None:
         return self._gdm_other_blocks_handler
@@ -258,7 +258,6 @@ class _GroupDidManager(DidManager):
         })
         joining_block.sign(invitation_key)
         self._gdm_add_info_block(joining_block)
-
 
 
 class GroupDidManager(_GroupDidManager):
@@ -477,7 +476,7 @@ class GroupDidManager(_GroupDidManager):
         if control_key.private_key:
             return
 
-        logger.debug(f"Not yet control key owner: {control_key.get_key_id()}")
+        # logger.debug(f"Not yet control key owner: {control_key.get_key_id()}")
         while not self._terminate:
             for member in self.get_members():
                 if self._terminate:
@@ -934,13 +933,14 @@ class GroupDidManager(_GroupDidManager):
         self.candidate_keys = {}
         return True
 
-    def delete(self) -> None:
+    def delete(self, terminate_member: bool = True) -> None:
         """Delete this Identity."""
-        self.terminate()
-        self.member_did_manager.delete()
+        GroupDidManager.terminate(self, terminate_member=terminate_member)
+        if terminate_member:
+            self.member_did_manager.delete()
         DidManager.delete(self)
 
-    def terminate(self) -> None:
+    def terminate(self, terminate_member: bool = True) -> None:
         """Stop this Identity object, cleaning up resources."""
         if not self._terminate:
             self._terminate = True
@@ -949,7 +949,8 @@ class GroupDidManager(_GroupDidManager):
             except:
                 pass
             try:
-                self.member_did_manager.terminate()
+                if terminate_member:
+                    self.member_did_manager.terminate()
             except:
                 pass
             try:

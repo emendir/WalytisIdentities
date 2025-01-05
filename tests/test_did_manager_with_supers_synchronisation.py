@@ -145,7 +145,7 @@ def test_setup_profile(docker_container: WalIdentityDocker):
         "pytest.profile.terminate()",
     ])
     output_lines = docker_container.run_python_code(
-        python_code, print_output=True, timeout=PROFILE_CREATE_TIMEOUT_S,
+        python_code, print_output=False, timeout=PROFILE_CREATE_TIMEOUT_S,
         background=False
     ).split("\n")
     last_line = output_lines[-1] if len(output_lines) > 0 else None
@@ -176,7 +176,7 @@ def test_load_profile(docker_container: WalIdentityDocker) -> dict | None:
     ])
     # breakpoint()
     output_lines = docker_container.run_python_code(
-        python_code, print_output=True,
+        python_code, print_output=False,
         timeout=PROFILE_CREATE_TIMEOUT_S, background=False
     ).split("\n")
     if len(output_lines) < 2:
@@ -201,8 +201,8 @@ def test_load_profile(docker_container: WalIdentityDocker) -> dict | None:
 
 # used for creation, first loading test, and invitation creation
 PROFILE_CREATE_TIMEOUT_S = 10
-PROFILE_JOIN_TIMEOUT_S = 15
-CORRESP_JOIN_TIMEOUT_S = 15
+PROFILE_JOIN_TIMEOUT_S = 20
+CORRESP_JOIN_TIMEOUT_S = 20
 
 
 def docker_join_profile(invitation: str):
@@ -213,7 +213,7 @@ def docker_join_profile(invitation: str):
     logger.info("Joined Endra profile, waiting to get control key...")
 
     sleep(PROFILE_JOIN_TIMEOUT_S)
-    ctrl_key = pytest.profile.profile_did_manager.get_control_key()
+    ctrl_key = pytest.profile.get_control_key()
     logger.info(f"Joined: {type(ctrl_key)}")
     if ctrl_key.private_key:
         print("Got control key!")
@@ -257,7 +257,7 @@ def test_add_device(
         "pytest.profile.terminate()",
     ])
     output_lines = docker_container_new.run_python_code(
-        python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=True,
+        python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=False,
         background=False
     ).split("\n")
     last_line = output_lines[-1].strip()
@@ -301,7 +301,7 @@ def test_create_super(docker_container: WalIdentityDocker) -> dict | None:
         "pytest.profile.terminate()",
     ])
     output_lines = docker_container.run_python_code(
-        python_code, print_output=True,
+        python_code, print_output=False,
         timeout=PROFILE_CREATE_TIMEOUT_S, background=False
     ).split("\n")
     if len(output_lines) < 2:
@@ -355,7 +355,7 @@ def test_join_super(
     ])
     output_lines = docker_container_new.run_python_code(
         python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
-        print_output=True, background=False
+        print_output=False, background=False
     ).split("\n")
     second_last_line = output_lines[-2].strip()
     corresp_id = output_lines[-1].strip()
@@ -400,7 +400,7 @@ def test_auto_join_super(
     try:
         output = docker_container_new.run_python_code(
             python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
-            print_output=True, background=False
+            print_output=False, background=False
         ).split("GroupDidManager DIDs:")
     except DockerShellError as e:
         print(e)

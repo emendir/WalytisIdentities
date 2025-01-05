@@ -1,3 +1,4 @@
+from typing import Callable
 from walidentity.did_manager_blocks import get_info_blocks
 from walytis_beta_api import Blockchain, join_blockchain, JoinFailureError
 from walidentity.did_manager import did_from_blockchain_id
@@ -55,33 +56,39 @@ class SuperExistsError(Exception):
     pass
 
 
-class DidManagerWithSupers:
+class DidManagerWithSupers(GroupDidManager):
     """Manages a collection of correspondences, managing adding archiving them.
     """
 
     def __init__(
         self,
-        profile_did_manager: GroupDidManager,
+        group_key_store: KeyStore,
+        member: KeyStore | DidManager,
+        other_blocks_handler: Callable[[Block], None] | None = None,
+        auto_load_missed_blocks: bool = True,
     ):
-
-        profile_did_manager.block_received_handler = self._on_block_received_dmws
+        GroupDidManager.__init__(self,
+                                 group_key_store=group_key_store,
+                                 member=member,
+                                 other_blocks_handler=self._on_block_received_dmws,
+                                 auto_load_missed_blocks=False
+                                 )
 
         self.lock = Lock()
-        self.profile_did_manager = profile_did_manager
         self.key_store_dir = os.path.dirname(
-            self.profile_did_manager.key_store.key_store_path
+            self.key_store.key_store_path
+
         )
-        self._terminate = False
+        self._terminate_dmws = False
 
         # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
         self.correspondences: dict[str, GroupDidManager] = dict()
         self._load_supers()  # load GroupDidManager objects
         self._process_invitations = False
-        self.correspondences_to_join: dict[str,
-                                           SuperRegistration | None] = {}
+        self.correspondences_to_join: dict[str, SuperRegistration | None] = {}
 
-        self.profile_did_manager.load_missed_blocks()
+        self.load_missed_blocks()
         # start joining new correspondeces only after loading missed blocks
         self.process_invitations()
 
@@ -98,7 +105,7 @@ class DidManagerWithSupers:
 
                 registrations = get_info_blocks(
                     SuperRegistration,
-                    self.profile_did_manager.blockchain
+                    self.blockchain
                 )
                 invitation: SuperRegistration | None = None
                 for registration in registrations.reverse():
@@ -125,17 +132,17 @@ class DidManagerWithSupers:
 
     def add(self) -> GroupDidManager:
         with self.lock:
-            if self._terminate:
+            if self._terminate_dmws:
                 raise Exception(
                     "DidManagerWithSupers.add: we're shutting down"
                 )
             # the GroupDidManager keystore file is located in self.key_store_dir
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
-            # self.profile_did_manager.key_store
+            # self.key_store
             correspondence = GroupDidManager.create(
                 self.key_store_dir,
-                member=self.profile_did_manager
+                member=self
             )
             invitation = correspondence.invite_member()
             # register GroupDidManager on blockchain
@@ -155,7 +162,7 @@ class DidManagerWithSupers:
         """
         with self.lock:
 
-            if self._terminate:
+            if self._terminate_dmws:
                 raise Exception(
                     "DidManagerWithSupers.add: we're shutting down")
 
@@ -172,11 +179,11 @@ class DidManagerWithSupers:
             # the GroupDidManager keystore file is located in self.key_store_dir
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
-            # self.profile_did_manager.key_store
+            # self.key_store
             correspondence = GroupDidManager.join(
                 invitation=invitation_d,
                 group_key_store=self.key_store_dir,
-                member=self.profile_did_manager
+                member=self
             )
 
             if register:
@@ -201,7 +208,7 @@ class DidManagerWithSupers:
                 blockchain_id_from_did(correspondence_id) + ".json"
             )
             key = Key.create(CRYPTO_FAMILY)
-            self.profile_did_manager.key_store.add_key(key)
+            self.key_store.add_key(key)
             key_store = KeyStore(key_store_path, key)
 
             # logger.info("JAJ: Joining blockchain...")
@@ -222,7 +229,7 @@ class DidManagerWithSupers:
             correspondence = GroupDidManager(
 
                 group_key_store=key_store,
-                member=self.profile_did_manager
+                member=self
 
             )
 
@@ -231,7 +238,10 @@ class DidManagerWithSupers:
 
     def archive(self, correspondence_id: str, register=True):
         with self.lock:
-            self.correspondences[correspondence_id].terminate()
+            if correspondence_id not in self.correspondences:
+                return
+            self.correspondences[correspondence_id].terminate(
+                terminate_member=False)
 
             if register:
                 # register archiving on blockchain
@@ -256,9 +266,9 @@ class DidManagerWithSupers:
             invitation
         )
         correspondence_registration.sign(
-            self.profile_did_manager.get_control_key()
+            self.get_control_key()
         )
-        self.profile_did_manager.add_block(
+        self.add_block(
             correspondence_registration.generate_block_content(),
             topics=[WALYTIS_BLOCK_TOPIC,
                     correspondence_registration.walytis_block_topic]
@@ -275,7 +285,7 @@ class DidManagerWithSupers:
         """
         active_supers: set[str] = set()
         archived_supers: set[str] = set()
-        for block in self.profile_did_manager.blockchain.get_blocks():
+        for block in self.blockchain.get_blocks():
             # ignore blocks that aren't SuperRegistration
             if (
                 SuperRegistration.walytis_block_topic
@@ -285,7 +295,7 @@ class DidManagerWithSupers:
 
             # load SuperRegistration
             crsp_registration = SuperRegistration.load_from_block_content(
-                self.profile_did_manager.blockchain.get_block(
+                self.blockchain.get_block(
                     block.long_id
                 ).content
             )
@@ -329,15 +339,15 @@ class DidManagerWithSupers:
                     continue
                 # get this correspondence' KeyStore Key ID
                 keystore_key_id = KeyStore.get_keystore_pubkey(key_store_path)
-                # get the Key from self.profile_did_manager's KeyStore
-                key_store_key = self.profile_did_manager.key_store.get_key(
+                # get the Key from KeyStore
+                key_store_key = self.key_store.get_key(
                     keystore_key_id
                 )
                 # load the correspondence' KeyStore
                 key_store = KeyStore(key_store_path, key_store_key)
                 correspondence = GroupDidManager(
                     group_key_store=key_store,
-                    member=self.profile_did_manager
+                    member=self
                 )
                 correspondences.append(correspondence)
             self.correspondences = dict([
@@ -351,7 +361,7 @@ class DidManagerWithSupers:
             ])
 
     def on_super_registration_received(self, block: Block):
-        if self._terminate:
+        if self._terminate_dmws:
             return
         crsp_registration = SuperRegistration.load_from_block_content(
             block.content
@@ -382,15 +392,6 @@ class DidManagerWithSupers:
             #     "DidManagerWithSupers: we already have this GroupDidManager!")
             pass
 
-    def terminate(self):
-        if self._terminate:
-            return
-        with self.lock:
-            self._terminate = True
-            for correspondence in self.correspondences.values():
-                correspondence.terminate()
-        self.profile_did_manager.terminate()
-
     @classmethod
     def create(cls, config_dir: str, key: Key) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
@@ -403,9 +404,11 @@ class DidManagerWithSupers:
         profile_did_manager = GroupDidManager.create(
             profile_did_keystore, device_did_manager
         )
+        profile_did_manager.terminate()
 
         return cls(
-            profile_did_manager=profile_did_manager,
+            group_key_store=profile_did_keystore,
+            member=device_did_manager
         )
 
     @classmethod
@@ -417,17 +420,11 @@ class DidManagerWithSupers:
         device_did_keystore = KeyStore(device_keystore_path, key)
         profile_did_keystore = KeyStore(profile_keystore_path, key)
 
-        profile_did_manager = GroupDidManager(
+        return cls(
             group_key_store=profile_did_keystore,
             member=device_did_keystore,
             auto_load_missed_blocks=False
         )
-        return cls(
-            profile_did_manager=profile_did_manager,
-        )
-
-    def invite_member(self) -> dict:
-        return self.profile_did_manager.invite_member()
 
     @classmethod
     def join(cls,
@@ -445,8 +442,10 @@ class DidManagerWithSupers:
             profile_did_keystore,
             device_did_manager
         )
+        profile_did_manager.terminate()
         return cls(
-            profile_did_manager=profile_did_manager,
+            group_key_store=profile_did_keystore,
+            member=device_did_manager,
         )
 
     def _on_block_received_dmws(self, block: Block):
@@ -467,8 +466,22 @@ class DidManagerWithSupers:
                 f"{block.topics}"
             )
 
+    def terminate(self):
+        if self._terminate_dmws:
+            return
+
+        with self.lock:
+            self._terminate_dmws = True
+            for correspondence in self.correspondences.values():
+                correspondence.terminate(terminate_member=False)
+        GroupDidManager.terminate(self)
+
     def delete(self):
-        self.profile_did_manager.delete()
+        with self.lock:
+            self._terminate_dmws = True
+            for correspondence in self.correspondences.values():
+                correspondence.delete(terminate_member=False)
+        GroupDidManager.delete(self)
 
     def __del__(self):
         self.terminate()
