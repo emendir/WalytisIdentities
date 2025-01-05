@@ -3,6 +3,10 @@
 
 ## WalIdentity
 
+- group_did_manager blockslst
+- did_manager_with_supers blockslist
+- rename group_did_manager to did_manager_with_subs and other renames?
+- remove constructors with cross-inheritance function signature conflicts
 - Ensure full conformity with DID specifications
 - DidManager.get_latest_did_doc & .get_latest_control_key: more efficiency by not reading through the whole blockchain
 - when instantiating Blockchain objects, specify app_name

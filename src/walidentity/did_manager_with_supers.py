@@ -16,6 +16,7 @@ import json
 from walidentity.key_store import KeyStore
 from walytis_beta_api import Block
 from walidentity.utils import logger
+from .generics import GroupDidManagerWrapper
 WALYTIS_BLOCK_TOPIC = "Endra"
 
 CRYPTO_FAMILY = "EC-secp256k1"
@@ -54,7 +55,7 @@ class SuperRegistration(InfoBlock):
 
 class SuperExistsError(Exception):
     pass
-
+from typing import Type
 
 class DidManagerWithSupers(GroupDidManager):
     """Manages a collection of correspondences, managing adding archiving them.
@@ -66,7 +67,9 @@ class DidManagerWithSupers(GroupDidManager):
         member: KeyStore | DidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
+        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager
     ):
+        self.super_type = super_type
         GroupDidManager.__init__(self,
                                  group_key_store=group_key_store,
                                  member=member,
@@ -140,7 +143,7 @@ class DidManagerWithSupers(GroupDidManager):
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
             # self.key_store
-            correspondence = GroupDidManager.create(
+            correspondence = self.super_type.create(
                 self.key_store_dir,
                 member=self
             )
@@ -180,7 +183,7 @@ class DidManagerWithSupers(GroupDidManager):
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
             # self.key_store
-            correspondence = GroupDidManager.join(
+            correspondence = self.super_type.join(
                 invitation=invitation_d,
                 group_key_store=self.key_store_dir,
                 member=self
@@ -411,7 +414,9 @@ class DidManagerWithSupers(GroupDidManager):
             )
 
     @classmethod
-    def create(cls, config_dir: str, key: Key) -> 'DidManagerWithSupers':
+    def create(cls, config_dir: str, key: Key,
+        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager
+    ) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
             config_dir, "profile_keystore.json")
@@ -426,11 +431,14 @@ class DidManagerWithSupers(GroupDidManager):
 
         return cls(
             group_key_store=profile_did_keystore,
-            member=device_did_manager
+            member=device_did_manager,
+            super_type=super_type,
         )
 
     @classmethod
-    def load(cls, config_dir: str, key: Key) -> 'DidManagerWithSupers':
+    def load(cls, config_dir: str, key: Key,
+        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager,
+    ) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
             config_dir, "profile_keystore.json")
@@ -441,12 +449,15 @@ class DidManagerWithSupers(GroupDidManager):
         return cls(
             group_key_store=profile_did_keystore,
             member=device_did_keystore,
-            auto_load_missed_blocks=False
+            auto_load_missed_blocks=False,
+            super_type=super_type
         )
 
     @classmethod
     def join(cls,
-             invitation: str | dict, config_dir: str, key: Key
+             invitation: str | dict, config_dir: str, key: Key,
+        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager
+             
              ) -> 'DidManagerWithSupers':
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
@@ -464,6 +475,7 @@ class DidManagerWithSupers(GroupDidManager):
         return cls(
             group_key_store=profile_did_keystore,
             member=device_did_manager,
+            super_type=super_type,
         )
 
     def terminate(self):
