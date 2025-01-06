@@ -1,5 +1,30 @@
 """Classes for managing Person and Device identities."""
 import json
+from walytis_beta_api.exceptions import BlockNotFoundError
+from collections.abc import Generator
+from walytis_beta_api._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
+import os
+from dataclasses import dataclass
+from typing import Callable, TypeVar
+
+import walytis_beta_api as waly
+from brenthy_tools_beta.utils import bytes_to_string
+from multi_crypt import Crypt
+from walytis_beta_api import Block, Blockchain, create_blockchain
+from .utils import logger
+from . import did_manager_blocks
+from .did_manager_blocks import (
+    ControlKeyBlock,
+    DidDocBlock,
+    InfoBlock,
+    get_block_type,
+    get_latest_control_key,
+    get_latest_did_doc,
+)
+from .did_objects import Key
+from .exceptions import NotValidDidBlockchainError
+from .key_store import CodePackage, KeyStore
 import os
 import time
 from datetime import datetime, timedelta
@@ -81,6 +106,7 @@ class _GroupDidManager(DidManager):
             auto_load_missed_blocks=False,
 
         )
+        self._init_blocks_list_gdm()
         self.members_list: list[dict] = []
         self.members_list = list(get_members(self.blockchain).values())
         if auto_load_missed_blocks:
@@ -115,7 +141,7 @@ class _GroupDidManager(DidManager):
                     self.check_control_key()
                 case did_manager_blocks.MemberInvitationBlock:
                     pass
-                case _:
+                case 0:
                     logger.warning(
                         "This block is marked as belong to GroupDidManager, "
                         "but it's InfoBlock type is not handled: "
@@ -123,7 +149,8 @@ class _GroupDidManager(DidManager):
                     )
         else:
             # logger.info(f"GDM: passing on received block: {block.topics}")
-
+            self._blocks_list_gdm.add_block(BlockLazilyLoaded.from_block(block))
+            
             # if user defined an event-handler for non-DID blocks, call it
             if self._gdm_other_blocks_handler:
                 self._gdm_other_blocks_handler(block)
@@ -258,6 +285,61 @@ class _GroupDidManager(DidManager):
         })
         joining_block.sign(invitation_key)
         self._gdm_add_info_block(joining_block)
+    
+    
+    def _init_blocks_list_gdm(self):
+        # present to other programs all blocks not created by this DidManager
+        blocks = [
+            block for block in DidManager.get_blocks(self)
+            if WALYTIS_BLOCK_TOPIC not in block.topics and block.topics != ["genesis"]
+        ]
+        self._blocks_list_gdm = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
+
+    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+        return self._blocks_list_gdm.get_blocks(reverse=reverse)
+
+    def get_block_ids(self) -> list[bytes]:
+        return self._blocks_list_gdm.get_long_ids()
+
+    def get_num_blocks(self) -> int:
+        return self._blocks_list_gdm.get_num_blocks()
+
+    def get_block(self, id: bytes) -> GenericBlock:
+
+        # if index is passed instead of block_id, get block_id from index
+        if isinstance(id, int):
+            try:
+                id = self.get_block_ids()[id]
+            except IndexError:
+                message = (
+                    "Walytis_BetaAPI.Blockchain: Get Block from index: "
+                    "Index out of range."
+                )
+                raise IndexError(message)
+        else:
+            id_bytearray = bytearray(id)
+            len_id = len(id_bytearray)
+            if bytearray([0, 0, 0, 0]) not in id_bytearray:  # if a short ID was passed
+                short_id = None
+                for long_id in self.get_block_ids():
+                    if bytearray(long_id)[:len_id] == id_bytearray:
+                        short_id = long_id
+                        break
+                if not short_id:
+                    raise BlockNotFoundError()
+                id = bytes(short_id)
+        if isinstance(id, bytearray):
+            id = bytes(id)
+        try:
+            block = self._blocks_list_gdm[id]
+            return block
+        except KeyError:
+
+            error = BlockNotFoundError(
+                "This block isn't recorded (by brenthy_api.Blockchain) as being "
+                "part of this blockchain."
+            )
+            raise error
 
 
 class GroupDidManager(_GroupDidManager):

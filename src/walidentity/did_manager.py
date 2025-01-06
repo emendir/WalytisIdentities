@@ -101,7 +101,7 @@ class DidManager(GenericBlockchain):
         self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
         # logger.debug("DM: Getting DID-Doc...")
-        self._init_dm_blocks_list()
+        self._init_blocks_list_dm()
         self._did_doc = None
         if auto_load_missed_blocks:
             DidManager.load_missed_blocks(self)
@@ -322,7 +322,7 @@ class DidManager(GenericBlockchain):
                         f"{block.topics}"
                     )
         else:
-            self._dm_blocks_list.add_block(BlockLazilyLoaded.from_block(block))
+            self._blocks_list_dm.add_block(BlockLazilyLoaded.from_block(block))
             # if user defined an event-handler for non-DID blocks, call it
             if self._dm_other_blocks_handler:
                 self._dm_other_blocks_handler(block)
@@ -451,22 +451,22 @@ class DidManager(GenericBlockchain):
     ) -> GenericBlock:
         return self.blockchain.add_block(content, topics)
 
-    def _init_dm_blocks_list(self):
+    def _init_blocks_list_dm(self):
         # present to other programs all blocks not created by this DidManager
         blocks = [
             block for block in self.blockchain.get_blocks()
-            if WALYTIS_BLOCK_TOPIC not in block.topics
+            if WALYTIS_BLOCK_TOPIC not in block.topics and block.topics != ["genesis"]
         ]
-        self._dm_blocks_list = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
+        self._blocks_list_dm = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
-        return self._dm_blocks_list.get_blocks(reverse=reverse)
+        return self._blocks_list_dm.get_blocks(reverse=reverse)
 
     def get_block_ids(self) -> list[bytes]:
-        return self._dm_blocks_list.get_long_ids()
+        return self._blocks_list_dm.get_long_ids()
 
     def get_num_blocks(self) -> int:
-        return self._dm_blocks_list.get_num_blocks()
+        return self._blocks_list_dm.get_num_blocks()
 
     def get_block(self, id: bytes) -> GenericBlock:
 
@@ -495,7 +495,7 @@ class DidManager(GenericBlockchain):
         if isinstance(id, bytearray):
             id = bytes(id)
         try:
-            block = self._dm_blocks_list[id]
+            block = self._blocks_list_dm[id]
             return block
         except KeyError:
 

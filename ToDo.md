@@ -3,8 +3,6 @@
 
 ## WalIdentity
 
-- group_did_manager blockslst
-- did_manager_with_supers blockslist
 - rename group_did_manager to did_manager_with_subs and other renames?
 - remove constructors with cross-inheritance function signature conflicts
 - Ensure full conformity with DID specifications
