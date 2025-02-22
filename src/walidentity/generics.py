@@ -59,7 +59,24 @@ class GroupDidManagerWrapper(ABC):
 
     def invite_member(self) -> dict:
         return self.org_did_manager.invite_member()
+    def add_block(
+        self, content: bytes, topics: list[str] | str | None = None
+    ) -> GenericBlock:
+        return self.did_manager.add_block(
+            content=content, topics=topics
+        )
 
+    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+        return self.did_manager.get_blocks(reverse=reverse)
+
+    def get_block_ids(self) -> list[bytes]:
+        return self.did_manager.get_block_ids()
+
+    def get_num_blocks(self) -> int:
+        return self.did_manager.get_num_blocks()
+
+    def get_block(self, id: bytes) -> GenericBlock:
+        return self.did_manager.get_block(id=id)
     def encrypt(
         self,
         data: bytes,
@@ -118,24 +135,7 @@ class GroupDidManagerWrapper(ABC):
             data=data,
         )
 
-    def add_block(
-        self, content: bytes, topics: list[str] | str | None = None
-    ) -> GenericBlock:
-        return self.org_did_manager.add_block(
-            content=content, topics=topics
-        )
 
-    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
-        return self.org_did_manager.get_blocks(reverse=reverse)
-
-    def get_block_ids(self) -> list[bytes]:
-        return self.org_did_manager.get_block_ids()
-
-    def get_num_blocks(self) -> int:
-        return self.org_did_manager.get_num_blocks()
-
-    def get_block(self, id: bytes) -> GenericBlock:
-        return self.org_did_manager.get_block(id=id)
 
     def get_peers(self) -> list[str]:
         return self.org_did_manager.get_peers()

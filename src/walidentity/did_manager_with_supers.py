@@ -1,6 +1,6 @@
 from typing import Callable
 from walidentity.did_manager_blocks import get_info_blocks
-from walytis_beta_api import Blockchain, join_blockchain, JoinFailureError
+from walytis_beta_api import Blockchain, join_blockchain, JoinFailureError, BlockchainAlreadyExistsError
 from walidentity.did_manager import did_from_blockchain_id
 from threading import Lock, Event
 from walidentity.did_manager import blockchain_id_from_did
@@ -99,8 +99,7 @@ class DidManagerWithSupers(GroupDidManager):
         # logger.debug(
         #     f"Processing invitations: {len(self.correspondences_to_join)}"
         # )
-        _supers_to_join: dict[str,
-                              SuperRegistration | None] = {}
+        _supers_to_join: dict[str, SuperRegistration | None] = {}
         for correspondence_id in self.correspondences_to_join.keys():
             registration = self.correspondences_to_join[correspondence_id]
             if not registration:
@@ -110,12 +109,12 @@ class DidManagerWithSupers(GroupDidManager):
                     SuperRegistration,
                     self.blockchain
                 )
-                invitation: SuperRegistration | None = None
-                for registration in registrations.reverse():
-                    if registration.active:
-                        if registration.correspondence_id == correspondence_id:
-                            invitation = registration.invitation
-                if not invitation:
+                for reg in registrations.reverse():
+                    if reg.active:
+                        if reg.correspondence_id == correspondence_id:
+                            registration = reg
+                            self.correspondences_to_join[correspondence_id] = reg
+                if not registration:
                     error_message = (
                         "BUG: "
                         "In trying to join already joined GroupDidManager, "
@@ -125,7 +124,8 @@ class DidManagerWithSupers(GroupDidManager):
                     logger.warning(error_message)
                     continue
             correspondence = self._join_already_joined_super(
-                correspondence_id, registration)
+                correspondence_id, registration
+            )
             if not correspondence:
                 _supers_to_join.update(
                     {correspondence_id: correspondence})
@@ -252,13 +252,24 @@ class DidManagerWithSupers(GroupDidManager):
                 blockchain.terminate()
             except JoinFailureError:
                 return None
+            except BlockchainAlreadyExistsError:
+                pass
             # logger.info("Loading correspondence...")
-            correspondence = GroupDidManager(
-
-                group_key_store=key_store,
-                member=self
-
-            )
+            if issubclass(self.super_type, GroupDidManagerWrapper):
+                correspondence = self.super_type(GroupDidManager(
+                    group_key_store=key_store,
+                    member=self
+                ))
+            elif issubclass(self.super_type, GroupDidManager):
+                correspondence = self.super_type(
+                    group_key_store=key_store,
+                    member=self
+                )
+            else:
+                raise Exception(
+                    "self.super_type must be a subclass of GroupDidManager or "
+                    "GroupDidManagerWrapper"
+                )
 
             self.correspondences.update({correspondence.did: correspondence})
             return correspondence
@@ -348,10 +359,21 @@ class DidManagerWithSupers(GroupDidManager):
                 )
                 # load the correspondence' KeyStore
                 key_store = KeyStore(key_store_path, key_store_key)
-                correspondence = GroupDidManager(
-                    group_key_store=key_store,
-                    member=self
-                )
+                if issubclass(self.super_type, GroupDidManagerWrapper):
+                    correspondence = self.super_type(GroupDidManager(
+                        group_key_store=key_store,
+                        member=self
+                    ))
+                elif issubclass(self.super_type, GroupDidManager):
+                    correspondence = self.super_type(
+                        group_key_store=key_store,
+                        member=self
+                    )
+                else:
+                    raise Exception(
+                        "self.super_type must be a subclass of GroupDidManager or "
+                        "GroupDidManagerWrapper"
+                    )
                 correspondences.append(correspondence)
             self.correspondences = dict([
                 (correspondence.did, correspondence)
