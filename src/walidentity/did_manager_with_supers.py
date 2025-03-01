@@ -513,6 +513,7 @@ class DidManagerWithSupers(GenericBlockchain):
         self.did_manager.terminate()
 
     def delete(self):
+        self.terminate()
         with self.lock:
             self._terminate_dmws = True
             for correspondence in self.correspondences.values():
