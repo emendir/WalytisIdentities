@@ -1,5 +1,7 @@
 ## Next Steps:
-
+- create DidManagerWrapper class
+  - DidManagerWithSupers inherits from it
+  - GroupDidManagerWrapper inherits from it
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
 

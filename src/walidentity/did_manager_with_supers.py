@@ -1,3 +1,6 @@
+from walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_api._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
+from typing import Type
 from typing import Callable
 from walidentity.did_manager_blocks import get_info_blocks
 from walytis_beta_api import Blockchain, join_blockchain, JoinFailureError, BlockchainAlreadyExistsError
@@ -17,7 +20,9 @@ from walidentity.key_store import KeyStore
 from walytis_beta_api import Block
 from walidentity.utils import logger
 from .generics import GroupDidManagerWrapper
-WALYTIS_BLOCK_TOPIC = "Endra"
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
+from collections.abc import Generator
+from walytis_beta_api._experimental.generic_block import GenericBlock
 
 CRYPTO_FAMILY = "EC-secp256k1"
 
@@ -55,34 +60,37 @@ class SuperRegistration(InfoBlock):
 
 class SuperExistsError(Exception):
     pass
-from typing import Type
 
-class DidManagerWithSupers(GroupDidManager):
+
+class DidManagerWithSupers(GenericBlockchain):
     """Manages a collection of correspondences, managing adding archiving them.
     """
 
     def __init__(
         self,
-        group_key_store: KeyStore,
-        member: KeyStore | DidManager,
+        did_manager: DidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
-        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager
+        super_type: Type[GroupDidManager |
+                         GroupDidManagerWrapper] = GroupDidManager,
+        virtual_layer_name: str = "DMWS",
+
     ):
+        self.virtual_layer_name = virtual_layer_name
         self.super_type = super_type
-        GroupDidManager.__init__(self,
-                                 group_key_store=group_key_store,
-                                 member=member,
-                                 other_blocks_handler=self._on_block_received_dmws,
-                                 auto_load_missed_blocks=False
-                                 )
+        self.did_manager = did_manager
+
+        self._init_blocks()
+
+        did_manager.block_received_handler = self._on_block_received_dmws
 
         self.lock = Lock()
         self.key_store_dir = os.path.dirname(
-            self.key_store.key_store_path
+            self.did_manager.key_store.key_store_path
 
         )
         self._terminate_dmws = False
+        self._dmws_other_blocks_handler = other_blocks_handler
 
         # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
@@ -90,8 +98,66 @@ class DidManagerWithSupers(GroupDidManager):
         self._load_supers()  # load GroupDidManager objects
         self.__process_invitations = False
         self.correspondences_to_join: dict[str, SuperRegistration | None] = {}
+        if auto_load_missed_blocks:
+            self.load_missed_blocks()
 
-        self.load_missed_blocks()
+    def _init_blocks(self):
+        # present to other programs all blocks not created by this DidManager
+        blocks = [
+            block for block in self.did_manager.get_blocks()
+            if self.virtual_layer_name not in block.topics
+        ]
+        self._blocks = BlocksList.from_blocks(
+            blocks, BlockLazilyLoaded)
+
+    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+        return self._blocks.get_blocks(reverse=reverse)
+
+    def get_block_ids(self) -> list[bytes]:
+        return self._blocks.get_long_ids()
+
+    def get_num_blocks(self) -> int:
+        return self._blocks.get_num_blocks()
+
+    def get_block(self, id: bytes) -> GenericBlock:
+
+        # if index is passed instead of block_id, get block_id from index
+        if isinstance(id, int):
+            try:
+                id = self.get_block_ids()[id]
+            except IndexError:
+                message = (
+                    "Walytis_BetaAPI.Blockchain: Get Block from index: "
+                    "Index out of range."
+                )
+                raise IndexError(message)
+        else:
+            id_bytearray = bytearray(id)
+            len_id = len(id_bytearray)
+            if bytearray([0, 0, 0, 0]) not in id_bytearray:  # if a short ID was passed
+                short_id = None
+                for long_id in self.get_block_ids():
+                    if bytearray(long_id)[:len_id] == id_bytearray:
+                        short_id = long_id
+                        break
+                if not short_id:
+                    raise BlockNotFoundError()
+                id = bytes(short_id)
+        if isinstance(id, bytearray):
+            id = bytes(id)
+        try:
+            block = self._blocks[id]
+            return block
+        except KeyError:
+
+            error = BlockNotFoundError(
+                "This block isn't recorded (by brenthy_api.Blockchain) as being "
+                "part of this blockchain."
+            )
+            raise error
+
+    def load_missed_blocks(self):
+        self.did_manager.load_missed_blocks()
         # start joining new correspondeces only after loading missed blocks
         self._process_invitations()
 
@@ -145,7 +211,7 @@ class DidManagerWithSupers(GroupDidManager):
             # self.key_store
             correspondence = self.super_type.create(
                 self.key_store_dir,
-                member=self
+                member=self.did_manager
             )
             invitation = correspondence.invite_member()
             # register GroupDidManager on blockchain
@@ -186,7 +252,7 @@ class DidManagerWithSupers(GroupDidManager):
             correspondence = self.super_type.join(
                 invitation=invitation_d,
                 group_key_store=self.key_store_dir,
-                member=self
+                member=self.did_manager
             )
 
             if register:
@@ -235,7 +301,7 @@ class DidManagerWithSupers(GroupDidManager):
                 blockchain_id_from_did(correspondence_id) + ".json"
             )
             key = Key.create(CRYPTO_FAMILY)
-            self.key_store.add_key(key)
+            self.did_manager.key_store.add_key(key)
             key_store = KeyStore(key_store_path, key)
 
             # logger.info("JAJ: Joining blockchain...")
@@ -263,7 +329,7 @@ class DidManagerWithSupers(GroupDidManager):
             elif issubclass(self.super_type, GroupDidManager):
                 correspondence = self.super_type(
                     group_key_store=key_store,
-                    member=self
+                    member=self.did_manager
                 )
             else:
                 raise Exception(
@@ -289,11 +355,11 @@ class DidManagerWithSupers(GroupDidManager):
             invitation
         )
         correspondence_registration.sign(
-            self.get_control_key()
+            self.did_manager.get_control_key()
         )
-        self.add_block(
+        self.did_manager.add_block(
             correspondence_registration.generate_block_content(),
-            topics=[WALYTIS_BLOCK_TOPIC,
+            topics=[self.virtual_layer_name,
                     correspondence_registration.walytis_block_topic]
         )
 
@@ -308,7 +374,7 @@ class DidManagerWithSupers(GroupDidManager):
         """
         active_supers: set[str] = set()
         archived_supers: set[str] = set()
-        for block in self.blockchain.get_blocks():
+        for block in self.did_manager.blockchain.get_blocks():
             # ignore blocks that aren't SuperRegistration
             if (
                 SuperRegistration.walytis_block_topic
@@ -318,7 +384,7 @@ class DidManagerWithSupers(GroupDidManager):
 
             # load SuperRegistration
             crsp_registration = SuperRegistration.load_from_block_content(
-                self.blockchain.get_block(
+                self.did_manager.blockchain.get_block(
                     block.long_id
                 ).content
             )
@@ -354,7 +420,7 @@ class DidManagerWithSupers(GroupDidManager):
                 # get this correspondence' KeyStore Key ID
                 keystore_key_id = KeyStore.get_keystore_pubkey(key_store_path)
                 # get the Key from KeyStore
-                key_store_key = self.key_store.get_key(
+                key_store_key = self.did_manager.key_store.get_key(
                     keystore_key_id
                 )
                 # load the correspondence' KeyStore
@@ -367,7 +433,7 @@ class DidManagerWithSupers(GroupDidManager):
                 elif issubclass(self.super_type, GroupDidManager):
                     correspondence = self.super_type(
                         group_key_store=key_store,
-                        member=self
+                        member=self.did_manager
                     )
                 else:
                     raise Exception(
@@ -418,7 +484,7 @@ class DidManagerWithSupers(GroupDidManager):
             pass
 
     def _on_block_received_dmws(self, block: Block):
-        if WALYTIS_BLOCK_TOPIC == block.topics[0]:
+        if self.virtual_layer_name in block.topics[0]:
             match block.topics[1]:
                 case SuperRegistration.walytis_block_topic:
                     self._on_super_registration_received(
@@ -426,79 +492,15 @@ class DidManagerWithSupers(GroupDidManager):
                     )
                 case _:
                     logger.warning(
-                        "Endra DidManagerWithSupers: Received unhandled block with topics: "
+                        "DMWS DidManagerWithSupers: Received unhandled block with topics: "
                         f"{block.topics}"
                     )
         else:
-            logger.warning(
-                "Endra DidManagerWithSupers: Received unhandled block with topics: "
-                f"{block.topics}"
-            )
+            self._blocks.add_block(
+                BlockLazilyLoaded.from_block(block))
 
-    @classmethod
-    def create(cls, config_dir: str, key: Key,
-        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager
-    ) -> 'DidManagerWithSupers':
-        device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-        profile_keystore_path = os.path.join(
-            config_dir, "profile_keystore.json")
-
-        device_did_keystore = KeyStore(device_keystore_path, key)
-        profile_did_keystore = KeyStore(profile_keystore_path, key)
-        device_did_manager = DidManager.create(device_did_keystore)
-        profile_did_manager = GroupDidManager.create(
-            profile_did_keystore, device_did_manager
-        )
-        profile_did_manager.terminate()
-
-        return cls(
-            group_key_store=profile_did_keystore,
-            member=device_did_manager,
-            super_type=super_type,
-        )
-
-    @classmethod
-    def load(cls, config_dir: str, key: Key,
-        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager,
-    ) -> 'DidManagerWithSupers':
-        device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-        profile_keystore_path = os.path.join(
-            config_dir, "profile_keystore.json")
-
-        device_did_keystore = KeyStore(device_keystore_path, key)
-        profile_did_keystore = KeyStore(profile_keystore_path, key)
-
-        return cls(
-            group_key_store=profile_did_keystore,
-            member=device_did_keystore,
-            auto_load_missed_blocks=False,
-            super_type=super_type
-        )
-
-    @classmethod
-    def join(cls,
-             invitation: str | dict, config_dir: str, key: Key,
-        super_type:Type[GroupDidManager|GroupDidManagerWrapper]=GroupDidManager
-             
-             ) -> 'DidManagerWithSupers':
-        device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-        profile_keystore_path = os.path.join(
-            config_dir, "profile_keystore.json")
-        device_did_keystore = KeyStore(device_keystore_path, key)
-        profile_did_keystore = KeyStore(profile_keystore_path, key)
-        device_did_manager = DidManager.create(device_did_keystore)
-
-        profile_did_manager = GroupDidManager.join(
-            invitation,
-            profile_did_keystore,
-            device_did_manager
-        )
-        profile_did_manager.terminate()
-        return cls(
-            group_key_store=profile_did_keystore,
-            member=device_did_manager,
-            super_type=super_type,
-        )
+            if self._dmws_other_blocks_handler:
+                self._dmws_other_blocks_handler(block)
 
     def terminate(self):
         if self._terminate_dmws:
@@ -508,14 +510,123 @@ class DidManagerWithSupers(GroupDidManager):
             self._terminate_dmws = True
             for correspondence in self.correspondences.values():
                 correspondence.terminate(terminate_member=False)
-        GroupDidManager.terminate(self)
+        self.did_manager.terminate()
 
     def delete(self):
         with self.lock:
             self._terminate_dmws = True
             for correspondence in self.correspondences.values():
                 correspondence.delete(terminate_member=False)
-        GroupDidManager.delete(self)
+        self.did_manager.delete()
 
     def __del__(self):
         self.terminate()
+
+    @property
+    def blockchain(self):
+        return self.did_manager.blockchain
+
+    @property
+    def blockchain_id(self) -> str:
+        return self.did_manager.blockchain_id
+
+    @property
+    def did(self) -> str:
+        return self.did_manager.did
+
+    def add_block(
+        self, content: bytes, topics: list[str] | str | None = None
+    ) -> GenericBlock:
+        return self.did_manager.add_block(
+            content=content, topics=topics
+        )
+
+    def encrypt(
+        self,
+        data: bytes,
+        encryption_options: str = ""
+    ) -> bytes:
+        """Encrypt the provided data using the specified public key.
+
+        Args:
+            data_to_encrypt(bytes): the data to encrypt
+            encryption_options(str): specification code for which
+                                    encryption / decryption protocol should be used
+        Returns:
+            bytes: the encrypted data
+        """
+        return self.did_manager.encrypt(
+            data=data,
+            encryption_options=encryption_options,
+        )
+
+    def decrypt(
+        self,
+        data: bytes,
+    ) -> bytes:
+        """Decrypt the provided data using the specified private key.
+
+        Args:
+            data (bytes): the data to decrypt
+        Returns:
+            bytes: the decrypted data
+        """
+        return self.did_manager.decrypt(data=data)
+
+    def sign(self, data: bytes, signature_options: str = "") -> bytes:
+        """Sign the provided data using the specified private key.
+
+        Args:
+            data(bytes): the data to sign
+            private_key(bytes): the private key to be used for the signing
+            signature_options(str): specification code for which
+                                signature / verification protocol should be used
+        Returns:
+            bytes: the signature
+        """
+        return self.did_manager.sign(
+            data=data,
+            signature_options=signature_options,
+        )
+
+    def verify_signature(
+        self,
+        signature: bytes,
+        data: bytes,
+    ) -> bool:
+        return self.did_manager.verify_signature(
+            signature=signature,
+            data=data,
+        )
+
+    def get_control_key(self) -> Key:
+        return self.did_manager.get_control_key()
+
+    def get_peers(self) -> list[str]:
+        return self.did_manager.get_peers()
+
+    @property
+    def did(self) -> str:
+        return self.did_manager.did
+
+    @property
+    def did_doc(self):
+        return self.did_manager.did_doc
+
+    @property
+    def block_received_handler(self) -> Callable[[Block], None] | None:
+        return self._dmws_other_blocks_handler
+
+    @block_received_handler.setter
+    def block_received_handler(
+        self, block_received_handler: Callable[Block, None]
+    ) -> None:
+        if self._dmws_other_blocks_handler is not None:
+            raise Exception(
+                "`block_received_handler` is already set!\n"
+                "If you want to replace it, call `clear_block_received_handler()` first."
+            )
+        self._dmws_other_blocks_handler = block_received_handler
+
+    def clear_block_received_handler(self) -> None:
+        self._dmws_other_blocks_handler = None

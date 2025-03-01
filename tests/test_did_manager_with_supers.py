@@ -1,3 +1,5 @@
+from walidentity.key_store import KeyStore
+from walidentity.did_manager import DidManager
 from datetime import datetime
 import walytis_beta_api as waly
 import os
@@ -53,20 +55,59 @@ def test_cleanup():
 
 
 def test_create_dm():
-    pytest.dm = DidManagerWithSupers.create(
-        pytest.dm_config_dir, pytest.KEY)
+    config_dir = pytest.dm_config_dir
+    key = pytest.KEY
+
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, key)
+    profile_did_keystore = KeyStore(profile_keystore_path, key)
+    device_did_manager = DidManager.create(device_did_keystore)
+    profile_did_manager = GroupDidManager.create(
+        profile_did_keystore, device_did_manager
+    )
+    profile_did_manager.terminate()
+    group_did_manager = GroupDidManager(
+        profile_did_keystore,
+        device_did_manager,
+        auto_load_missed_blocks=False
+    )
+    dmws = DidManagerWithSupers(
+        did_manager=group_did_manager,
+    )
+    pytest.dm = dmws
     existing_blockchain_ids = waly.list_blockchain_ids()
     mark(
-        pytest.dm.blockchain.blockchain_id in existing_blockchain_ids
-        and pytest.dm.member_did_manager.blockchain.blockchain_id in existing_blockchain_ids,
+        pytest.dm.blockchain.blockchain_id in existing_blockchain_ids,
         "Created DidManagerWithSupers."
     )
+
+
 def test_reload_dm():
     pytest.dm.terminate()
     test_threads_cleanup()
-    pytest.dm = DidManagerWithSupers.load(
-        pytest.dm_config_dir, pytest.KEY
+    config_dir = pytest.dm_config_dir
+    key = pytest.KEY
+
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, key)
+    profile_did_keystore = KeyStore(profile_keystore_path, key)
+    group_did_manager = GroupDidManager(
+        profile_did_keystore,
+        device_did_keystore,
+        auto_load_missed_blocks=False
     )
+    dmws = DidManagerWithSupers(
+        did_manager=group_did_manager,
+    )
+
+    pytest.dm = dmws
+
 
 def test_create_super():
     dm = pytest.dm
@@ -116,8 +157,7 @@ def test_delete_dm():
     pytest.dm.delete()
     existing_blockchain_ids = waly.list_blockchain_ids()
     mark(
-        pytest.dm.blockchain.blockchain_id not in existing_blockchain_ids
-        and pytest.dm.member_did_manager.blockchain.blockchain_id not in existing_blockchain_ids,
+        pytest.dm.blockchain.blockchain_id not in existing_blockchain_ids,
         "Deleted DidManagerWithSupers."
     )
 

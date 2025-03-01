@@ -123,15 +123,56 @@ def test_cleanup():
     if pytest.dm:
         pytest.dm.delete()
 
-
+from walidentity.key_store import KeyStore
+from walidentity.did_manager import DidManager
 def docker_create_dm():
     logger.info("DOCKER: Creating DidManagerWithSupers...")
-    pytest.dm = DidManagerWithSupers.create(pytest.dm_config_dir, pytest.KEY)
+    config_dir = pytest.dm_config_dir
+    key = pytest.KEY
+
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, key)
+    profile_did_keystore = KeyStore(profile_keystore_path, key)
+    device_did_manager = DidManager.create(device_did_keystore)
+    profile_did_manager = GroupDidManager.create(
+        profile_did_keystore, device_did_manager
+    )
+    profile_did_manager.terminate()
+    group_did_manager = GroupDidManager(
+        profile_did_keystore,
+        device_did_manager,
+        auto_load_missed_blocks=False
+    )
+    dmws = DidManagerWithSupers(
+        did_manager=group_did_manager,
+    )
+    pytest.dm = dmws
 
 
 def docker_load_dm():
     logger.info("DOCKER: Loading DidManagerWithSupers...")
-    pytest.dm = DidManagerWithSupers.load(pytest.dm_config_dir, pytest.KEY)
+    config_dir = pytest.dm_config_dir
+    key = pytest.KEY
+
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        config_dir, "profile_keystore.json")
+
+    device_did_keystore = KeyStore(device_keystore_path, key)
+    profile_did_keystore = KeyStore(profile_keystore_path, key)
+    group_did_manager = GroupDidManager(
+        profile_did_keystore,
+        device_did_keystore,
+        auto_load_missed_blocks=False
+    )
+    dmws = DidManagerWithSupers(
+        did_manager=group_did_manager,
+    )
+    logger.info("DOCKER: Loaded DidManagerWithSupers!")
+    pytest.dm = dmws
 
 
 def test_setup_dm(docker_container: WalIdentityDocker):
@@ -169,7 +210,7 @@ def test_load_dm(docker_container: WalIdentityDocker) -> dict | None:
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         "test_did_manager_with_supers_synchronisation.docker_load_dm()",
-        "invitation=pytest.dm.invite_member()",
+        "invitation=pytest.dm.did_manager.invite_member()",
         "print(json.dumps(invitation))",
         "print(f'DOCKER: Loaded DidManagerWithSupers: {type(pytest.dm)}')",
         "pytest.dm.terminate()",
@@ -207,9 +248,26 @@ CORRESP_JOIN_TIMEOUT_S = 20
 
 def docker_join_dm(invitation: str):
     logger.info("Joining Endra dm...")
-    pytest.dm = DidManagerWithSupers.join(
-        invitation, pytest.dm_config_dir, pytest.KEY
+    
+    config_dir = pytest.dm_config_dir
+    key = pytest.KEY
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        config_dir, "profile_keystore.json")
+    device_did_keystore = KeyStore(device_keystore_path, key)
+    profile_did_keystore = KeyStore(profile_keystore_path, key)
+    device_did_manager = DidManager.create(device_did_keystore)
+
+    profile_did_manager = GroupDidManager.join(
+        invitation,
+        profile_did_keystore,
+        device_did_manager
     )
+
+    dmws= DidManagerWithSupers(
+        did_manager = profile_did_manager,
+    )
+    pytest.dm = dmws
     logger.info("Joined Endra dm, waiting to get control key...")
 
     sleep(PROFILE_JOIN_TIMEOUT_S)
@@ -248,7 +306,7 @@ def test_add_sub(
 
     ])
     docker_container_old.run_python_code(
-        python_code, background=True
+        python_code, background=True, print_output=False,
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,

@@ -47,8 +47,30 @@ def test_preparations() -> None:
     pytest.CRYPTO_FAMILY = "EC-secp256k1"
     pytest.KEY = Key.create(pytest.CRYPTO_FAMILY)
 
-    pytest.profile = DidManagerWithSupers.create(
-        pytest.profile_config_dir, pytest.KEY)
+    config_dir = pytest.profile_config_dir
+    key = pytest.KEY
+
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(
+        config_dir, "profile_keystore.json")
+
+    pytest.device_did_keystore = KeyStore(device_keystore_path, key)
+    pytest.profile_did_keystore = KeyStore(profile_keystore_path, key)
+    pytest.device_did_manager = DidManager.create(pytest.device_did_keystore)
+    pytest.profile_did_manager = GroupDidManager.create(
+        pytest.profile_did_keystore, pytest.device_did_manager
+    )
+    pytest.profile_did_manager.terminate()
+    pytest.group_did_manager = GroupDidManager(
+        pytest.profile_did_keystore,
+        pytest.device_did_manager,
+        auto_load_missed_blocks=False
+    )
+    dmws = DidManagerWithSupers(
+        did_manager=pytest.group_did_manager,
+    )
+
+    pytest.profile = dmws
     pytest.super = pytest.profile.create_super()
     sleep(1)
     pytest.profile.terminate()
@@ -64,10 +86,14 @@ def test_cleanup() -> None:
 
 def test_profile():
     print("Running test for DidManagerWithSupers...")
+    pytest.group_did_manager = GroupDidManager(
+        pytest.profile_did_keystore,
+        pytest.device_did_manager,
+        auto_load_missed_blocks=False
+    )
     test_generic_blockchain(
         DidManagerWithSupers,
-        group_key_store=pytest.profile.key_store,
-        member=pytest.profile.member_did_manager.key_store
+        did_manager=pytest.group_did_manager
     )
 
 
@@ -89,4 +115,5 @@ def run_tests():
 
 if __name__ == "__main__":
     generic_blockchain_testing.PYTEST = False
+    generic_blockchain_testing.BREAKPOINTS=False
     run_tests()

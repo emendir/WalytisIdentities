@@ -195,6 +195,7 @@ class DidManager(GenericBlockchain):
             tempfile.mkdtemp(), blockchain_id + ".json"
         )
         key_store = KeyStore(key_store_path, key)
+        cls.assign_keystore(key_store, blockchain_id)
         return cls(key_store)
 
     @staticmethod
@@ -421,8 +422,8 @@ class DidManager(GenericBlockchain):
 
     def terminate(self) -> None:
         """Stop this DID-Manager, cleaning up resources."""
+        self.key_store.terminate()
         try:
-            self.key_store.terminate()
             
             self.blockchain.terminate()
         except waly.exceptions.NoSuchBlockchainError:
@@ -444,8 +445,14 @@ class DidManager(GenericBlockchain):
     def block_received_handler(
         self, block_received_handler: Callable[Block, None]
     ) -> None:
+        if self._dm_other_blocks_handler is not None:
+            raise Exception(
+                "`block_received_handler` is already set!\n"
+                "If you want to replace it, call `clear_block_received_handler()` first."
+            )
         self._dm_other_blocks_handler = block_received_handler
-
+    def clear_block_received_handler(self) -> None:
+        self._dm_other_blocks_handler = None
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:

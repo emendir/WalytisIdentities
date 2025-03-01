@@ -1,4 +1,5 @@
 """Classes for managing Person and Device identities."""
+from .did_manager_blocks import get_info_blocks
 import json
 from walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
@@ -149,8 +150,9 @@ class _GroupDidManager(DidManager):
                     )
         else:
             # logger.info(f"GDM: passing on received block: {block.topics}")
-            self._blocks_list_gdm.add_block(BlockLazilyLoaded.from_block(block))
-            
+            self._blocks_list_gdm.add_block(
+                BlockLazilyLoaded.from_block(block))
+
             # if user defined an event-handler for non-DID blocks, call it
             if self._gdm_other_blocks_handler:
                 self._gdm_other_blocks_handler(block)
@@ -285,15 +287,15 @@ class _GroupDidManager(DidManager):
         })
         joining_block.sign(invitation_key)
         self._gdm_add_info_block(joining_block)
-    
-    
+
     def _init_blocks_list_gdm(self):
         # present to other programs all blocks not created by this DidManager
         blocks = [
             block for block in DidManager.get_blocks(self)
             if WALYTIS_BLOCK_TOPIC not in block.topics and block.topics != ["genesis"]
         ]
-        self._blocks_list_gdm = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
+        self._blocks_list_gdm = BlocksList.from_blocks(
+            blocks, BlockLazilyLoaded)
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
         return self._blocks_list_gdm.get_blocks(reverse=reverse)
@@ -341,6 +343,16 @@ class _GroupDidManager(DidManager):
             )
             raise error
 
+    def get_member_invitation_blocks(self):
+        #TODO: ensure teh MemberInvitationBlock is in the correct place in the list of block topics
+        #TODO: see if we should/can use get_info_blocks
+        return [b for b in DidManager.get_blocks(self) if MemberInvitationBlock.walytis_block_topic in b.topics]
+    def get_member_joining_blocks(self):
+        #TODO: ensure teh MemberJoiningBlock is in the correct place in the list of block topics
+        #TODO: see if we should/can use get_info_blocks
+        return [b for b in DidManager.get_blocks(self) if MemberJoiningBlock.walytis_block_topic in b.topics]
+
+
 
 class GroupDidManager(_GroupDidManager):
     """DidManager controlled by multiple member DIDs.
@@ -371,11 +383,11 @@ class GroupDidManager(_GroupDidManager):
             self.member_did_manager = DidManager(
                 key_store=member,
             )
-        elif isinstance(member, DidManager):
+        elif issubclass(type(member), DidManager):
             self.member_did_manager = member
         else:
             raise TypeError(
-                "The parameter `member` must be of type KeyStore, "
+                "The parameter `member` must be of type KeyStore or DidManager, "
                 f"not {type(member)}"
             )
         # TODO: assert that member_did_manager is indeed a member of the GroupDidManager(group_key_store, member)
@@ -1028,20 +1040,24 @@ class GroupDidManager(_GroupDidManager):
             self._terminate = True
             try:
                 self.key_requests_listener.terminate()
-            except:
+            except Exception as e:
+                logger.warning(f"GDM TERMINATING: {e}") 
                 pass
             try:
                 if terminate_member:
                     self.member_did_manager.terminate()
-            except:
+            except Exception as e:
+                logger.warning(f"GDM TERMINATING: {e}") 
                 pass
             try:
                 DidManager.terminate(self)
-            except:
+            except Exception as e:
+                logger.warning(f"GDM TERMINATING: {e}") 
                 pass
             try:
                 self.control_key_manager_thr.join()
-            except:
+            except Exception as e:
+                logger.warning(f"GDM TERMINATING: {e}") 
                 pass
 
     def __del__(self):
@@ -1066,4 +1082,3 @@ class IdentityJoinError(Exception):
     def __str__(self):
         return self.message
 # decorate_all_functions(strictly_typed, __name__)
-
