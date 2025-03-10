@@ -4,6 +4,11 @@
   - GroupDidManagerWrapper inherits from it
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
+- Check TODO marks in code
+
+## Generics
+- why use org_did_manager for cryptography functions?
+- is org_did_manager really needed? If so, explain in docstrings
 
 ## KeyStore
 

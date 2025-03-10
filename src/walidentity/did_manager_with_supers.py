@@ -1,3 +1,6 @@
+from multi_crypt import Crypt
+from .group_did_manager import GenericDidManager
+from .generics import DidManagerWrapper
 from walytis_beta_api.exceptions import BlockNotFoundError
 from walytis_beta_api._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
 from typing import Type
@@ -62,7 +65,7 @@ class SuperExistsError(Exception):
     pass
 
 
-class DidManagerWithSupers(GenericBlockchain):
+class DidManagerWithSupers(DidManagerWrapper):
     """Manages a collection of correspondences, managing adding archiving them.
     """
 
@@ -78,15 +81,15 @@ class DidManagerWithSupers(GenericBlockchain):
     ):
         self.virtual_layer_name = virtual_layer_name
         self.super_type = super_type
-        self.did_manager = did_manager
-
+        self._did_manager = did_manager
+        self._org_did_manager = did_manager
         self._init_blocks()
 
         did_manager.block_received_handler = self._on_block_received_dmws
 
         self.lock = Lock()
         self.key_store_dir = os.path.dirname(
-            self.did_manager.key_store.key_store_path
+            self._did_manager.key_store.key_store_path
 
         )
         self._terminate_dmws = False
@@ -104,7 +107,7 @@ class DidManagerWithSupers(GenericBlockchain):
     def _init_blocks(self):
         # present to other programs all blocks not created by this DidManager
         blocks = [
-            block for block in self.did_manager.get_blocks()
+            block for block in self._did_manager.get_blocks()
             if self.virtual_layer_name not in block.topics
         ]
         self._blocks = BlocksList.from_blocks(
@@ -157,7 +160,7 @@ class DidManagerWithSupers(GenericBlockchain):
             raise error
 
     def load_missed_blocks(self):
-        self.did_manager.load_missed_blocks()
+        self._did_manager.load_missed_blocks()
         # start joining new correspondeces only after loading missed blocks
         self._process_invitations()
 
@@ -211,7 +214,7 @@ class DidManagerWithSupers(GenericBlockchain):
             # self.key_store
             correspondence = self.super_type.create(
                 self.key_store_dir,
-                member=self.did_manager
+                member=self._did_manager
             )
             invitation = correspondence.invite_member()
             # register GroupDidManager on blockchain
@@ -252,7 +255,7 @@ class DidManagerWithSupers(GenericBlockchain):
             correspondence = self.super_type.join(
                 invitation=invitation_d,
                 group_key_store=self.key_store_dir,
-                member=self.did_manager
+                member=self._did_manager
             )
 
             if register:
@@ -301,7 +304,7 @@ class DidManagerWithSupers(GenericBlockchain):
                 blockchain_id_from_did(correspondence_id) + ".json"
             )
             key = Key.create(CRYPTO_FAMILY)
-            self.did_manager.key_store.add_key(key)
+            self._did_manager.key_store.add_key(key)
             key_store = KeyStore(key_store_path, key)
 
             # logger.info("JAJ: Joining blockchain...")
@@ -329,7 +332,7 @@ class DidManagerWithSupers(GenericBlockchain):
             elif issubclass(self.super_type, GroupDidManager):
                 correspondence = self.super_type(
                     group_key_store=key_store,
-                    member=self.did_manager
+                    member=self._did_manager
                 )
             else:
                 raise Exception(
@@ -355,9 +358,9 @@ class DidManagerWithSupers(GenericBlockchain):
             invitation
         )
         correspondence_registration.sign(
-            self.did_manager.get_control_key()
+            self._did_manager.get_control_key()
         )
-        self.did_manager.add_block(
+        self._did_manager.add_block(
             correspondence_registration.generate_block_content(),
             topics=[self.virtual_layer_name,
                     correspondence_registration.walytis_block_topic]
@@ -374,7 +377,7 @@ class DidManagerWithSupers(GenericBlockchain):
         """
         active_supers: set[str] = set()
         archived_supers: set[str] = set()
-        for block in self.did_manager.blockchain.get_blocks():
+        for block in self._did_manager.blockchain.get_blocks():
             # ignore blocks that aren't SuperRegistration
             if (
                 SuperRegistration.walytis_block_topic
@@ -384,7 +387,7 @@ class DidManagerWithSupers(GenericBlockchain):
 
             # load SuperRegistration
             crsp_registration = SuperRegistration.load_from_block_content(
-                self.did_manager.blockchain.get_block(
+                self._did_manager.blockchain.get_block(
                     block.long_id
                 ).content
             )
@@ -420,7 +423,7 @@ class DidManagerWithSupers(GenericBlockchain):
                 # get this correspondence' KeyStore Key ID
                 keystore_key_id = KeyStore.get_keystore_pubkey(key_store_path)
                 # get the Key from KeyStore
-                key_store_key = self.did_manager.key_store.get_key(
+                key_store_key = self._did_manager.key_store.get_key(
                     keystore_key_id
                 )
                 # load the correspondence' KeyStore
@@ -433,7 +436,7 @@ class DidManagerWithSupers(GenericBlockchain):
                 elif issubclass(self.super_type, GroupDidManager):
                     correspondence = self.super_type(
                         group_key_store=key_store,
-                        member=self.did_manager
+                        member=self._did_manager
                     )
                 else:
                     raise Exception(
@@ -510,7 +513,7 @@ class DidManagerWithSupers(GenericBlockchain):
             self._terminate_dmws = True
             for correspondence in self.correspondences.values():
                 correspondence.terminate(terminate_member=False)
-        self.did_manager.terminate()
+        self._did_manager.terminate()
 
     def delete(self):
         self.terminate()
@@ -518,27 +521,27 @@ class DidManagerWithSupers(GenericBlockchain):
             self._terminate_dmws = True
             for correspondence in self.correspondences.values():
                 correspondence.delete(terminate_member=False)
-        self.did_manager.delete()
+        self._did_manager.delete()
 
     def __del__(self):
         self.terminate()
 
     @property
     def blockchain(self):
-        return self.did_manager.blockchain
+        return self._did_manager.blockchain
 
     @property
     def blockchain_id(self) -> str:
-        return self.did_manager.blockchain_id
+        return self._did_manager.blockchain_id
 
     @property
     def did(self) -> str:
-        return self.did_manager.did
+        return self._did_manager.did
 
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
-        return self.did_manager.add_block(
+        return self._did_manager.add_block(
             content=content, topics=topics
         )
 
@@ -556,7 +559,7 @@ class DidManagerWithSupers(GenericBlockchain):
         Returns:
             bytes: the encrypted data
         """
-        return self.did_manager.encrypt(
+        return self._did_manager.encrypt(
             data=data,
             encryption_options=encryption_options,
         )
@@ -572,7 +575,7 @@ class DidManagerWithSupers(GenericBlockchain):
         Returns:
             bytes: the decrypted data
         """
-        return self.did_manager.decrypt(data=data)
+        return self._did_manager.decrypt(data=data)
 
     def sign(self, data: bytes, signature_options: str = "") -> bytes:
         """Sign the provided data using the specified private key.
@@ -585,7 +588,7 @@ class DidManagerWithSupers(GenericBlockchain):
         Returns:
             bytes: the signature
         """
-        return self.did_manager.sign(
+        return self._did_manager.sign(
             data=data,
             signature_options=signature_options,
         )
@@ -595,24 +598,24 @@ class DidManagerWithSupers(GenericBlockchain):
         signature: bytes,
         data: bytes,
     ) -> bool:
-        return self.did_manager.verify_signature(
+        return self._did_manager.verify_signature(
             signature=signature,
             data=data,
         )
 
     def get_control_key(self) -> Key:
-        return self.did_manager.get_control_key()
+        return self._did_manager.get_control_key()
 
     def get_peers(self) -> list[str]:
-        return self.did_manager.get_peers()
+        return self._did_manager.get_peers()
 
     @property
     def did(self) -> str:
-        return self.did_manager.did
+        return self._did_manager.did
 
     @property
     def did_doc(self):
-        return self.did_manager.did_doc
+        return self._did_manager.did_doc
 
     @property
     def block_received_handler(self) -> Callable[[Block], None] | None:
@@ -631,3 +634,19 @@ class DidManagerWithSupers(GenericBlockchain):
 
     def clear_block_received_handler(self) -> None:
         self._dmws_other_blocks_handler = None
+
+    @property
+    def did_manager(self) -> GenericDidManager:
+        return self._did_manager
+
+    @property
+    def key_store(self) -> KeyStore:
+        return self._did_manager.key_store
+
+    def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
+        return self._did_manager.renew_control_key(new_ctrl_key)
+
+    def update_did_doc(self, did_doc: dict) -> None:
+        return self.update_did_doc(did_doc)
+    def org_did_manager(self)->GenericDidManager:
+        return self._org_did_manager

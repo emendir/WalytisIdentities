@@ -10,6 +10,7 @@ import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
 
+from .generic_did_manager import GenericDidManager
 import walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
@@ -38,8 +39,8 @@ KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
 WALYTIS_BLOCK_TOPIC = "DidManager"
 
 
-@dataclass
-class DidManager(GenericBlockchain):
+# @dataclass
+class DidManager(GenericDidManager):
     """Manage DID documents using a Walytis blockchain.
 
     Publishes DID documents on a blockchain, secured by an updatable
@@ -47,12 +48,12 @@ class DidManager(GenericBlockchain):
     DOESN'T create ID documents.
     """
 
-    blockchain: Blockchain
+    _blockchain: Blockchain
 
     # The current control key's ID.
-    # This key's Key object is always available in self.key_store
+    # This key's Key object is always available in self._key_store
     _control_key_id: str
-    key_store: KeyStore
+    _key_store: KeyStore
 
     _did_doc: dict | None
 
@@ -70,13 +71,13 @@ class DidManager(GenericBlockchain):
             other_blocks_handler: eventhandler for blocks published on
                 `blockchain` that aren't related to this DID-Manager work
         """
-        
+
         if not isinstance(key_store, KeyStore):
             raise TypeError(
                 "The parameter `key_store` must be of type KeyStore, "
                 f"not {type(key_store)}"
             )
-        self.key_store=key_store
+        self._key_store = key_store
         # assert that the key_store is unlocked
         key_store.key.get_private_key()
 
@@ -90,7 +91,7 @@ class DidManager(GenericBlockchain):
                 "in the keystore's custom metadata"
             )
 
-        self.blockchain = Blockchain(
+        self._blockchain = Blockchain(
             blockchain_id,
             appdata_dir=self.get_blockchain_appdata_path(key_store),
             auto_load_missed_blocks=False,
@@ -108,11 +109,11 @@ class DidManager(GenericBlockchain):
 
         # logger.debug("DM: Built DID-Manager object!")
     def load_missed_blocks(self):
-        self.blockchain.load_missed_blocks(
+        self._blockchain.load_missed_blocks(
             waly.blockchain_model.N_STARTUP_BLOCKS
         )
 
-        self._did_doc = get_latest_did_doc(self.blockchain)
+        self._did_doc = get_latest_did_doc(self._blockchain)
         if not self._did_doc:
             raise NotValidDidBlockchainError()
 
@@ -123,7 +124,11 @@ class DidManager(GenericBlockchain):
         return self._did_doc
 
     @classmethod
-    def create(cls, key_store: KeyStore | str):
+    def create(
+        cls,
+        key_store: KeyStore | str,
+        other_blocks_handler: Callable[[Block], None] | None = None,
+    ):
         """Create a new DID-Manager.
 
         Args:
@@ -177,7 +182,9 @@ class DidManager(GenericBlockchain):
 
         blockchain.terminate()
         blockchain.terminate()
-        did_manager = cls(key_store)
+        did_manager = cls(
+            key_store=key_store, other_blocks_handler=other_blocks_handler
+        )
 
         # logger.debug("DM: created DID-Manager!")
         return did_manager
@@ -229,7 +236,7 @@ class DidManager(GenericBlockchain):
     @property
     def did(self) -> str:
         """Get this DID-Manager's DID."""
-        return did_from_blockchain_id(self.blockchain.blockchain_id)
+        return did_from_blockchain_id(self._blockchain.blockchain_id)
 
     def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
         """Change the control key to an automatically generated new one."""
@@ -240,7 +247,7 @@ class DidManager(GenericBlockchain):
             new_ctrl_key = Key.create(CRYPTO_FAMILY)
 
         old_ctrl_key = self.get_control_key()
-        self.key_store.add_key(new_ctrl_key)
+        self._key_store.add_key(new_ctrl_key)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
         keyblock = ControlKeyBlock.new(
@@ -249,7 +256,7 @@ class DidManager(GenericBlockchain):
         )
         keyblock.sign(old_ctrl_key)
 
-        self.blockchain.add_block(
+        self._blockchain.add_block(
             keyblock.generate_block_content(),
             topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic]
         )
@@ -265,7 +272,7 @@ class DidManager(GenericBlockchain):
         """Add an InfoBlock type block to this DID-Block's blockchain."""
         if not block.signature:
             block.sign(self.get_control_key())
-        return self.blockchain.add_block(
+        return self._blockchain.add_block(
             block.generate_block_content(),
             [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic]
         )
@@ -276,11 +283,11 @@ class DidManager(GenericBlockchain):
         Updates self._control_key_id, returns the control key object.
         The returned Key NEVER has the private key.
         """
-        control_key = get_latest_control_key(self.blockchain)
+        control_key = get_latest_control_key(self._blockchain)
         self._control_key_id = control_key.get_key_id()
-        if self._control_key_id not in self.key_store.keys.keys():
+        if self._control_key_id not in self._key_store.keys.keys():
             # add key to key store
-            self.key_store.add_key(control_key)
+            self._key_store.add_key(control_key)
         return control_key
 
     def get_control_key(self) -> Key:
@@ -289,7 +296,7 @@ class DidManager(GenericBlockchain):
             # update self._control_key_id from the blockchain
             self.check_control_key()
         # load key from key store to get potential private key
-        control_key = self.key_store.get_key(self._control_key_id)
+        control_key = self._key_store.get_key(self._control_key_id)
         return control_key
 
     def update_did_doc(self, did_doc: dict) -> None:
@@ -314,7 +321,7 @@ class DidManager(GenericBlockchain):
                     self.check_control_key()
                     # logger.debug(self._control_key_id)
                 case did_manager_blocks.DidDocBlock:
-                    self._did_doc = get_latest_did_doc(self.blockchain)
+                    self._did_doc = get_latest_did_doc(self._blockchain)
 
                 case _:
                     logger.warning(
@@ -328,11 +335,12 @@ class DidManager(GenericBlockchain):
             if self._dm_other_blocks_handler:
                 self._dm_other_blocks_handler(block)
         # logger.debug("DM: processed block")
+
     def unlock(self, private_key: bytes | bytearray | str) -> None:
         control_key = self.get_control_key()
         if control_key:
             control_key.unlock(private_key)
-            self.key_store.save_appdata()
+            self._key_store.save_appdata()
         else:
             # TODO: raise custom exception
             raise Exception("Don't have control key yet!")
@@ -351,7 +359,7 @@ class DidManager(GenericBlockchain):
         Returns:
             bytes: the encrypted data
         """
-        return self.key_store.encrypt(
+        return self._key_store.encrypt(
             data=data,
             key=self.get_control_key(),
             encryption_options=encryption_options,
@@ -369,7 +377,7 @@ class DidManager(GenericBlockchain):
             bytes: the decrypted data
         """
         cipher_package = CodePackage.deserialise_bytes(data)
-        return self.key_store.decrypt(
+        return self._key_store.decrypt(
             cipher_package,
         )
 
@@ -384,7 +392,7 @@ class DidManager(GenericBlockchain):
         Returns:
             bytes: the signature
         """
-        return self.key_store.sign(
+        return self._key_store.sign(
             data=data,
             key=self.get_control_key(),
             signature_options=signature_options,
@@ -407,25 +415,25 @@ class DidManager(GenericBlockchain):
             bool: whether or not the signature matches the data
         """
         signature_package = CodePackage.deserialise_bytes(signature)
-        return self.key_store.verify_signature(
+        return self._key_store.verify_signature(
             signature_package,
             data=data
         )
 
     def delete(self) -> None:
         """Delete this DID-Manager."""
-        self.blockchain.terminate()
+        self._blockchain.terminate()
         try:
-            self.blockchain.delete()
+            self._blockchain.delete()
         except waly.exceptions.NoSuchBlockchainError:
             pass
 
     def terminate(self) -> None:
         """Stop this DID-Manager, cleaning up resources."""
-        self.key_store.terminate()
+        self._key_store.terminate()
         try:
-            
-            self.blockchain.terminate()
+
+            self._blockchain.terminate()
         except waly.exceptions.NoSuchBlockchainError:
             pass
 
@@ -435,7 +443,7 @@ class DidManager(GenericBlockchain):
 
     @property
     def blockchain_id(self) -> str:
-        return self.blockchain.blockchain_id
+        return self._blockchain.blockchain_id
 
     @property
     def block_received_handler(self) -> Callable[[Block], None] | None:
@@ -451,20 +459,25 @@ class DidManager(GenericBlockchain):
                 "If you want to replace it, call `clear_block_received_handler()` first."
             )
         self._dm_other_blocks_handler = block_received_handler
+
     def clear_block_received_handler(self) -> None:
         self._dm_other_blocks_handler = None
+
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
-        return self.blockchain.add_block(content, topics)
+        block = self._blockchain.add_block(content, topics)
+        self._blocks_list_dm.add_block(BlockLazilyLoaded.from_block(block))
+        return block
 
     def _init_blocks_list_dm(self):
         # present to other programs all blocks not created by this DidManager
         blocks = [
-            block for block in self.blockchain.get_blocks()
+            block for block in self._blockchain.get_blocks()
             if WALYTIS_BLOCK_TOPIC not in block.topics and block.topics != ["genesis"]
         ]
-        self._blocks_list_dm = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
+        self._blocks_list_dm = BlocksList.from_blocks(
+            blocks, BlockLazilyLoaded)
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
         return self._blocks_list_dm.get_blocks(reverse=reverse)
@@ -513,9 +526,18 @@ class DidManager(GenericBlockchain):
             raise error
 
     def get_peers(self) -> list[str]:
-        return self.blockchain.get_peers()
+        return self._blockchain.get_peers()
+
+    @property
+    def blockchain(self) -> Blockchain:
+        return self._blockchain
+
+    @property
+    def key_store(self) -> KeyStore:
+        return self._key_store
+
     @staticmethod
-    def get_blockchain_appdata_path(key_store: KeyStore)->str:
+    def get_blockchain_appdata_path(key_store: KeyStore) -> str:
         keystore_did = DidManager.get_keystore_did(key_store)
         blockchain_id = blockchain_id_from_did(keystore_did)
         appdata_path = os.path.join(
@@ -525,8 +547,9 @@ class DidManager(GenericBlockchain):
         if not os.path.exists(appdata_path):
             os.makedirs(appdata_path)
         return appdata_path
+
     @staticmethod
-    def get_keystore_did(key_store:KeyStore)->str:
+    def get_keystore_did(key_store: KeyStore) -> str:
         # load blockchain_id from the KeyStore's metadata
         keystore_did = key_store.get_custom_metadata().get(KEYSTORE_DID)
 
@@ -536,7 +559,7 @@ class DidManager(GenericBlockchain):
                 f"{KEYSTORE_DID} in its custom metadata"
             )
         return keystore_did
-    
+
 
 def blockchain_id_from_did(did: str) -> str:
     """Given a DID, get its Walytis blockchain's ID."""

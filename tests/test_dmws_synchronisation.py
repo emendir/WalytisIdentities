@@ -46,13 +46,13 @@ import threading
 import json
 from time import sleep
 sys.path.append('/opt/WalIdentity/tests')
-import test_did_manager_with_supers_synchronisation
+import test_dmws_synchronisation
 import pytest
-from test_did_manager_with_supers_synchronisation import logger
+from test_dmws_synchronisation import logger
 logger.info('DOCKER: Preparing tests...')
-test_did_manager_with_supers_synchronisation.REBUILD_DOCKER=False
-test_did_manager_with_supers_synchronisation.DELETE_ALL_BRENTHY_DOCKERS=False
-test_did_manager_with_supers_synchronisation.test_preparations()
+test_dmws_synchronisation.REBUILD_DOCKER=False
+test_dmws_synchronisation.DELETE_ALL_BRENTHY_DOCKERS=False
+test_dmws_synchronisation.test_preparations()
 logger.info('DOCKER: Ready to test!')
 '''
 DOCKER_PYTHON_FINISH_TESTING_CODE = '''
@@ -62,7 +62,7 @@ N_DOCKER_CONTAINERS = 4
 
 pytest.super = None
 pytest.dm = None
-pytest.dm_config_dir = "/tmp/wali_test_did_manager_with_supers_synchronisation"
+pytest.dm_config_dir = "/tmp/wali_test_dmws_synchronisation"
 pytest.containers: list[WalIdentityDocker] = []
 
 
@@ -181,7 +181,7 @@ def test_setup_dm(docker_container: WalIdentityDocker):
 
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_create_dm()",
+        "test_dmws_synchronisation.docker_create_dm()",
         "print(f'DOCKER: Created DidManagerWithSupers: {type(pytest.dm)}')",
         "pytest.dm.terminate()",
     ])
@@ -209,7 +209,7 @@ def test_load_dm(docker_container: WalIdentityDocker) -> dict | None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "test_dmws_synchronisation.docker_load_dm()",
         "invitation=pytest.dm.did_manager.invite_member()",
         "print(json.dumps(invitation))",
         "print(f'DOCKER: Loaded DidManagerWithSupers: {type(pytest.dm)}')",
@@ -297,7 +297,7 @@ def test_add_sub(
 
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "test_dmws_synchronisation.docker_load_dm()",
         "logger.info('Waiting to allow new device to join...')",
         f"sleep({PROFILE_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
@@ -310,7 +310,7 @@ def test_add_sub(
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        f"test_did_manager_with_supers_synchronisation.docker_join_dm('{
+        f"test_dmws_synchronisation.docker_join_dm('{
             json.dumps(invitation)}')",
         "pytest.dm.terminate()",
     ])
@@ -351,8 +351,8 @@ def test_create_super(docker_container: WalIdentityDocker) -> dict | None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
-        "super=test_did_manager_with_supers_synchronisation.docker_create_super()",
+        "test_dmws_synchronisation.docker_load_dm()",
+        "super=test_dmws_synchronisation.docker_create_super()",
         "invitation = super.invite_member()",
         "print(json.dumps(invitation))",
         "print(f'DOCKER: Created super: {type(super)}')",
@@ -391,7 +391,7 @@ def test_join_super(
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "test_dmws_synchronisation.docker_load_dm()",
         "logger.info('Waiting to allow conversation join...')",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
@@ -404,8 +404,8 @@ def test_join_super(
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
-        f"super = test_did_manager_with_supers_synchronisation.docker_join_super('{
+        "test_dmws_synchronisation.docker_load_dm()",
+        f"super = test_dmws_synchronisation.docker_join_super('{
             json.dumps(invitation)}')",
         "print(super.did)",
         "pytest.dm.terminate()",
@@ -435,7 +435,7 @@ def test_auto_join_super(
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "test_dmws_synchronisation.docker_load_dm()",
         "logger.info('Waiting to allow auto conversation join...')",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
@@ -448,7 +448,7 @@ def test_auto_join_super(
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "test_did_manager_with_supers_synchronisation.docker_load_dm()",
+        "test_dmws_synchronisation.docker_load_dm()",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "print('GroupDidManager DIDs:')",
         "for c in pytest.dm.get_active_supers():",

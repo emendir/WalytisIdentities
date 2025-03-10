@@ -26,6 +26,7 @@ from .did_manager_blocks import (
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .key_store import CodePackage, KeyStore
+from .generic_did_manager import GenericDidManager
 import os
 import time
 from datetime import datetime, timedelta
@@ -216,7 +217,7 @@ class _GroupDidManager(DidManager):
 
     def add_member(
         self,
-        member: DidManager
+        member: GenericDidManager
     ) -> None:
         """Adds an existing DID-Manager as a member to this Group-DID.
 
@@ -253,7 +254,7 @@ class _GroupDidManager(DidManager):
     def make_member(
         self,
         invitation: dict,
-        member: DidManager
+        member: GenericDidManager
     ) -> None:
         """Creating a new member DID-Manager joining an existing Group-DID.
 
@@ -353,7 +354,6 @@ class _GroupDidManager(DidManager):
         return [b for b in DidManager.get_blocks(self) if MemberJoiningBlock.walytis_block_topic in b.topics]
 
 
-
 class GroupDidManager(_GroupDidManager):
     """DidManager controlled by multiple member DIDs.
 
@@ -365,7 +365,7 @@ class GroupDidManager(_GroupDidManager):
     def __init__(
         self,
         group_key_store: KeyStore,
-        member: KeyStore | DidManager,
+        member: KeyStore | GenericDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
     ):
@@ -383,7 +383,7 @@ class GroupDidManager(_GroupDidManager):
             self.member_did_manager = DidManager(
                 key_store=member,
             )
-        elif issubclass(type(member), DidManager):
+        elif issubclass(type(member), GenericDidManager):
             self.member_did_manager = member
         else:
             raise TypeError(
@@ -423,7 +423,7 @@ class GroupDidManager(_GroupDidManager):
     def create(
         cls,
         group_key_store: KeyStore | str,
-        member: DidManager | KeyStore,
+        member: GenericDidManager | KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ):
         """Create a new GroupDidManager object.
@@ -437,7 +437,7 @@ class GroupDidManager(_GroupDidManager):
             member_did_manager = DidManager(
                 key_store=member,
             )
-        elif isinstance(member, DidManager):
+        elif isinstance(member, GenericDidManager):
             member_did_manager = member
         else:
             raise TypeError(
@@ -468,7 +468,7 @@ class GroupDidManager(_GroupDidManager):
         cls: Type[GroupDidManagerType],
         invitation: str | dict,
         group_key_store: KeyStore | str,
-        member: DidManager,
+        member: KeyStore | GenericDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ) -> GroupDidManagerType:
         """Join an exisiting Group-DID-Manager.
@@ -488,7 +488,7 @@ class GroupDidManager(_GroupDidManager):
             member = DidManager(
                 key_store=member,
             )
-        elif isinstance(member, DidManager):
+        elif isinstance(member, GenericDidManager):
             member = member
         else:
             raise TypeError(
