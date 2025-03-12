@@ -25,7 +25,7 @@ class DidManagerWrapper(GenericDidManager,ABC):
         pass
 
     @abstractproperty
-    def org_did_manager(self) -> GroupDidManager:
+    def org_did_manager(self) -> GenericDidManager:
         pass
 
     @classmethod

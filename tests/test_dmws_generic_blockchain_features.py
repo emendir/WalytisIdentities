@@ -57,10 +57,10 @@ def test_preparations() -> None:
     pytest.device_did_keystore = KeyStore(device_keystore_path, key)
     pytest.profile_did_keystore = KeyStore(profile_keystore_path, key)
     pytest.device_did_manager = DidManager.create(pytest.device_did_keystore)
-    pytest.profile_did_manager = GroupDidManager.create(
+    pytest.dmws_did_manager = GroupDidManager.create(
         pytest.profile_did_keystore, pytest.device_did_manager
     )
-    pytest.profile_did_manager.terminate()
+    pytest.dmws_did_manager.terminate()
     pytest.group_did_manager = GroupDidManager(
         pytest.profile_did_keystore,
         pytest.device_did_manager,
@@ -70,16 +70,16 @@ def test_preparations() -> None:
         did_manager=pytest.group_did_manager,
     )
 
-    pytest.profile = dmws
-    pytest.super = pytest.profile.create_super()
+    pytest.dmws = dmws
+    pytest.super = pytest.dmws.create_super()
     sleep(1)
-    pytest.profile.terminate()
+    pytest.dmws.terminate()
 
 
 def test_cleanup() -> None:
     """Clean up resources used during tests."""
-    if pytest.profile:
-        pytest.profile.delete()
+    if pytest.dmws:
+        pytest.dmws.delete()
 
     shutil.rmtree(pytest.profile_config_dir)
 
@@ -91,19 +91,21 @@ def test_profile():
         pytest.device_did_manager,
         auto_load_missed_blocks=False
     )
-    test_generic_blockchain(
+    dmws = test_generic_blockchain(
         DidManagerWithSupers,
         did_manager=pytest.group_did_manager
     )
+    dmws.terminate()
 
 
 def test_super():
     print("Running test for Super...")
-    test_generic_blockchain(
+    super = test_generic_blockchain(
         GroupDidManager,
         group_key_store=pytest.super.key_store,
         member=pytest.super.member_did_manager.key_store
     )
+    super.terminate()
 
 
 def run_tests():
