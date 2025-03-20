@@ -1,4 +1,5 @@
 ## Next Steps:
+- PeerMonitor for GroupDidManager members
 - create DidManagerWrapper class
   - DidManagerWithSupers inherits from it
   - GroupDidManagerWrapper inherits from it
@@ -15,7 +16,7 @@
 - encrypted and unencrypted custom metadata
 
 ## WalIdentity
-
+- GroupDidManager.get_members returns `list[dict]` - is that appropriate? symmetry to `DidManagerWithSupers.get_active_supers()` would be nice
 - rename group_did_manager to did_manager_with_subs and other renames?
 - remove constructors with cross-inheritance function signature conflicts
 - DidManager.get_latest_did_doc & .get_latest_control_key: more efficiency by not reading through the whole blockchain
@@ -32,7 +33,8 @@
 
 - GroupDidManagerWithSupers sometimes has to check whether self.super_type is a subclass of GroupDidManagerWrapper or GroupDidManager, because they have different constructors. Can we simplify this?
 - GroupDidManagerWithSupers: implement BlocksList to avoid loading SuperRegistrationBlocks
-
+- find better way of getting DidManager's peer ID than using blockchain invitation? see GroupDidManager.get_ipfs_ids
+- 
 ### Tests
 - DidManagerWithSupers
   - test that the return type is suprt_type in all operations returning a super

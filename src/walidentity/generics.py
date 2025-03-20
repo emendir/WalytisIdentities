@@ -261,7 +261,18 @@ class GroupDidManagerWrapper(ABC):
             data=data,
         )
 
+    @property
+    def block_received_handler(self) -> Callable[[Block], None] | None:
+        return self.did_manager.block_received_handler
 
+    @block_received_handler.setter
+    def block_received_handler(
+        self, block_received_handler: Callable[Block, None]
+    ) -> None:
+        self.did_manager.block_received_handler = block_received_handler
+
+    def clear_block_received_handler(self) -> None:
+        self.did_manager.clear_block_received_handler()
 
     def get_peers(self) -> list[str]:
         return self.org_did_manager.get_peers()

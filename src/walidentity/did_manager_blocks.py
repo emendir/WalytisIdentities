@@ -271,7 +271,8 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
         for block in blockchain.get_blocks()
         if get_block_type(block.topics) == ControlKeyBlock
     ]
-
+    if not ctrl_key_blocks:
+        raise Exception(f"Blockchain has no control keys! {blockchain.blockchain_id}")
     # ensure the first ControlKeyBlock has identical current and new keys
     if not (
         ctrl_key_blocks[0].old_key == ctrl_key_blocks[0].new_key
