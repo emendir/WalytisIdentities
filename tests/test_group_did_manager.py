@@ -63,7 +63,7 @@ def test_create_person_identity() -> None:
     mark(
         isinstance(pytest.group_1, GroupDidManager)
         and len(members) == 1
-        and pytest.group_1.member_did_manager.did in members[0]["did"],
+        and pytest.group_1.member_did_manager.did in members[0].did,
         "Create GroupDidManager"
     )
     pytest.group_1.terminate()
@@ -88,7 +88,7 @@ def test_load_person_identity() -> None:
         group_1.member_did_manager.did == member_did
         and group_1.did == person_did
         and len(members) == 1
-        and group_1.member_did_manager.did in members[0]["did"],
+        and group_1.member_did_manager.did in members[0].did,
         "Load GroupDidManager"
     )
     # group_1.terminate()

@@ -441,7 +441,7 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
     return latest_block.info_content
 
 
-def get_members(blockchain: Blockchain) -> dict:
+def get_members(blockchain: Blockchain) -> dict[str, dict]:
     blocks: list[
         MemberJoiningBlock | MemberUpdateBlock | MemberLeavingBlock
     ] = get_info_blocks(
@@ -502,5 +502,6 @@ def get_block_type(topics: list[str] | str) -> InfoBlockType | type(ControlKeyBl
             block_type = _type
 
     return block_type
+
 
 # decorate_all_functions(strictly_typed, __name__)

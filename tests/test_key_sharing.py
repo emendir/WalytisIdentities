@@ -174,11 +174,11 @@ def docker_check_new_member(did: str):
     logger.debug("CND: Getting members...")
     success = (
         did in [
-            member["did"]
+            member.did
             for member in pytest.group_1.get_members()
         ]
         and did in [
-            member["did"]
+            member.did
             for member in pytest.group_1.get_members()
         ]
     )

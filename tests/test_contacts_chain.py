@@ -64,7 +64,7 @@ def test_create_identity():
     members = pytest.me1.get_members()
     mark(
         isinstance(pytest.me1, GroupDidManager) and
-        len(members) == 1 and members[0]["did"] == pytest.me1.member_did_manager.did,
+        len(members) == 1 and members[0].did == pytest.me1.member_did_manager.did,
         "Created identity"
     )
 

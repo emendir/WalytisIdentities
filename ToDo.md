@@ -1,8 +1,9 @@
 ## Next Steps:
+- debug endra:
+  - creating correspondence gets stuck after joining profile
+  - after joining profile, existing correspondences aren't shown
 - PeerMonitor for GroupDidManager members
-- create DidManagerWrapper class
-  - DidManagerWithSupers inherits from it
-  - GroupDidManagerWrapper inherits from it
+- make GroupDidManagerWrapper inherits from DidManagerWrapper
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
 - Check TODO marks in code
@@ -16,6 +17,7 @@
 - encrypted and unencrypted custom metadata
 
 ## WalIdentity
+- ensure all published blockchain invitation contain all members' IPFS IDs
 - GroupDidManager.get_members returns `list[dict]` - is that appropriate? symmetry to `DidManagerWithSupers.get_active_supers()` would be nice
 - rename group_did_manager to did_manager_with_subs and other renames?
 - remove constructors with cross-inheritance function signature conflicts
@@ -34,7 +36,6 @@
 - GroupDidManagerWithSupers sometimes has to check whether self.super_type is a subclass of GroupDidManagerWrapper or GroupDidManager, because they have different constructors. Can we simplify this?
 - GroupDidManagerWithSupers: implement BlocksList to avoid loading SuperRegistrationBlocks
 - find better way of getting DidManager's peer ID than using blockchain invitation? see GroupDidManager.get_ipfs_ids
-- 
 ### Tests
 - DidManagerWithSupers
   - test that the return type is suprt_type in all operations returning a super
