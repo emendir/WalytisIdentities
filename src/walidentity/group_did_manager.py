@@ -605,6 +605,7 @@ class GroupDidManager(_GroupDidManager):
         logger.debug("GDM: Generating DID-Doc...")
         group_did_manager.member_did_manager.update_did_doc(
             group_did_manager.generate_member_did_doc())
+        logger.debug("GDM: Created DID-Manager!")
         return group_did_manager
 
     @classmethod
@@ -910,8 +911,8 @@ class GroupDidManager(_GroupDidManager):
                 key = self.key_store.get_key(key_id)
                 private_key = key.private_key
             except UnknownKeyError:
+                logger.debug("KRH: unknown private key!.")
                 private_key = None
-            logger.debug("KRH: got private key!.")
 
             if not private_key:
                 logger.debug("KRH: Sending DontOwnKey")

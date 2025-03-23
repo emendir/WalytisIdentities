@@ -1,3 +1,5 @@
+from threading import Thread
+from time import sleep
 from multi_crypt import Crypt
 from .group_did_manager import GenericDidManager
 from .generics import DidManagerWrapper
@@ -14,7 +16,7 @@ import os
 from walytis_beta_api import decode_short_id
 from brenthy_tools_beta.utils import bytes_to_string
 from walidentity.did_objects import Key
-from walidentity.did_manager_blocks import InfoBlock
+from walidentity.did_manager_blocks import InfoBlock, SuperRegistrationBlock
 from walidentity.group_did_manager import GroupDidManager
 from walidentity import DidManager
 from dataclasses import dataclass
@@ -30,35 +32,6 @@ from walytis_beta_api._experimental.generic_block import GenericBlock
 CRYPTO_FAMILY = "EC-secp256k1"
 
 
-@dataclass
-class SuperRegistration(InfoBlock):
-    """Block in a DidManagerWithSupers's blockchain registering a GroupDidManager."""
-    walytis_block_topic = "endra_corresp_reg"
-    info_content: dict
-
-    @classmethod
-    def create(
-        cls, correspondence_id: str, active: bool, invitation: dict | None,
-    ) -> 'SuperRegistration':
-
-        info_content = {
-            "correspondence_id": correspondence_id,
-            "active": active,
-            "invitation": invitation,
-        }
-        return cls.new(info_content)
-
-    @property
-    def correspondence_id(self) -> str:
-        return self.info_content["correspondence_id"]
-
-    @property
-    def active(self) -> bool:
-        return self.info_content["active"]
-
-    @property
-    def invitation(self) -> dict | None:
-        return self.info_content["invitation"]
 
 
 class SuperExistsError(Exception):
@@ -98,9 +71,11 @@ class DidManagerWithSupers(DidManagerWrapper):
         # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
         self.correspondences: dict[str, GroupDidManager] = dict()
+        self.correspondences_to_join: dict[str, SuperRegistrationBlock | None] = {}
         self._load_supers()  # load GroupDidManager objects
         self.__process_invitations = False
-        self.correspondences_to_join: dict[str, SuperRegistration | None] = {}
+        self._correspondences_finder_thr = Thread(
+            target=self._join_correspondences)
         if auto_load_missed_blocks:
             self.load_missed_blocks()
 
@@ -162,23 +137,35 @@ class DidManagerWithSupers(DidManagerWrapper):
     def load_missed_blocks(self):
         self._did_manager.load_missed_blocks()
         # start joining new correspondeces only after loading missed blocks
-        self._process_invitations()
+        if not self._correspondences_finder_thr.is_alive():
+            self._correspondences_finder_thr.start()
+
+    def _join_correspondences(self):
+        while not self._terminate_dmws:
+            self._process_invitations()
+            sleep(1)
 
     def _process_invitations(self) -> None:
         # logger.debug(
         #     f"Processing invitations: {len(self.correspondences_to_join)}"
         # )
-        _supers_to_join: dict[str, SuperRegistration | None] = {}
+        _supers_to_join: dict[str, SuperRegistrationBlock | None] = {}
+        joined_correspondences: dict[str, GroupDidManager] = {}
         for correspondence_id in self.correspondences_to_join.keys():
+            if self._terminate_dmws:
+                return
             registration = self.correspondences_to_join[correspondence_id]
             if not registration:
-                # logger.info("JAJ: finding blockchain invitation...")
+                # logger.info("DMWS: finding blockchain invitation...")
 
                 registrations = get_info_blocks(
-                    SuperRegistration,
-                    self.blockchain
+                    self._did_manager.blockchain,
+                    SuperRegistrationBlock,
                 )
-                for reg in registrations.reverse():
+                # logger.debug(f"DMWS REGISTRATIONS: {len(registrations)}")
+                registrations.reverse()
+                for reg in registrations:
+                    print(reg)
                     if reg.active:
                         if reg.correspondence_id == correspondence_id:
                             registration = reg
@@ -187,7 +174,8 @@ class DidManagerWithSupers(DidManagerWrapper):
                     error_message = (
                         "BUG: "
                         "In trying to join already joined GroupDidManager, "
-                        "couldn't find a matching SuperRegistration."
+                        "couldn't find a matching SuperRegistrationBlock.\n"
+                        f"{self._did_manager.blockchain.blockchain_id}"
 
                     )
                     logger.warning(error_message)
@@ -195,35 +183,54 @@ class DidManagerWithSupers(DidManagerWrapper):
             correspondence = self._join_already_joined_super(
                 correspondence_id, registration
             )
-            if not correspondence:
+            if correspondence:
+                joined_correspondences.update(
+                    {correspondence_id: correspondence}
+                )
+            else:
                 _supers_to_join.update(
-                    {correspondence_id: correspondence})
-        self.correspondences_to_join = _supers_to_join
+                    {correspondence_id: registration})
+        for correspondence_id in joined_correspondences.keys():
+            self.correspondences_to_join.pop(correspondence_id)
+        # self.correspondences_to_join = _supers_to_join
+        # with self.lock:
+            # for correspondence_id, correspondence in joined_correspondences.items():
+            #     # if correspondence was archived in the meantime
+            #     if correspondence_id in self._archived_corresp_ids:
+            #         correspondence.terminate()
+            #     else:
+            #         self.correspondences.update(
+            #             {correspondence_id: correspondence}
+            #         )
 
         self.__process_invitations = True
 
     def create_super(self) -> GroupDidManager:
+        if self._terminate_dmws:
+            raise Exception(
+                "DidManagerWithSupers.add: we're shutting down"
+            )
         with self.lock:
-            if self._terminate_dmws:
-                raise Exception(
-                    "DidManagerWithSupers.add: we're shutting down"
-                )
             # the GroupDidManager keystore file is located in self.key_store_dir
             # and named according to the created GroupDidManager's blockchain ID
             # and its KeyStore's key is automatically added to
             # self.key_store
+            logger.debug("DMWS: Creating Super...")
             correspondence = self.super_type.create(
                 self.key_store_dir,
                 member=self._did_manager
             )
+            logger.debug("DMWS: Joining created super...")
             invitation = correspondence.invite_member()
             # register GroupDidManager on blockchain
+            logger.debug("DMWS: registering created super...")
             self._register_super(
                 correspondence.did, True, invitation
             )
 
             # add to internal collection of GroupDidManager objects
             self.correspondences.update({correspondence.did: correspondence})
+            logger.debug("DMWS: Created super!")
             return correspondence
 
     def join_super(self, invitation: dict | str, register=True) -> GroupDidManager:
@@ -270,6 +277,10 @@ class DidManagerWithSupers(DidManagerWrapper):
 
     def archive_super(self, correspondence_id: str, register=True):
         with self.lock:
+            if correspondence_id in self.correspondences_to_join:
+                self.correspondences_to_join.pop(correspondence_id)
+                self._archived_corresp_ids.add(correspondence_id)
+                return
             if correspondence_id not in self.correspondences:
                 return
             self.correspondences[correspondence_id].terminate(
@@ -284,6 +295,7 @@ class DidManagerWithSupers(DidManagerWrapper):
             self._archived_corresp_ids.add(correspondence_id)
 
     def get_active_supers(self) -> set[str]:
+        # logger.debug(f"DMWS: Active supers: {len(self.correspondences)}")
         return set(self.correspondences.keys())
 
     def get_archived_supers(self) -> set[str]:
@@ -294,11 +306,33 @@ class DidManagerWithSupers(DidManagerWrapper):
 
     def _join_already_joined_super(
         self, correspondence_id: str,
-        registration: SuperRegistration
+        registration: SuperRegistrationBlock
     ) -> GroupDidManager | None:
         """Join a Coresp. which our DidManagerWithSupers has joined but member hasn't."""
+        blockchain_id = blockchain_id_from_did(correspondence_id)
+        try:
+            logger.info("DMWS: JAJ: Joining blockchain...")
+            # join blockchain, preprocessing existing blocks
+            blockchain = Blockchain.join(
+                registration.invitation["blockchain_invitation"],
+                # appdata_dir=DidManager.get_blockchain_appdata_path(
+                #     key_store
+                # ),
+            )
+            blockchain.terminate()
+        except JoinFailureError:
+            logger.warning("JAJ: Failed to join blockchain...")
+            return None
+        except BlockchainAlreadyExistsError:
+            pass
         with self.lock:
-            # logger.info("JAJ: Joining already joined GroupDidManager...")
+            if correspondence_id in self.correspondences:
+                logger.warning("JAJ: correspondeces already has entry")
+                if not self.correspondences[correspondence_id]:
+                    logger.warning("JAJ: correspondeces has entry with None")
+                return self.correspondences[correspondence_id]
+                
+            logger.info("JAJ: Joining already joined GroupDidManager...")
             key_store_path = os.path.join(
                 self.key_store_dir,
                 blockchain_id_from_did(correspondence_id) + ".json"
@@ -307,22 +341,8 @@ class DidManagerWithSupers(DidManagerWrapper):
             self._did_manager.key_store.add_key(key)
             key_store = KeyStore(key_store_path, key)
 
-            # logger.info("JAJ: Joining blockchain...")
-            blockchain_id = blockchain_id_from_did(correspondence_id)
             DidManager.assign_keystore(key_store, blockchain_id)
-            try:
-                # join blockchain, preprocessing existing blocks
-                blockchain = Blockchain.join(
-                    registration.invitation["blockchain_invitation"],
-                    appdata_dir=DidManager.get_blockchain_appdata_path(
-                        key_store
-                    ),
-                )
-                blockchain.terminate()
-            except JoinFailureError:
-                return None
-            except BlockchainAlreadyExistsError:
-                pass
+
             # logger.info("Loading correspondence...")
             if issubclass(self.super_type, GroupDidManagerWrapper):
                 correspondence = self.super_type(GroupDidManager(
@@ -341,6 +361,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 )
 
             self.correspondences.update({correspondence.did: correspondence})
+            logger.info("JAJ: Joining Super!")
             return correspondence
 
     def _register_super(
@@ -352,7 +373,7 @@ class DidManagerWithSupers(DidManagerWrapper):
             correspondence_id: the ID of the correspondence to register
             active: whether the correspondence is being activated or archived 
         """
-        correspondence_registration = SuperRegistration.create(
+        correspondence_registration = SuperRegistrationBlock.create(
             correspondence_id,
             active,
             invitation
@@ -378,15 +399,15 @@ class DidManagerWithSupers(DidManagerWrapper):
         active_supers: set[str] = set()
         archived_supers: set[str] = set()
         for block in self._did_manager.blockchain.get_blocks():
-            # ignore blocks that aren't SuperRegistration
+            # ignore blocks that aren't SuperRegistrationBlock
             if (
-                SuperRegistration.walytis_block_topic
+                SuperRegistrationBlock.walytis_block_topic
                 not in block.topics
             ):
                 continue
 
-            # load SuperRegistration
-            crsp_registration = SuperRegistration.load_from_block_content(
+            # load SuperRegistrationBlock
+            crsp_registration = SuperRegistrationBlock.load_from_block_content(
                 self._did_manager.blockchain.get_block(
                     block.long_id
                 ).content
@@ -402,7 +423,8 @@ class DidManagerWithSupers(DidManagerWrapper):
                 archived_supers.add(correspondence_bc_id)
                 if correspondence_bc_id in active_supers:
                     active_supers.remove(correspondence_bc_id)
-
+        # logger.debug(f"DMWS Registry: {len(active_supers)} {
+        #              len(archived_supers)}")
         return active_supers, archived_supers
 
     def _load_supers(self) -> None:
@@ -453,11 +475,13 @@ class DidManagerWithSupers(DidManagerWrapper):
             self.correspondences_to_join = dict([
                 (cid, None) for cid in new_supers
             ])
+            # logger.debug(f"DMWS: Correspondences: {len(self.correspondences)} {
+            #              len(self._archived_corresp_ids)} {len(self.correspondences_to_join)}")
 
     def _on_super_registration_received(self, block: Block):
         if self._terminate_dmws:
             return
-        crsp_registration = SuperRegistration.load_from_block_content(
+        crsp_registration = SuperRegistrationBlock.load_from_block_content(
             block.content
         )
         # logger.info(f"DidManagerWithSupers: got registration for {
@@ -489,7 +513,7 @@ class DidManagerWithSupers(DidManagerWrapper):
     def _on_block_received_dmws(self, block: Block):
         if self.virtual_layer_name in block.topics[0]:
             match block.topics[1]:
-                case SuperRegistration.walytis_block_topic:
+                case SuperRegistrationBlock.walytis_block_topic:
                     self._on_super_registration_received(
                         block
                     )
@@ -508,9 +532,10 @@ class DidManagerWithSupers(DidManagerWrapper):
     def terminate(self):
         if self._terminate_dmws:
             return
-
+        self._terminate_dmws = True
+        if self._correspondences_finder_thr.is_alive():
+            self._correspondences_finder_thr.join()
         with self.lock:
-            self._terminate_dmws = True
             for correspondence in self.correspondences.values():
                 correspondence.terminate(terminate_member=False)
         self._did_manager.terminate()
@@ -533,10 +558,6 @@ class DidManagerWithSupers(DidManagerWrapper):
     @property
     def blockchain_id(self) -> str:
         return self._did_manager.blockchain_id
-
-    @property
-    def did(self) -> str:
-        return self._did_manager.did
 
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
@@ -648,5 +669,6 @@ class DidManagerWithSupers(DidManagerWrapper):
 
     def update_did_doc(self, did_doc: dict) -> None:
         return self.update_did_doc(did_doc)
-    def org_did_manager(self)->GenericDidManager:
+
+    def org_did_manager(self) -> GenericDidManager:
         return self._org_did_manager

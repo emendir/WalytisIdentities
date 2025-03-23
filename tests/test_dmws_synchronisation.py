@@ -444,7 +444,7 @@ def test_auto_join_super(
 
     ])
     docker_container_old.run_python_code(
-        python_code, background=True
+        python_code, print_output=False, background=True
     )
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
@@ -458,7 +458,7 @@ def test_auto_join_super(
     try:
         output = docker_container_new.run_python_code(
             python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
-            print_output=False, background=False
+            print_output=True, background=False
         ).split("GroupDidManager DIDs:")
     except DockerShellError as e:
         print(e)

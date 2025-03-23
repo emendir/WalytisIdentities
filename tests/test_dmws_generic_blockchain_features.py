@@ -112,6 +112,9 @@ def run_tests():
     test_preparations()
     test_profile()
     test_super()
+    pytest.group_did_manager.terminate()
+    pytest.super.terminate()
+    pytest.dmws.terminate()
     test_cleanup()
 
 

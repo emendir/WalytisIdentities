@@ -224,6 +224,35 @@ class MemberUpdateBlock(InfoBlock):
         """Get the DID-Document which this block publishes."""
         return self.info_content
 
+@dataclass
+class SuperRegistrationBlock(InfoBlock):
+    """Block in a DidManagerWithSupers's blockchain registering a GroupDidManager."""
+    walytis_block_topic = "endra_corresp_reg"
+    info_content: dict
+
+    @classmethod
+    def create(
+        cls, correspondence_id: str, active: bool, invitation: dict | None,
+    ) -> 'SuperRegistrationBlock':
+
+        info_content = {
+            "correspondence_id": correspondence_id,
+            "active": active,
+            "invitation": invitation,
+        }
+        return cls.new(info_content)
+
+    @property
+    def correspondence_id(self) -> str:
+        return self.info_content["correspondence_id"]
+
+    @property
+    def active(self) -> bool:
+        return self.info_content["active"]
+
+    @property
+    def invitation(self) -> dict | None:
+        return self.info_content["invitation"]
 
 @strictly_typed
 class KeyOwnershipBlock(InfoBlock):
@@ -348,11 +377,15 @@ def get_info_blocks(
                     raise Exception(
                         "First key block doesn't have identical keys!")
                 last_key_block = ctrl_key_block
+                if ControlKeyBlock in block_types:
+                    valid_blocks.append(block)
 
             # we've already processed this blockchain's first ctrl key
             # if this block's signaure is validated by the last ctrl key
             elif verify_control_key_update(last_key_block, ctrl_key_block):
                 last_key_block = ctrl_key_block
+                if ControlKeyBlock in block_types:
+                    valid_blocks.append(block)
             else:
                 print("Found Control Key Block with invalid signature")
         elif block_type == MemberInvitationBlock:
@@ -483,6 +516,7 @@ INFO_BLOCK_TYPES: set[InfoBlockType] = {
     MemberJoiningBlock,
     MemberLeavingBlock,
     MemberUpdateBlock,
+    SuperRegistrationBlock,
     KeyOwnershipBlock,
 }
 
