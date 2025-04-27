@@ -4,7 +4,7 @@ from time import sleep
 from termcolor import colored as coloured
 from brenthy_tools_beta.utils import function_name
 from datetime import datetime
-import walytis_beta_api as waly
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 import os
 import shutil
 import tempfile
@@ -14,7 +14,7 @@ from brenthy_docker import DockerShellError
 import _testing_utils
 import walidentity
 import pytest
-import walytis_beta_api as walytis_api
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walidentity.did_objects import Key
 from walidentity import did_manager_with_supers
@@ -243,7 +243,7 @@ def test_load_dm(docker_container: WalIdentityDocker) -> dict | None:
 # used for creation, first loading test, and invitation creation
 PROFILE_CREATE_TIMEOUT_S = 10
 PROFILE_JOIN_TIMEOUT_S = 20
-CORRESP_JOIN_TIMEOUT_S = 20
+CORRESP_JOIN_TIMEOUT_S = 30
 
 
 def docker_join_dm(invitation: str):
@@ -389,32 +389,27 @@ def test_join_super(
     invitation: dict
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
-    python_code = "\n".join([
+    python_code_1 = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         "test_dmws_synchronisation.docker_load_dm()",
-        "logger.info('Waiting to allow conversation join...')",
+        "logger.info('test_join_super: Waiting to allow conversation join...')",
         f"sleep({CORRESP_JOIN_TIMEOUT_S})",
         "logger.info('Finished waiting, terminating...')",
         "pytest.dm.terminate()",
         "logger.info('Exiting after waiting.')",
 
     ])
-    docker_container_old.run_python_code(
-        python_code, background=True
-    )
-    python_code = "\n".join([
+    docker_container_old.run_python_code(python_code_1, background=True)
+    python_code_2 = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         "test_dmws_synchronisation.docker_load_dm()",
-        f"super = test_dmws_synchronisation.docker_join_super('{
-            json.dumps(invitation)}')",
+        f"super = test_dmws_synchronisation.docker_join_super"
+        f"('{json.dumps(invitation)}')",
         "print(super.did)",
         "pytest.dm.terminate()",
         "super.terminate()",
     ])
-    output_lines = docker_container_new.run_python_code(
-        python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
-        print_output=False, background=False
-    ).split("\n")
+    output_lines = docker_container_new.run_python_code(python_code_2, timeout=CORRESP_JOIN_TIMEOUT_S + 5,print_output=True, background=False).split("\n")
     second_last_line = output_lines[-2].strip()
     super_id = output_lines[-1].strip()
     expected_super_id = did_from_blockchain_id(
@@ -520,5 +515,7 @@ def run_tests():
 
 if __name__ == "__main__":
     _testing_utils.PYTEST = False
-    _testing_utils.BREAKPOINTS = True
+    _testing_utils.BREAKPOINTS = False
     run_tests()
+    _testing_utils.terminate()
+    

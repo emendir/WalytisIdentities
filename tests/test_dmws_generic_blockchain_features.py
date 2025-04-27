@@ -1,8 +1,8 @@
-from walytis_beta_api._experimental import generic_blockchain_testing
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental import generic_blockchain_testing
 from time import sleep
 import _testing_utils
-from walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
-from walytis_beta_api import Blockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
 from mutablockchain import MutaBlockchain
 import os
 import pytest
@@ -13,7 +13,7 @@ from walidentity.group_did_manager import GroupDidManager
 from walidentity.key_store import KeyStore
 import tempfile
 from datetime import datetime
-import walytis_beta_api as waly
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 import os
 import shutil
 import tempfile
@@ -21,7 +21,7 @@ import tempfile
 import _testing_utils
 import walidentity
 import pytest
-import walytis_beta_api as walytis_api
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walidentity.did_objects import Key
 from walidentity import did_manager_with_supers
@@ -119,6 +119,8 @@ def run_tests():
 
 
 if __name__ == "__main__":
-    generic_blockchain_testing.PYTEST = False
-    generic_blockchain_testing.BREAKPOINTS=False
+    _testing_utils.PYTEST = False
+    _testing_utils.BREAKPOINTS = False
     run_tests()
+    _testing_utils.terminate()
+    

@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod, abstractproperty
 from collections.abc import Generator
 from typing import Callable
 
-from walytis_beta_api import (
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import (
     Block,
 )
-from walytis_beta_api._experimental.generic_blockchain import (
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import (
     GenericBlock,
 )
 

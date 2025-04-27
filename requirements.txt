@@ -1,5 +1,6 @@
 rfc3987
 walytis_beta_api
+walytis_beta_embedded
 decorate_all
 py_strict_typing
 loguru

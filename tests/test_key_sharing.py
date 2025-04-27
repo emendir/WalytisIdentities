@@ -7,7 +7,7 @@ from datetime import datetime
 import _testing_utils
 import pytest
 import walidentity
-import walytis_beta_api as walytis_api
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
 from walidentity.did_manager import DidManager
 from walidentity.did_objects import Key
@@ -450,5 +450,7 @@ def run_tests():
 
 if __name__ == "__main__":
     _testing_utils.PYTEST = False
-    _testing_utils.BREAKPOINTS = True
+    _testing_utils.BREAKPOINTS = False
     run_tests()
+    _testing_utils.terminate()
+    

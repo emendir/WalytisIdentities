@@ -6,9 +6,8 @@ import os
 import docker
 from time import sleep
 from loguru import logger
-import ipfs_api
+from walytis_beta_embedded import ipfs
 from termcolor import colored as coloured
-from termcolor._types import Color as Colour
 import pyperclip
 from brenthy_docker import BrenthyDocker, delete_containers
 
@@ -48,8 +47,8 @@ if __name__ == "__main__":
 
     # Execute Python command on the container
     python_output = docker_container.run_python_command(
-        "import walytis_beta_api;"
-        "print(walytis_beta_api.get_walytis_beta_version())"
+        "import walytis_beta_embedded._walytis_beta.walytis_beta_api;"
+        "print(walytis_beta_embedded._walytis_beta.walytis_beta_api.get_walytis_beta_version())"
     )
     print("Output of Python command:", python_output)
 

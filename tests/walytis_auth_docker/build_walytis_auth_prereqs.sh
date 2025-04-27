@@ -7,6 +7,7 @@ cd $work_dir/../..
 rsync -XAva ../../IPFS-Monitoring tests/walytis_auth_docker/
 rsync -XAva ../../MultiCrypt tests/walytis_auth_docker/python_packages/
 rsync -XAva ../../Brenthy/Brenthy/blockchains/Walytis_Beta tests/walytis_auth_docker/python_packages/
+rsync -XALva ../../Brenthy/Deployment/walytis_beta_embedded tests/walytis_auth_docker/python_packages/
 
 docker build -t local/walytis_auth_prereqs -f tests/walytis_auth_docker/walytis_auth_prereqs.dockerfile .
 

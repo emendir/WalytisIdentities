@@ -1,6 +1,6 @@
 from loguru import logger
 from walidentity import GroupDidManager
-from walytis_beta_api import Block
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block
 from private_blocks import PrivateBlockchain
 from typing import Callable
 import json

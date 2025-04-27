@@ -1,19 +1,19 @@
 """Classes for managing Person and Device identities."""
-from walytis_beta_api import list_blockchain_ids
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import list_blockchain_ids
 import traceback
 import json
-from walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_embedded._walytis_beta.walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
-from walytis_beta_api._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
+from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
+from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
 import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
 
-import walytis_beta_api as waly
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
-from walytis_beta_api import Block, Blockchain, create_blockchain
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block, Blockchain, create_blockchain
 from .utils import logger
 from . import did_manager_blocks
 from .did_manager_blocks import (
@@ -36,18 +36,15 @@ from threading import Thread
 from time import sleep
 from typing import Callable, Type, TypeVar
 
-import ipfs_api
-import ipfs_datatransmission
-import walytis_beta_api
-import walytis_beta_api as walytis_beta
+from walytis_beta_embedded import ipfs
+from walytis_beta_embedded import ipfs
+
+import walytis_beta_embedded._walytis_beta.walytis_beta_api
+import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_beta
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
-from ipfs_datatransmission import (
-    Conversation,
-    ConversationListener,
-    ConvListenTimeout,
-)
+from ipfs_tk_transmission.errors import ConvListenTimeout, CommunicationTimeout
 from loguru import logger
-from walytis_beta_api import (
+from walytis_beta_embedded._walytis_beta.walytis_beta_api import (
     Block,
     Blockchain,
     BlockchainAlreadyExistsError,
@@ -72,7 +69,6 @@ from .did_objects import Key
 from .key_store import KeyStore, UnknownKeyError
 from .settings import CTRL_KEY_MAX_RENEWAL_DUR_HR, CTRL_KEY_RENEWAL_AGE_HR
 from .utils import validate_did_doc
-
 WALYTIS_BLOCK_TOPIC = "GroupDidManager"
 
 DID_METHOD_NAME = "wlaytis-contacts"
@@ -104,8 +100,10 @@ class Member:
     @classmethod
     def from_dict(cls, data: dict):
         return cls(data["did"], data["invitation"])
-    def to_dict(self)->dict:
+
+    def to_dict(self) -> dict:
         return {"did": self.did, "invitation": self.invitation}
+
     @property
     def blockchain(self):
         if self._blockchain:
@@ -251,21 +249,25 @@ class _GroupDidManager(DidManager):
         self, block_received_handler: Callable[Block, None]
     ) -> None:
         self._gdm_other_blocks_handler = block_received_handler
+
     def _update_members(self):
         self._members = dict([
             (member_info["did"], Member.from_dict(member_info))
             for member_info in get_members(self.blockchain).values()
         ])
+
     def get_members(self, no_cache: bool = False) -> list[Member]:
         """Get the current list of member-members."""
         if no_cache or not self._members:
             self._update_members()
 
         return list(self._members.values())
-    def get_members_dids(self, no_cache: bool = False) ->set[str]:
+
+    def get_members_dids(self, no_cache: bool = False) -> set[str]:
         if no_cache or not self._members:
             self._update_members()
         return set(self._members.keys())
+
     def add_member_invitation(self, member_invitation: dict) -> Block:
         member_invitation_block = MemberInvitationBlock.new(member_invitation)
         return self._gdm_add_info_block(member_invitation_block)
@@ -536,7 +538,7 @@ class GroupDidManager(_GroupDidManager):
 
         self.get_published_candidate_keys()
 
-        self.key_requests_listener = ConversationListener(
+        self.key_requests_listener = ipfs.listen_for_conversations(
             f"{self.member_did_manager.did}-KeyRequests",
             self.key_requests_handler
         )
@@ -761,7 +763,8 @@ class GroupDidManager(_GroupDidManager):
                 self.check_apply_control_key_update()
             except Exception as e:
                 traceback.format_exc()
-                logger.warning(f"Recovered from bug in manage_control_key:\n{e}")
+                logger.warning(
+                    f"Recovered from bug in manage_control_key:\n{e}")
             sleep(5)
 
     def manage_member_keys(self):
@@ -774,7 +777,8 @@ class GroupDidManager(_GroupDidManager):
                         pass
             except Exception as e:
                 traceback.format_exc()
-                logger.warning(f"Recovered from bug in manage_member_keys\n{e}")
+                logger.warning(
+                    f"Recovered from bug in manage_member_keys\n{e}")
             sleep(5)
 
     def serialise(self) -> dict:
@@ -835,18 +839,17 @@ class GroupDidManager(_GroupDidManager):
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
         # logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
-        conv = Conversation()
         # logger.debug("Joining conv...")
         try:
-            conv.join(
+            conv = ipfs.join_conversation(
                 conv_name,
                 peer_id,
                 conv_name,
-                transm_send_timeout_sec=SEND_TIMEOUT
+                timeout_sec=SEND_TIMEOUT
             )
-        except ipfs_datatransmission.CommunicationTimeout:
+        except CommunicationTimeout:
             logger.warning("KRH: failed to join conversation")
-            conv.close()
+            # conv.close()
             return
         if self._terminate:
             conv.close()
@@ -988,22 +991,21 @@ class GroupDidManager(_GroupDidManager):
             json.dumps(key_request_message).encode()).hex()})
         count = 0
         for peer_id in self.get_member_ipfs_ids(other_member_did):
-            if peer_id == ipfs_api.my_id():
+            if peer_id == ipfs.peer_id:
                 continue
             count += 1
             logger.debug(
                 f"RK: Requesting key from {other_member_did} {peer_id}..."
             )
             try:
-                conv = Conversation()
                 try:
-                    conv.start(
+                    conv = ipfs.start_conversation(
                         conv_name=f"KeyRequest-{key_id}",
                         peer_id=peer_id,
                         others_req_listener=f"{other_member_did}-KeyRequests",
-                        transm_send_timeout_sec=SEND_TIMEOUT
+                        timeout_sec=SEND_TIMEOUT
                     )
-                except ipfs_datatransmission.CommunicationTimeout:
+                except CommunicationTimeout:
                     logger.warning(
                         "RK: Failed to initiate key request (timeout): "
                         f"KeyRequest-{key_id}, "
@@ -1011,7 +1013,7 @@ class GroupDidManager(_GroupDidManager):
                         f"\nRequested key for {
                             other_member_did} from {peer_id}"
                     )
-                    conv.close()
+                    # conv.close()
                     continue
                 if self._terminate:
                     conv.close()

@@ -6,7 +6,7 @@ import _testing_utils
 import private_blocks
 import pytest
 import walidentity
-import walytis_beta_api
+import walytis_beta_embedded._walytis_beta.walytis_beta_api
 from _testing_utils import mark, test_threads_cleanup
 from multi_crypt import Crypt
 from walidentity.group_did_manager import GroupDidManager
@@ -119,3 +119,5 @@ if __name__ == "__main__":
     _testing_utils.PYTEST = False
     _testing_utils.BREAKPOINTS = True
     run_tests()
+    _testing_utils.terminate()
+    

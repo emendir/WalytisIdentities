@@ -113,4 +113,8 @@ def run_tests():
 
 
 if __name__ == "__main__":
+    _testing_utils.PYTEST = False
+    _testing_utils.BREAKPOINTS = False
     run_tests()
+    _testing_utils.terminate()
+    

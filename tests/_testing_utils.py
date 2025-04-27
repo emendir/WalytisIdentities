@@ -7,16 +7,35 @@ from types import ModuleType
 from termcolor import colored as coloured
 from tqdm import TMonitor, tqdm
 
+PROJ_DIR=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"
+    PROJ_DIR, "src"
 ))
 sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    PROJ_DIR,
     "..", "PrivateBlocks", "src"
 ))
 BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
+USING_BRENTHY=False
+if os.path.exists("/opt/we_are_in_docker"):
+    USING_BRENTHY=True
+if True:
+    # ensure IPFS is initialised via Walytis_Beta.networking, not walytis_beta_embedded._walytis_beta.walytis_beta_api
+    if USING_BRENTHY:
+        os.environ["USE_IPFS_NODE"] = "false"
+        os.environ["WALYTIS_BETA_API_TYPE"] = "WALYTIS_BETA_BRENTHY_API"
+    else:
+        os.environ["USE_IPFS_NODE"] = "true"
 
+    
+    from walytis_beta_embedded._walytis_beta.networking import ipfs
+    import walytis_beta_embedded
+    if not USING_BRENTHY:
+        walytis_beta_embedded.set_appdata_dir("./.blockchains")
+        walytis_beta_embedded.run_blockchains()
+    print("IPFS Peer ID:", ipfs.peer_id)
 
 def mark(success: bool, message: str, error: Exception | None = None) -> None:
     """Handle test results in a way compatible with and without pytest.
@@ -90,3 +109,6 @@ def assert_is_loaded_from_source(source_dir: str, module: ModuleType) -> None:
         f"Loaded module path: {module_path}\n"
     )
     print(f"Using module {module.__name__} from {module_path}")
+def terminate():
+    walytis_beta_embedded.terminate()
+    ipfs.terminate()

@@ -11,8 +11,8 @@ RUN pip install --break-system-packages --root-user-action ignore -r /opt/WalIde
 RUN pip install --break-system-packages --root-user-action ignore -r /opt/WalIdentity/requirements.txt
 RUN pip install --break-system-packages --root-user-action ignore -e /opt/WalIdentity/
 
-RUN for SUBFOLDER in /opt/WalIdentity/tests/walytis_auth_docker/python_packages/*; do pip install --break-system-packages --root-user-action ignore "$SUBFOLDER"; done
-
+RUN for python_package in /opt/WalIdentity/tests/walytis_auth_docker/python_packages/*; do pip install --break-system-packages --root-user-action ignore "$python_package"; done
+RUN touch /opt/we_are_in_docker
 
 # RUN pip show WalIdentity
 ## Run with:
