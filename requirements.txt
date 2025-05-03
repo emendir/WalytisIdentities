@@ -4,3 +4,4 @@ walytis_beta_embedded
 decorate_all
 py_strict_typing
 loguru
+portalocker

@@ -7,6 +7,7 @@ import json
 import os
 from .utils import bytes_to_string, bytes_from_string
 from dataclasses import dataclass
+import portalocker
 
 _CodePackage = TypeVar('_CodePackage', bound='CodePackage')
 
@@ -55,6 +56,7 @@ class KeyStore:
         self.key = key
         self.keys: dict[str, Key] = {}
         self._custom_metadata = {}
+        self.app_lock = portalocker.Lock(self.lock_file_path)
         self._load_appdata()
 
     def _load_appdata(self):
@@ -64,14 +66,7 @@ class KeyStore:
                 "The directory of the keystore path doesn't exist:\n"
                 f"{os.path.dirname(self.key_store_path)}"
             )
-
-        if os.path.exists(self.lock_file_path):
-            raise Exception(
-                "It looks like another application is currently working with "
-                "this DID-Manager's appdata!"
-            )
-        with open(self.lock_file_path, "w+") as lock_file:
-            lock_file.write("Running...")
+        self.app_lock.acquire(timeout=0.1)
 
         if not os.path.exists(self.key_store_path):
             self.keys: dict[str, Key] = {}
@@ -257,8 +252,7 @@ class KeyStore:
         return key_id
 
     def terminate(self):
-        if os.path.exists(self.lock_file_path):
-            os.remove(self.lock_file_path)
+        self.app_lock.release()
 
     def reload(self) -> 'KeyStore':
         self._load_appdata()
