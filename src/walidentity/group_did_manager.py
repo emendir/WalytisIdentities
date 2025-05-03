@@ -45,7 +45,7 @@ import walytis_beta_embedded._walytis_beta.walytis_beta_api
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_beta
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from ipfs_tk_transmission.errors import ConvListenTimeout, CommunicationTimeout
-from loguru import logger
+from .utils import logger
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import (
     Block,
     Blockchain,
@@ -325,9 +325,9 @@ class _GroupDidManager(DidManager):
         self,
         member: GenericDidManager
     ) -> None:
-        """Adds an existing DID-Manager as a member to this Group-DID.
-
-        """
+        """Add an existing DID-Manager as a member to this Group-DID."""
+        logger.debug("GDM: Adding DidManager as member...")
+        
         invitation_key = Key.create(CRYPTO_FAMILY)
 
         group_blockchain_invitation = json.loads(
@@ -359,6 +359,8 @@ class _GroupDidManager(DidManager):
 
         if self.get_control_key().private_key:
             self.update_did_doc(self.generate_did_doc())
+        logger.debug("GDM: Added DidManager as member!")
+        
 
     def make_member(
         self,
@@ -369,7 +371,7 @@ class _GroupDidManager(DidManager):
 
         Returns the member's DidManager.
         """
-        # logger.debug("DM: Member joining a did_manager.")
+        logger.debug("GDM: Member joining...")
         invitation_key = Key.from_key_id(invitation["invitation_key"])
         try:
             invitation_key.unlock(invitation["private_key"])
@@ -399,6 +401,8 @@ class _GroupDidManager(DidManager):
         self._gdm_add_info_block(joining_block)
         if self.get_control_key().private_key:
             self.update_did_doc(self.generate_did_doc())
+        logger.debug("GDM: Member joined!")
+        
 
     def _init_blocks_list_gdm(self):
         # present to other programs all blocks not created by this DidManager
@@ -549,7 +553,7 @@ class GroupDidManager(_GroupDidManager):
         self.get_published_candidate_keys()
 
         self.key_requests_listener = ipfs.listen_for_conversations(
-            f"{self.member_did_manager.did}-KeyRequests",
+            f"{self.did}-KeyRequests",
             self.key_requests_handler
         )
 
@@ -883,7 +887,7 @@ class GroupDidManager(_GroupDidManager):
             if self._terminate:
                 conv.close()
             logger.debug("KRH: got key request.")
-            peer_did = message["did"]
+            peer_did = message["did"] # member DID of peer who is requesting
             key_id = message["key_id"]
             sig = bytes.fromhex(message["signature"])
 
@@ -893,8 +897,13 @@ class GroupDidManager(_GroupDidManager):
                 peer_key = self.get_member_control_key(peer_did)
                 logger.debug("Got member control key!")
             except NotMemberError as error:
-                logger.warning(error)
-                logger.debug("KRH: Sending NotMemberError")
+                ## the peer requesting the key
+                ## is not known to us to be a member of this GroupDidManager
+                logger.warning(str(error))
+                logger.debug(
+                    "KRH: Sending NotMemberError. "
+                    f"Num Members: {len(self.get_members())}"
+                )
                 success = conv.say(json.dumps({
                     "error": "NotMemberError",
                 }).encode())
@@ -1005,14 +1014,15 @@ class GroupDidManager(_GroupDidManager):
                 continue
             count += 1
             logger.debug(
-                f"RK: Requesting key from {other_member_did} {peer_id}..."
+                f"RK: Requesting key from {other_member_did} for {key_id}..."
             )
             try:
+                conv = None
                 try:
                     conv = ipfs.start_conversation(
                         conv_name=f"KeyRequest-{key_id}",
                         peer_id=peer_id,
-                        others_req_listener=f"{other_member_did}-KeyRequests",
+                        others_req_listener=f"{self.did}-KeyRequests",
                         timeout_sec=SEND_TIMEOUT
                     )
                 except CommunicationTimeout:
@@ -1072,7 +1082,8 @@ class GroupDidManager(_GroupDidManager):
                 # logger.warning(traceback.format_exc())
                 logger.warning(
                     f"RK: Error in request_key: {type(error)} {error}")
-                conv.close()
+                if conv:
+                    conv.close()
                 continue
 
             if "error" in response.keys():

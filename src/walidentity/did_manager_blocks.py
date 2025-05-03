@@ -1,5 +1,5 @@
 """Machinery for working with Walytis blocks for the DID-Manager."""
-from loguru import logger
+from .utils import logger
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 import json

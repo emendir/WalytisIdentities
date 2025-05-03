@@ -1,16 +1,16 @@
 from base64 import urlsafe_b64encode
 from base64 import urlsafe_b64decode
 import rfc3987
-from loguru import logger
+import loguru
 import sys
 try:
-    logger.remove(0)
+    loguru.logger.remove(0)
 except ValueError:
     pass
 
-LOG_PATH=".WalIdentity.log"
-logger.add(sys.stdout, format="<level>{message}</level>")
-logger.add(LOG_PATH, rotation="1 week")
+LOG_PATH = ".WalIdentity.log"
+loguru.logger.add(sys.stdout, format="<level>{message}</level>",level="DEBUG")
+# loguru.logger.add(LOG_PATH, rotation="1 week")
 
 
 def is_valid_uri(uri):
@@ -32,7 +32,8 @@ def validate_did_doc(did_doc: dict):
         for service in did_doc.get('service', []):
             rfc3987.parse(f"{did_doc['id']}{service['id']}", rule='URI')
     except Exception as e:
-        raise ValueError("One of this Identy's fields has an incompatible value.")
+        raise ValueError(
+            "One of this Identy's fields has an incompatible value.")
 
 
 def bytes_to_string(data: bytes | bytearray, variable_name: str = "Value") -> str:
@@ -68,3 +69,20 @@ def bytes_from_string(data: str, variable_name: str = "Value") -> bytes:
         f"{variable_name} must be of type str, not "
         f"{type(data)}"
     ))
+
+
+class WalIdLogger:
+    prefix = "WalId"
+
+    def debug(self, message: str):
+        loguru.logger.debug(self._prefix_message(message))
+    def info(self, message: str):
+        loguru.logger.info(self._prefix_message(message))
+    def warning(self, message: str):
+        loguru.logger.warning(self._prefix_message(message))
+    def error(self, message: str):
+        loguru.logger.error(self._prefix_message(message))
+
+    def _prefix_message(self, message: str) -> str:
+        return f"[{self.prefix}] {message}"
+logger = WalIdLogger()

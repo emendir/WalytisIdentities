@@ -23,7 +23,7 @@ from dataclasses import dataclass
 import json
 from walidentity.key_store import KeyStore
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block
-from walidentity.utils import logger
+from .utils import logger
 from .generics import GroupDidManagerWrapper
 from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
 from collections.abc import Generator
