@@ -7,7 +7,8 @@ try:
     logger.remove(0)
 except ValueError:
     pass
-LOG_PATH="/tmp/WalIdentity.log"
+
+LOG_PATH=".WalIdentity.log"
 logger.add(sys.stdout, format="<level>{message}</level>")
 logger.add(LOG_PATH, rotation="1 week")
 

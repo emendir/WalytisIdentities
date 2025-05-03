@@ -5,11 +5,12 @@ import json
 from walytis_beta_embedded._walytis_beta.walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
 from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
+import walytis_beta_embedded._walytis_beta.walytis_beta_api
 from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
 import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
-
+import ipfs_tk_transmission
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
@@ -25,6 +26,7 @@ from .did_manager_blocks import (
     get_latest_did_doc,
     get_info_blocks,
 )
+import walytis_beta_tools
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .key_store import CodePackage, KeyStore
@@ -47,9 +49,12 @@ from loguru import logger
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import (
     Block,
     Blockchain,
+
+    list_blockchain_ids,
+)
+from walytis_beta_tools.exceptions import (
     BlockchainAlreadyExistsError,
     JoinFailureError,
-    list_blockchain_ids,
 )
 from . import did_manager_blocks
 from .did_manager import DidManager, blockchain_id_from_did
@@ -148,8 +153,13 @@ class Member:
 
             try:
                 blockchain = Blockchain.join(self.invitation)
-            except BlockchainAlreadyExistsError:
+            except (BlockchainAlreadyExistsError) as e:
                 blockchain = Blockchain(blockchain_id)
+            except ipfs_tk_transmission.errors.CommunicationTimeout:
+                try:
+                    blockchain = Blockchain.join(self.invitation)
+                except (Exception, BlockchainAlreadyExistsError, walytis_beta_tools.exceptions.BlockchainAlreadyExistsError) as e:
+                    blockchain = Blockchain(blockchain_id)
             logger.debug(f"GDM: joined member's blockchain! {self.did}")
         else:
             # logger.debug("Loading member blockchain...")
@@ -1010,8 +1020,8 @@ class GroupDidManager(_GroupDidManager):
                         "RK: Failed to initiate key request (timeout): "
                         f"KeyRequest-{key_id}, "
                         f"{peer_id}, {other_member_did}-KeyRequests"
-                        f"\nRequested key for {
-                            other_member_did} from {peer_id}"
+                        f"\nRequested key for {other_member_did} "
+                        f"from {peer_id}"
                     )
                     # conv.close()
                     continue
@@ -1047,8 +1057,8 @@ class GroupDidManager(_GroupDidManager):
                         "RK: Timeout waiting for key response."
                         f"KeyRequest-{key_id}, "
                         f"{peer_id}, {other_member_did}-KeyRequests"
-                        f"\nRequested key for {
-                            other_member_did} from {peer_id}"
+                        f"\nRequested key for {other_member_did} "
+                        f"from {peer_id}"
                     )
 
                     conv.close()
@@ -1060,8 +1070,8 @@ class GroupDidManager(_GroupDidManager):
 
             except Exception as error:
                 # logger.warning(traceback.format_exc())
-                logger.warning(f"RK: Error in request_key: {
-                               type(error)} {error}")
+                logger.warning(
+                    f"RK: Error in request_key: {type(error)} {error}")
                 conv.close()
                 continue
 

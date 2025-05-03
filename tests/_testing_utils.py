@@ -18,10 +18,12 @@ sys.path.insert(0, os.path.join(
 ))
 BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
-USING_BRENTHY=False
+USING_BRENTHY=False # overridden to True in docker container
+
 if os.path.exists("/opt/we_are_in_docker"):
     USING_BRENTHY=True
 if True:
+    print("USING_BRENTHY", USING_BRENTHY)
     # ensure IPFS is initialised via Walytis_Beta.networking, not walytis_beta_embedded._walytis_beta.walytis_beta_api
     if USING_BRENTHY:
         os.environ["USE_IPFS_NODE"] = "false"

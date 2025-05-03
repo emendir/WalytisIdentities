@@ -1,9 +1,9 @@
+from _testing_utils import test_threads_cleanup
 import os
 import shutil
 import tempfile
 
 import pytest
-from _testing_utils import test_threads_cleanup
 from walidentity.did_manager import DidManager
 from walidentity.did_objects import Key
 from walidentity.group_did_manager import GroupDidManager

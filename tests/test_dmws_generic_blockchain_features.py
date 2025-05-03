@@ -1,3 +1,4 @@
+import _testing_utils
 from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental import generic_blockchain_testing
 from time import sleep
 import _testing_utils
@@ -18,7 +19,6 @@ import os
 import shutil
 import tempfile
 
-import _testing_utils
 import walidentity
 import pytest
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api

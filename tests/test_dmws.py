@@ -1,3 +1,4 @@
+import _testing_utils
 from walidentity.key_store import KeyStore
 from walidentity.did_manager import DidManager
 from datetime import datetime
@@ -6,7 +7,6 @@ import os
 import shutil
 import tempfile
 
-import _testing_utils
 import walidentity
 import pytest
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
@@ -23,10 +23,6 @@ _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.join(os.path.dirname(__file__), "..", ".."), module=walidentity
 )
 
-REBUILD_DOCKER = True
-
-# automatically remove all docker containers after failed tests
-DELETE_ALL_BRENTHY_DOCKERS = True
 
 
 def test_preparations():

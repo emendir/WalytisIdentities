@@ -32,8 +32,6 @@ from walytis_beta_embedded._walytis_beta.walytis_beta_tools._experimental.generi
 CRYPTO_FAMILY = "EC-secp256k1"
 
 
-
-
 class SuperExistsError(Exception):
     pass
 
@@ -71,7 +69,8 @@ class DidManagerWithSupers(DidManagerWrapper):
         # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
         self.correspondences: dict[str, GroupDidManager] = dict()
-        self.correspondences_to_join: dict[str, SuperRegistrationBlock | None] = {}
+        self.correspondences_to_join: dict[str,
+                                           SuperRegistrationBlock | None] = {}
         self._load_supers()  # load GroupDidManager objects
         self.__process_invitations = False
         self._correspondences_finder_thr = Thread(
@@ -165,7 +164,6 @@ class DidManagerWithSupers(DidManagerWrapper):
                 # logger.debug(f"DMWS REGISTRATIONS: {len(registrations)}")
                 registrations.reverse()
                 for reg in registrations:
-                    print(reg)
                     if reg.active:
                         if reg.correspondence_id == correspondence_id:
                             registration = reg
@@ -227,6 +225,7 @@ class DidManagerWithSupers(DidManagerWrapper):
             self._register_super(
                 correspondence.did, True, invitation
             )
+            logger.debug("DMWS: updating correspondences...")
 
             # add to internal collection of GroupDidManager objects
             self.correspondences.update({correspondence.did: correspondence})
@@ -331,7 +330,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 if not self.correspondences[correspondence_id]:
                     logger.warning("JAJ: correspondeces has entry with None")
                 return self.correspondences[correspondence_id]
-                
+
             logger.info("JAJ: Joining already joined GroupDidManager...")
             key_store_path = os.path.join(
                 self.key_store_dir,

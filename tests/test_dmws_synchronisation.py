@@ -1,3 +1,4 @@
+import _testing_utils
 from threading import Thread
 from walidentity.did_manager import did_from_blockchain_id
 from time import sleep
@@ -11,7 +12,6 @@ import tempfile
 from walidentity.utils import logger, LOG_PATH
 import json
 from brenthy_docker import DockerShellError
-import _testing_utils
 import walidentity
 import pytest
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
@@ -471,7 +471,7 @@ def test_auto_join_super(
 
 
 def run_tests():
-    print("\nRunning tests for DidManagerWithSupers:")
+    print("\nRunning tests for DidManagerWithSupers Synchronisation:")
     test_cleanup()
     test_preparations()
     test_create_docker_containers()
@@ -515,7 +515,7 @@ def run_tests():
 
 if __name__ == "__main__":
     _testing_utils.PYTEST = False
-    _testing_utils.BREAKPOINTS = False
+    _testing_utils.BREAKPOINTS = True
     run_tests()
     _testing_utils.terminate()
     
