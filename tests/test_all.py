@@ -1,7 +1,6 @@
 import test_key_store
 import test_did_manager
 import test_group_did_manager
-import test_contacts_chain
 import test_key_sharing
 import test_generic_blockchain_features
 import test_dmws
@@ -32,6 +31,5 @@ test_dmws_synchronisation.run_tests()
 test_dmws_generic_blockchain_features.run_tests()
 
 test_generic_blockchain_features.run_tests()
-test_contacts_chain.run_tests()
 
 sleep(1)

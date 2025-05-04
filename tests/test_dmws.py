@@ -1,26 +1,26 @@
 import _testing_utils
-from walidentity.key_store import KeyStore
-from walidentity.did_manager import DidManager
+from walytis_identities.key_store import KeyStore
+from walytis_identities.did_manager import DidManager
 from datetime import datetime
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 import os
 import shutil
 import tempfile
 
-import walidentity
+import walytis_identities
 import pytest
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
-from walidentity.did_objects import Key
-from walidentity import did_manager_with_supers
-from walidentity.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
+from walytis_identities.did_objects import Key
+from walytis_identities import did_manager_with_supers
+from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 walytis_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager_with_supers
 )
 _testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.join(os.path.dirname(__file__), "..", ".."), module=walidentity
+    source_dir=os.path.join(os.path.dirname(__file__), "..", ".."), module=walytis_identities
 )
 
 

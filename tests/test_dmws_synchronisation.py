@@ -1,6 +1,6 @@
 import _testing_utils
 from threading import Thread
-from walidentity.did_manager import did_from_blockchain_id
+from walytis_identities.did_manager import did_from_blockchain_id
 from time import sleep
 from termcolor import colored as coloured
 from brenthy_tools_beta.utils import function_name
@@ -9,19 +9,19 @@ import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
 import os
 import shutil
 import tempfile
-from walidentity.utils import logger, LOG_PATH
+from walytis_identities.utils import logger, LOG_PATH
 import json
 from brenthy_docker import DockerShellError
-import walidentity
+import walytis_identities
 import pytest
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
-from walidentity.did_objects import Key
-from walidentity import did_manager_with_supers
-from walidentity.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
+from walytis_identities.did_objects import Key
+from walytis_identities import did_manager_with_supers
+from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 
 from walytis_auth_docker.walytis_auth_docker import (
-    WalIdentityDocker,
+    walytis_identitiesDocker,
     delete_containers,
 )
 from walytis_auth_docker.build_docker import build_docker_image
@@ -37,7 +37,7 @@ REBUILD_DOCKER = True
 # automatically remove all docker containers after failed tests
 DELETE_ALL_BRENTHY_DOCKERS = True
 
-CONTAINER_NAME_PREFIX = "walidentity_tests_device_"
+CONTAINER_NAME_PREFIX = "walytis_identities_tests_device_"
 
 # Boilerplate python code when for running python tests in a docker container
 DOCKER_PYTHON_LOAD_TESTING_CODE = '''
@@ -45,7 +45,7 @@ import sys
 import threading
 import json
 from time import sleep
-sys.path.append('/opt/WalIdentity/tests')
+sys.path.append('/opt/walytis_identities/tests')
 import test_dmws_synchronisation
 import pytest
 from test_dmws_synchronisation import logger
@@ -63,7 +63,7 @@ N_DOCKER_CONTAINERS = 4
 pytest.super = None
 pytest.dm = None
 pytest.dm_config_dir = "/tmp/wali_test_dmws_synchronisation"
-pytest.containers: list[WalIdentityDocker] = []
+pytest.containers: list[walytis_identitiesDocker] = []
 
 
 def test_preparations():
@@ -97,7 +97,7 @@ def test_create_docker_containers():
     pytest.containers = [None]*N_DOCKER_CONTAINERS
     for i in range(N_DOCKER_CONTAINERS):
         def task(number):
-            pytest.containers[number]=WalIdentityDocker(
+            pytest.containers[number]=walytis_identitiesDocker(
                 container_name=f"{CONTAINER_NAME_PREFIX}{number}"
             )
             
@@ -123,8 +123,8 @@ def test_cleanup():
     if pytest.dm:
         pytest.dm.delete()
 
-from walidentity.key_store import KeyStore
-from walidentity.did_manager import DidManager
+from walytis_identities.key_store import KeyStore
+from walytis_identities.did_manager import DidManager
 def docker_create_dm():
     logger.info("DOCKER: Creating DidManagerWithSupers...")
     config_dir = pytest.dm_config_dir
@@ -175,7 +175,7 @@ def docker_load_dm():
     pytest.dm = dmws
 
 
-def test_setup_dm(docker_container: WalIdentityDocker):
+def test_setup_dm(docker_container: walytis_identitiesDocker):
     """In a docker container, create an Endra dm."""
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
 
@@ -191,12 +191,12 @@ def test_setup_dm(docker_container: WalIdentityDocker):
     ).split("\n")
     last_line = output_lines[-1] if len(output_lines) > 0 else None
     mark(
-        last_line == "DOCKER: Created DidManagerWithSupers: <class 'walidentity.did_manager_with_supers.DidManagerWithSupers'>",
+        last_line == "DOCKER: Created DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>",
         function_name()
     )
 
 
-def test_load_dm(docker_container: WalIdentityDocker) -> dict | None:
+def test_load_dm(docker_container: walytis_identitiesDocker) -> dict | None:
     """In a docker container, load an Endra dm & create an invitation.
 
     The docker container must already have had the Endra dm set up.
@@ -233,7 +233,7 @@ def test_load_dm(docker_container: WalIdentityDocker) -> dict | None:
         logger.warning(f"Error getting invitation: {output_lines[-2]}")
         invitation = None
     mark(
-        last_line == "DOCKER: Loaded DidManagerWithSupers: <class 'walidentity.did_manager_with_supers.DidManagerWithSupers'>",
+        last_line == "DOCKER: Loaded DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>",
         function_name()
     )
 
@@ -278,8 +278,8 @@ def docker_join_dm(invitation: str):
 
 
 def test_add_sub(
-    docker_container_new: WalIdentityDocker,
-    docker_container_old: WalIdentityDocker,
+    docker_container_new: walytis_identitiesDocker,
+    docker_container_old: walytis_identitiesDocker,
     invitation: dict
 ) -> None:
     """
@@ -347,7 +347,7 @@ def docker_join_super(invitation: str | dict):
     return super
 
 
-def test_create_super(docker_container: WalIdentityDocker) -> dict | None:
+def test_create_super(docker_container: walytis_identitiesDocker) -> dict | None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
@@ -372,20 +372,20 @@ def test_create_super(docker_container: WalIdentityDocker) -> dict | None:
     invitation = json.loads(output_lines[-2].strip().replace("'", '"'))
 
     mark(
-        last_line == "DOCKER: Created super: <class 'walidentity.group_did_manager.GroupDidManager'>",
+        last_line == "DOCKER: Created super: <class 'walytis_identities.group_did_manager.GroupDidManager'>",
         function_name()
     )
 
     return invitation
 
 
-def test_device_loaded_super(docker_container: WalIdentityDocker, super_id: str) -> None:
+def test_device_loaded_super(docker_container: walytis_identitiesDocker, super_id: str) -> None:
     pass
 
 
 def test_join_super(
-    docker_container_old: WalIdentityDocker,
-    docker_container_new: WalIdentityDocker,
+    docker_container_old: walytis_identitiesDocker,
+    docker_container_new: walytis_identitiesDocker,
     invitation: dict
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
@@ -423,8 +423,8 @@ def test_join_super(
 
 
 def test_auto_join_super(
-    docker_container_old: WalIdentityDocker,
-    docker_container_new: WalIdentityDocker,
+    docker_container_old: walytis_identitiesDocker,
+    docker_container_new: walytis_identitiesDocker,
     superondence_id: str
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))

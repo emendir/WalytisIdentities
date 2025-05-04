@@ -8,7 +8,7 @@ try:
 except ValueError:
     pass
 
-LOG_PATH = ".WalIdentity.log"
+LOG_PATH = ".walytis_identities.log"
 loguru.logger.add(sys.stdout, format="<level>{message}</level>",level="DEBUG")
 # loguru.logger.add(LOG_PATH, rotation="1 week")
 

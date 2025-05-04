@@ -18,7 +18,7 @@
 
 - encrypted and unencrypted custom metadata
 
-## WalIdentity
+## walytis_identities
 
 - ensure all published blockchain invitation contain all members' IPFS IDs
 - GroupDidManager.get_members returns `list[dict]` - is that appropriate? symmetry to `DidManagerWithSupers.get_active_supers()` would be nice
@@ -30,7 +30,7 @@
 
 - How to make the same GroupDidManager accessible from multiple applications at once?
   - Ideas:
-    - run a WalIdentity server in Brenthy
+    - run a walytis_identities server in Brenthy
     - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
   - same solution for PrivateBlockchain?
 - Proper caching (replace with thorough implementation of block handlers?)

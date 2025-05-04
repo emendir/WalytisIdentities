@@ -7,21 +7,21 @@ from walytis_beta_embedded._walytis_beta.walytis_beta_api.exceptions import Bloc
 from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
 from typing import Type
 from typing import Callable
-from walidentity.did_manager_blocks import get_info_blocks
+from walytis_identities.did_manager_blocks import get_info_blocks
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain, join_blockchain, JoinFailureError, BlockchainAlreadyExistsError
-from walidentity.did_manager import did_from_blockchain_id
+from walytis_identities.did_manager import did_from_blockchain_id
 from threading import Lock, Event
-from walidentity.did_manager import blockchain_id_from_did
+from walytis_identities.did_manager import blockchain_id_from_did
 import os
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import decode_short_id
 from brenthy_tools_beta.utils import bytes_to_string
-from walidentity.did_objects import Key
-from walidentity.did_manager_blocks import InfoBlock, SuperRegistrationBlock
-from walidentity.group_did_manager import GroupDidManager
-from walidentity import DidManager
+from walytis_identities.did_objects import Key
+from walytis_identities.did_manager_blocks import InfoBlock, SuperRegistrationBlock
+from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities import DidManager
 from dataclasses import dataclass
 import json
-from walidentity.key_store import KeyStore
+from walytis_identities.key_store import KeyStore
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block
 from .utils import logger
 from .generics import GroupDidManagerWrapper

@@ -4,14 +4,13 @@ from time import sleep
 import _testing_utils
 from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
 from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
-from mutablockchain import MutaBlockchain
 import os
 import pytest
 import shutil
-from walidentity.did_manager import DidManager
-from walidentity.did_objects import Key
-from walidentity.group_did_manager import GroupDidManager
-from walidentity.key_store import KeyStore
+from walytis_identities.did_manager import DidManager
+from walytis_identities.did_objects import Key
+from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities.key_store import KeyStore
 import tempfile
 from datetime import datetime
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
@@ -19,20 +18,20 @@ import os
 import shutil
 import tempfile
 
-import walidentity
+import walytis_identities
 import pytest
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
-from walidentity.did_objects import Key
-from walidentity import did_manager_with_supers
-from walidentity.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
+from walytis_identities.did_objects import Key
+from walytis_identities import did_manager_with_supers
+from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 walytis_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager_with_supers
 )
 _testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.join(os.path.dirname(__file__), "..", ".."), module=walidentity
+    source_dir=os.path.join(os.path.dirname(__file__), "..", ".."), module=walytis_identities
 )
 
 
@@ -109,6 +108,7 @@ def test_super():
 
 
 def run_tests():
+    print("Running test for DidManagerWithSupers Generic Blockchain features...")
     test_preparations()
     test_profile()
     test_super()

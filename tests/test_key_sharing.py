@@ -6,16 +6,16 @@ from time import sleep
 from datetime import datetime
 import _testing_utils
 import pytest
-import walidentity
+import walytis_identities
 import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
-from walidentity.did_manager import DidManager
-from walidentity.did_objects import Key
-from walidentity.group_did_manager import GroupDidManager
-from walidentity.key_store import KeyStore
-from walidentity.utils import logger
+from walytis_identities.did_manager import DidManager
+from walytis_identities.did_objects import Key
+from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities.key_store import KeyStore
+from walytis_identities.utils import logger
 from walytis_auth_docker.walytis_auth_docker import (
-    WalIdentityDocker,
+    walytis_identitiesDocker,
     delete_containers,
 )
 from walytis_auth_docker.build_docker import build_docker_image
@@ -25,7 +25,7 @@ walytis_api.log.PRINT_DEBUG = False
 print((os.path.dirname(__file__)))
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    module=walidentity
+    module=walytis_identities
 )
 
 REBUILD_DOCKER = True
@@ -88,7 +88,7 @@ def test_preparations(delete_files: bool = False):
         private_key=b'\xd9\xd1\\D\x80\xd7\x1a\xe6E\x0bt\xdf\xd0z\x88\xeaQ\xe8\x04\x91\x11\xaf\\%wC\x83~\x0eGP\xd8',
         creation_time=datetime(2024, 11, 6, 19, 17, 45, 713000)
     )
-    pytest.containers: list[WalIdentityDocker] = []
+    pytest.containers: list[walytis_identitiesDocker] = []
     pytest.invitation = None
 
 
@@ -97,7 +97,7 @@ N_DOCKER_CONTAINERS = 1
 
 def test_create_docker_containers():
     for i in range(N_DOCKER_CONTAINERS):
-        pytest.containers.append(WalIdentityDocker())
+        pytest.containers.append(walytis_identitiesDocker())
 
 
 def cleanup():
@@ -248,7 +248,7 @@ def test_create_identity_and_invitation():
     print("Creating identity and invitation on docker...")
     python_code = "\n".join([
         "import sys;",
-        "sys.path.append('/opt/WalIdentity/tests');",
+        "sys.path.append('/opt/walytis_identities/tests');",
         "import test_key_sharing;",
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
@@ -303,7 +303,7 @@ def test_add_member_identity():
     print("Adding member on docker...")
     python_code = (
         "import sys;"
-        "sys.path.append('/opt/WalIdentity/tests');"
+        "sys.path.append('/opt/walytis_identities/tests');"
         "import test_key_sharing;"
         "import threading;"
         "from test_key_sharing import logger;"
@@ -331,7 +331,7 @@ def test_get_control_key():
     # background to handle a key request from pytest.group_2
     python_code = (
         "import sys;"
-        "sys.path.append('/opt/WalIdentity/tests');"
+        "sys.path.append('/opt/walytis_identities/tests');"
         "import test_key_sharing;"
         "from test_key_sharing import logger;"
         "logger.info('DOCKER: Testing control key sharing...');"
@@ -361,7 +361,7 @@ def test_renew_control_key():
     success = True
     python_code = "\n".join([
         "import sys;",
-        "sys.path.append('/opt/WalIdentity/tests');",
+        "sys.path.append('/opt/walytis_identities/tests');",
         "import test_key_sharing;",
         "from test_key_sharing import logger;",
         "logger.info('DOCKER: Testing control key renewal part 1...');",
@@ -397,7 +397,7 @@ def test_renew_control_key():
     if success:
         python_code = (
             "import sys;"
-            "sys.path.append('/opt/WalIdentity/tests');"
+            "sys.path.append('/opt/walytis_identities/tests');"
             "import test_key_sharing;"
             "from test_key_sharing import logger;"
             "logger.info('DOCKER: Testing control key renewal part 2...');"

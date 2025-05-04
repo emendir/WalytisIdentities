@@ -4,17 +4,17 @@ import tempfile
 
 import _testing_utils
 import pytest
-import walidentity
+import walytis_identities
 import walytis_beta_embedded._walytis_beta.walytis_beta_api
 from _testing_utils import mark
-from walidentity import did_manager, key_store
-from walidentity.did_manager import DidManager
-from walidentity.did_objects import Key
-from walidentity.group_did_manager import GroupDidManager
-from walidentity.key_store import CodePackage, KeyStore
+from walytis_identities import did_manager, key_store
+from walytis_identities.did_manager import DidManager
+from walytis_identities.did_objects import Key
+from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities.key_store import CodePackage, KeyStore
 
 _testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walidentity
+    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walytis_identities
 )
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=key_store

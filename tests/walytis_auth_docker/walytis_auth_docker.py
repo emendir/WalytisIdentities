@@ -12,7 +12,7 @@ import pyperclip
 from brenthy_docker import BrenthyDocker, delete_containers
 
 
-class WalIdentityDocker(BrenthyDocker):
+class walytis_identitiesDocker(BrenthyDocker):
     def __init__(
         self,
         image: str = "local/walytis_auth_testing",
@@ -29,7 +29,7 @@ class ContainerNotRunningError(Exception):
 if __name__ == "__main__":
     # Create an instance of DockerContainer with the desired image
     delete_containers(container_name_substr="DemoWalidentity")
-    docker_container = WalIdentityDocker(
+    docker_container = walytis_identitiesDocker(
         container_name="DemoWalidentity",
         auto_run=False
     )

@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 dynamic = ["dependencies"]
-name = "WalIdentity"
+name = "walytis_identities"
 authors = [{ name = "emendir" }]
-version = "0.0.1"
+version = "0.1.0"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["walidentity", "waly_contacts"]
+include = ["walytis_identities", "waly_contacts"]
 namespaces = false
