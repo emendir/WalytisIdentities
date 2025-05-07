@@ -763,9 +763,6 @@ class GroupDidManager(_GroupDidManager):
                     f"GDM: Request for control key failed. {self.did}")
             sleep(0.5)
 
-        self.update_did_doc(self.generate_did_doc())
-
-        # logger.debug(f"GDM: Got control key ownership!{self.did}")
 
     def manage_control_key(self):
         # logger.debug(f"Starting Control key manager for {self.did}")
