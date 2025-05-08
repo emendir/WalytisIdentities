@@ -54,3 +54,10 @@ The API of this library IS LIKELY TO CHANGE in the near future!
 #### Services:
 
 URI specs: https://www.rfc-editor.org/rfc/rfc3986
+
+## Related Projects
+
+For more info, see:
+
+- https://github.com/emendir/Endra
+- https://github.com/emendir/BrenthyAndWalytis
