@@ -238,8 +238,8 @@ class DidManagerWithSupers(DidManagerWrapper):
             register: whether or not the new correspondence still needs to be
                         registered on our DidManagerWithSupers's blockchain
         """
+        logger.debug("Joining super...")
         with self.lock:
-
             if self._terminate_dmws:
                 raise Exception(
                     "DidManagerWithSupers.add: we're shutting down")
@@ -483,8 +483,8 @@ class DidManagerWithSupers(DidManagerWrapper):
         crsp_registration = SuperRegistrationBlock.load_from_block_content(
             block.content
         )
-        # logger.info(f"DidManagerWithSupers: got registration for {
-        #             crsp_registration.correspondence_id}")
+        logger.info(f"DidManagerWithSupers: got registration for "
+                    f"{crsp_registration.correspondence_id}")
 
         # update lists of active and archived Correspondences
         try:
@@ -493,29 +493,34 @@ class DidManagerWithSupers(DidManagerWrapper):
                     self.correspondences_to_join.update({
                         crsp_registration.correspondence_id: crsp_registration
                     })
-                    # logger.info(
-                    #     "DidManagerWithSupers: not yet joining GroupDidManager")
+                    logger.info(
+                        "DidManagerWithSupers: not yet joining GroupDidManager"
+                    )
                 else:
                     self.join_super(
                         crsp_registration.invitation, register=False)
-                    # logger.info(
-                    #     "DidManagerWithSupers: added new GroupDidManager")
+                    logger.info(
+                        "DidManagerWithSupers: added new GroupDidManager"
+                    )
             else:
                 self.archive_super(
                     crsp_registration.correspondence_id, register=False)
-                # logger.info("DidManagerWithSupers: archived GroupDidManager")
+                logger.info("DidManagerWithSupers: archived GroupDidManager")
         except SuperExistsError:
-            # logger.info(
-            #     "DidManagerWithSupers: we already have this GroupDidManager!")
+            logger.info(
+                "DidManagerWithSupers: we already have this GroupDidManager!"
+            )
             pass
 
     def _on_block_received_dmws(self, block: Block):
+        logger.debug("DMWS: received new block")
         if self.virtual_layer_name in block.topics[0]:
             match block.topics[1]:
                 case SuperRegistrationBlock.walytis_block_topic:
-                    self._on_super_registration_received(
-                        block
-                    )
+                    Thread(
+                        target=self._on_super_registration_received,
+                        args= (block,)
+                    ).start()
                 case _:
                     logger.warning(
                         "DMWS DidManagerWithSupers: Received unhandled block with topics: "

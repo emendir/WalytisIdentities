@@ -7,11 +7,13 @@ try:
     loguru.logger.remove(0)
 except ValueError:
     pass
+import os
 
 LOG_PATH = ".walytis_identities.log"
-loguru.logger.add(sys.stdout, format="<level>{message}</level>",level="DEBUG")
-# loguru.logger.add(LOG_PATH, rotation="1 week")
+print(f"Logging to {os.path.abspath(LOG_PATH)}")
+loguru.logger.add(LOG_PATH, rotation="1 week")
 
+loguru.logger.add(sys.stdout, format="<level>{message}</level>",level="DEBUG")
 
 def is_valid_uri(uri):
     try:

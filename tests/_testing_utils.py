@@ -1,3 +1,4 @@
+from loguru import logger
 import os
 import sys
 import threading
@@ -19,8 +20,9 @@ sys.path.insert(0, os.path.join(
 BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
 USING_BRENTHY = False  # overridden to True in docker container
+WE_ARE_IN_DOCKER=os.path.exists('/.dockerenv')
 
-if os.path.exists("/opt/we_are_in_docker"):
+if WE_ARE_IN_DOCKER:
     USING_BRENTHY = True
 if True:
     print("USING_BRENTHY", USING_BRENTHY)
@@ -33,7 +35,18 @@ if True:
 
     from walytis_beta_embedded._walytis_beta.networking import ipfs
     import walytis_beta_embedded
-    if not USING_BRENTHY:
+    from walytis_beta_embedded._walytis_beta import walytis_beta_api
+    from brenthy_tools_beta import BrenthyNotRunningError
+
+    if USING_BRENTHY:
+        while True:
+            try:
+                walytis_beta_api.list_blockchain_names()
+                break
+            except BrenthyNotRunningError as e:
+                logger.error(e)
+                logger.info("Retrying to connect to brenthy...")
+    else:
         walytis_beta_embedded.set_appdata_dir("./.blockchains")
         walytis_beta_embedded.run_blockchains()
     print("IPFS Peer ID:", ipfs.peer_id)

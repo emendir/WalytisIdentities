@@ -351,7 +351,7 @@ def test_get_control_key():
         "Got control key ownership"
     )
     # wait a little to allow proper resources cleanup on docker container
-    sleep(5)
+    sleep(15)
 
 
 wait_dur_s = 30

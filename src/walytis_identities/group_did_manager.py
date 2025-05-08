@@ -131,10 +131,7 @@ class Member:
         return did_doc
 
     def _get_member_control_key(self) -> Key:
-
-        # logger.debug("Getting member control key...")
         ctrl_key = get_latest_control_key(self.blockchain)
-        # logger.debug("Got member control key!")
         return ctrl_key
 
     def _get_member_blockchain(self) -> Blockchain:
@@ -744,7 +741,7 @@ class GroupDidManager(_GroupDidManager):
                 did = member.did
                 # if did == self.member_did_manager.did:
                 #     continue
-                # logger.debug(f"Requesting control key from {did}")
+                logger.debug(f"Requesting control key from {did}")
                 try:
                     key = self.request_key(control_key.get_key_id(), did)
                 except IncompletePeerInfoError:
@@ -782,6 +779,8 @@ class GroupDidManager(_GroupDidManager):
         while not self._terminate:
             try:
                 for member in self._members.values():
+                    if self._terminate:
+                        return
                     try:
                         member._get_member_control_key()
                     except JoinFailureError:
@@ -790,6 +789,8 @@ class GroupDidManager(_GroupDidManager):
                 traceback.format_exc()
                 logger.warning(
                     f"Recovered from bug in manage_member_keys\n{e}")
+            if self._terminate:
+                return
             sleep(5)
 
     def serialise(self) -> dict:
@@ -849,8 +850,8 @@ class GroupDidManager(_GroupDidManager):
 
     def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
         """Respond to key requests from other members."""
-        # logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
-        # logger.debug("Joining conv...")
+        logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
+        logger.debug("Joining conv...")
         try:
             conv = ipfs.join_conversation(
                 conv_name,
@@ -864,7 +865,7 @@ class GroupDidManager(_GroupDidManager):
             return
         if self._terminate:
             conv.close()
-        # logger.debug("Joined conv!")
+        logger.debug("Joined conv!")
         logger.debug("KRH: Joined conversation.")
         success = conv.say("Hello there!".encode())
         if self._terminate:
@@ -1091,7 +1092,7 @@ class GroupDidManager(_GroupDidManager):
             key.unlock(private_key)
             self.key_store.add_key(key)
             self.publish_key_ownership(key)
-            # logger.debug(f"RK: Got key!: {key.get_key_id()}")
+            logger.debug(f"RK: Got key!: {key.get_key_id()}")
             return key
         logger.debug(
             f"RK: Failed to get key for {other_member_did} "
@@ -1226,22 +1227,21 @@ class GroupDidManager(_GroupDidManager):
         if not self._terminate:
             self._terminate = True
             try:
+                logger.debug("GDM: terminating key_requests_listener...")
                 self.key_requests_listener.terminate()
             except Exception as e:
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass
             try:
-                if terminate_member:
-                    self.member_did_manager.terminate()
+                logger.debug("GDM: terminating member_keys_manager_thr...")
+                if self.member_keys_manager_thr:
+                    self.member_keys_manager_thr.join()
+
             except Exception as e:
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass
             try:
-                DidManager.terminate(self)
-            except Exception as e:
-                logger.warning(f"GDM TERMINATING: {e}")
-                pass
-            try:
+                logger.debug("GDM: terminating control_key_manager_thr...")
                 if self.control_key_manager_thr:
                     self.control_key_manager_thr.join()
 
@@ -1249,13 +1249,24 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass
             try:
-                if self.member_keys_manager_thr:
-                    self.member_keys_manager_thr.join()
-
+                if terminate_member:
+                    logger.debug("GDM: terminating member_did_manager...")
+                    self.member_did_manager.terminate()
             except Exception as e:
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass
+            try:
+                logger.debug("GDM: terminating DidManager...")
+                DidManager.terminate(self)
+            except Exception as e:
+                logger.warning(f"GDM TERMINATING: {e}")
+                pass
+            
+            
+        logger.debug("GDM: terminating _GroupDidManager...")
         _GroupDidManager.terminate(self)
+        logger.debug("GDM: terminated!")
+        
 
     def __del__(self):
         """Stop this Identity object, cleaning up resources."""

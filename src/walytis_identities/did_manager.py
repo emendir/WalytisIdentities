@@ -333,6 +333,7 @@ class DidManager(GenericDidManager):
             self._blocks_list_dm.add_block(BlockLazilyLoaded.from_block(block))
             # if user defined an event-handler for non-DID blocks, call it
             if self._dm_other_blocks_handler:
+                # logger.debug(f"DM: passing on received block: {block.topics}")
                 self._dm_other_blocks_handler(block)
         # logger.debug("DM: processed block")
 

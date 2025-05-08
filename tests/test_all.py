@@ -25,11 +25,11 @@ test_did_manager.run_tests()
 
 test_group_did_manager.run_tests()
 test_key_sharing.run_tests()
+test_generic_blockchain_features.run_tests()
 
 test_dmws.run_tests()
-test_dmws_synchronisation.run_tests()
 test_dmws_generic_blockchain_features.run_tests()
 
-test_generic_blockchain_features.run_tests()
+test_dmws_synchronisation.run_tests()
 
 sleep(1)

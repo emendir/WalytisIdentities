@@ -1,4 +1,6 @@
 import _testing_utils
+from walytis_identities.key_store import KeyStore
+from walytis_identities.did_manager import DidManager
 from threading import Thread
 from walytis_identities.did_manager import did_from_blockchain_id
 from time import sleep
@@ -14,7 +16,7 @@ import json
 from brenthy_docker import DockerShellError
 import walytis_identities
 import pytest
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
+from walytis_beta_embedded._walytis_beta import walytis_beta_api
 from _testing_utils import mark, test_threads_cleanup
 from walytis_identities.did_objects import Key
 from walytis_identities import did_manager_with_supers
@@ -27,7 +29,7 @@ from walytis_auth_docker.walytis_auth_docker import (
 from walytis_auth_docker.build_docker import build_docker_image
 
 
-walytis_api.log.PRINT_DEBUG = False
+walytis_beta_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager_with_supers
@@ -38,6 +40,13 @@ REBUILD_DOCKER = True
 DELETE_ALL_BRENTHY_DOCKERS = True
 
 CONTAINER_NAME_PREFIX = "walytis_identities_tests_device_"
+
+
+# used for creation, first loading test, and invitation creation
+PROFILE_CREATE_TIMEOUT_S = 10
+PROFILE_JOIN_TIMEOUT_S = 60
+CORRESP_JOIN_TIMEOUT_S = 60
+
 
 # Boilerplate python code when for running python tests in a docker container
 DOCKER_PYTHON_LOAD_TESTING_CODE = '''
@@ -94,13 +103,13 @@ def test_preparations():
 def test_create_docker_containers():
     print("Setting up docker containers...")
     threads = []
-    pytest.containers = [None]*N_DOCKER_CONTAINERS
+    pytest.containers = [None] * N_DOCKER_CONTAINERS
     for i in range(N_DOCKER_CONTAINERS):
         def task(number):
-            pytest.containers[number]=walytis_identitiesDocker(
+            pytest.containers[number] = walytis_identitiesDocker(
                 container_name=f"{CONTAINER_NAME_PREFIX}{number}"
             )
-            
+
         thread = Thread(target=task, args=(i,))
         thread.start()
         threads.append(thread)
@@ -123,16 +132,14 @@ def test_cleanup():
     if pytest.dm:
         pytest.dm.delete()
 
-from walytis_identities.key_store import KeyStore
-from walytis_identities.did_manager import DidManager
+
 def docker_create_dm():
     logger.info("DOCKER: Creating DidManagerWithSupers...")
     config_dir = pytest.dm_config_dir
     key = pytest.KEY
 
     device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-    profile_keystore_path = os.path.join(
-        config_dir, "profile_keystore.json")
+    profile_keystore_path = os.path.join(config_dir, "profile_keystore.json")
 
     device_did_keystore = KeyStore(device_keystore_path, key)
     profile_did_keystore = KeyStore(profile_keystore_path, key)
@@ -158,8 +165,7 @@ def docker_load_dm():
     key = pytest.KEY
 
     device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-    profile_keystore_path = os.path.join(
-        config_dir, "profile_keystore.json")
+    profile_keystore_path = os.path.join(config_dir, "profile_keystore.json")
 
     device_did_keystore = KeyStore(device_keystore_path, key)
     profile_did_keystore = KeyStore(profile_keystore_path, key)
@@ -189,9 +195,13 @@ def test_setup_dm(docker_container: walytis_identitiesDocker):
         python_code, print_output=False, timeout=PROFILE_CREATE_TIMEOUT_S,
         background=False
     ).split("\n")
-    last_line = output_lines[-1] if len(output_lines) > 0 else None
+    docker_lines = [
+        line.replace("DOCKER: ", "").strip()
+        for line in output_lines if line.startswith("DOCKER: ")
+    ]
+    last_line = docker_lines[-1] if len(docker_lines) > 0 else None
     mark(
-        last_line == "DOCKER: Created DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>",
+        last_line == "Created DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>",
         function_name()
     )
 
@@ -211,7 +221,7 @@ def test_load_dm(docker_container: walytis_identitiesDocker) -> dict | None:
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         "test_dmws_synchronisation.docker_load_dm()",
         "invitation=pytest.dm.did_manager.invite_member()",
-        "print(json.dumps(invitation))",
+        "print('DOCKER: ', json.dumps(invitation))",
         "print(f'DOCKER: Loaded DidManagerWithSupers: {type(pytest.dm)}')",
         "pytest.dm.terminate()",
     ])
@@ -220,40 +230,45 @@ def test_load_dm(docker_container: walytis_identitiesDocker) -> dict | None:
         python_code, print_output=False,
         timeout=PROFILE_CREATE_TIMEOUT_S, background=False
     ).split("\n")
-    if len(output_lines) < 2:
+
+
+    docker_lines = [
+        line.replace("DOCKER: ", "").strip()
+        for line in output_lines if line.startswith("DOCKER: ")
+    ]
+    
+    if len(docker_lines) < 2:
         mark(
             False,
             function_name()
         )
         return None
-    last_line = output_lines[-1].strip()
+            
+    last_line = docker_lines[-1] if len(docker_lines) > 0 else None
+
     try:
-        invitation = json.loads(output_lines[-2].strip().replace("'", '"'))
+        invitation = json.loads(docker_lines[-2].strip().replace("'", '"'))
     except json.decoder.JSONDecodeError:
-        logger.warning(f"Error getting invitation: {output_lines[-2]}")
+        logger.warning(f"Error getting invitation: {docker_lines[-2]}")
         invitation = None
     mark(
-        last_line == "DOCKER: Loaded DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>",
+        last_line == "Loaded DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>",
         function_name()
     )
 
     return invitation
 
 
-# used for creation, first loading test, and invitation creation
-PROFILE_CREATE_TIMEOUT_S = 10
-PROFILE_JOIN_TIMEOUT_S = 20
-CORRESP_JOIN_TIMEOUT_S = 30
+
 
 
 def docker_join_dm(invitation: str):
     logger.info("Joining Endra dm...")
-    
+
     config_dir = pytest.dm_config_dir
     key = pytest.KEY
     device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-    profile_keystore_path = os.path.join(
-        config_dir, "profile_keystore.json")
+    profile_keystore_path = os.path.join(config_dir, "profile_keystore.json")
     device_did_keystore = KeyStore(device_keystore_path, key)
     profile_did_keystore = KeyStore(profile_keystore_path, key)
     device_did_manager = DidManager.create(device_did_keystore)
@@ -264,17 +279,18 @@ def docker_join_dm(invitation: str):
         device_did_manager
     )
 
-    dmws= DidManagerWithSupers(
-        did_manager = profile_did_manager,
+    dmws = DidManagerWithSupers(
+        did_manager=profile_did_manager,
     )
     pytest.dm = dmws
-    logger.info("Joined Endra dm, waiting to get control key...")
+    logger.info("DOCKER: Joined Endra dm, waiting to get control key...")
 
     sleep(PROFILE_JOIN_TIMEOUT_S)
     ctrl_key = pytest.dm.get_control_key()
-    logger.info(f"Joined: {type(ctrl_key)}")
     if ctrl_key.private_key:
-        print("Got control key!")
+        print("DOCKER: Got control key!")
+    else:
+        print("DOCKER: Haven't got control key...")
 
 
 def test_add_sub(
@@ -308,18 +324,24 @@ def test_add_sub(
     docker_container_old.run_python_code(
         python_code, background=True, print_output=False,
     )
+    invit_json= json.dumps(invitation)
+
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
-        f"test_dmws_synchronisation.docker_join_dm('{
-            json.dumps(invitation)}')",
+        f"test_dmws_synchronisation.docker_join_dm('{invit_json}')",
         "pytest.dm.terminate()",
     ])
     output_lines = docker_container_new.run_python_code(
         python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=False,
         background=False
     ).split("\n")
-    last_line = output_lines[-1].strip()
-    last_line
+
+    docker_lines = [
+        line.replace("DOCKER: ", "").strip()
+        for line in output_lines if line.startswith("DOCKER: ")
+    ]
+    last_line = docker_lines[-1] if len(docker_lines) > 0 else None
+
     mark(
         last_line == "Got control key!",
         function_name()
@@ -329,7 +351,7 @@ def test_add_sub(
 def docker_create_super() -> GroupDidManager:
     logger.info("DOCKER: Creating GroupDidManager...")
     super = pytest.dm.create_super()
-    print(super.did)
+    print("DOCKER: ", super.did)
     return super
 
 
@@ -337,13 +359,14 @@ def docker_join_super(invitation: str | dict):
     logger.info("DOCKER: Joining GroupDidManager...")
     super = pytest.dm.join_super(invitation)
     print(super.did)
-    logger.info("Joined Endra GroupDidManager, waiting to get control key...")
+    logger.info(
+        "DOCKER: Joined Endra GroupDidManager, waiting to get control key...")
 
     sleep(CORRESP_JOIN_TIMEOUT_S)
     ctrl_key = super.get_control_key()
-    logger.info(f"Joined: {type(ctrl_key)}")
+    logger.info(f"DOCKER: Joined: {type(ctrl_key)}")
     if ctrl_key.private_key:
-        print("Got control key!")
+        print("DOCKER: Got control key!")
     return super
 
 
@@ -354,7 +377,7 @@ def test_create_super(docker_container: walytis_identitiesDocker) -> dict | None
         "test_dmws_synchronisation.docker_load_dm()",
         "super=test_dmws_synchronisation.docker_create_super()",
         "invitation = super.invite_member()",
-        "print(json.dumps(invitation))",
+        "print('DOCKER: ',json.dumps(invitation))",
         "print(f'DOCKER: Created super: {type(super)}')",
         "pytest.dm.terminate()",
     ])
@@ -362,17 +385,26 @@ def test_create_super(docker_container: walytis_identitiesDocker) -> dict | None
         python_code, print_output=False,
         timeout=PROFILE_CREATE_TIMEOUT_S, background=False
     ).split("\n")
-    if len(output_lines) < 2:
+
+
+    docker_lines = [
+        line.replace("DOCKER: ", "").strip()
+        for line in output_lines if line.startswith("DOCKER: ")
+    ]
+    
+    if len(docker_lines) < 2:
         mark(
             False,
             function_name()
         )
         return None
-    last_line = output_lines[-1].strip()
-    invitation = json.loads(output_lines[-2].strip().replace("'", '"'))
+            
+    last_line = docker_lines[-1] if len(docker_lines) > 0 else None
+
+    invitation = json.loads(docker_lines[-2].strip().replace("'", '"'))
 
     mark(
-        last_line == "DOCKER: Created super: <class 'walytis_identities.group_did_manager.GroupDidManager'>",
+        last_line == "Created super: <class 'walytis_identities.group_did_manager.GroupDidManager'>",
         function_name()
     )
 
@@ -400,18 +432,27 @@ def test_join_super(
 
     ])
     docker_container_old.run_python_code(python_code_1, background=True)
+    invit_json = json.dumps(invitation)
+
     python_code_2 = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         "test_dmws_synchronisation.docker_load_dm()",
-        f"super = test_dmws_synchronisation.docker_join_super"
-        f"('{json.dumps(invitation)}')",
-        "print(super.did)",
+        f"super = test_dmws_synchronisation.docker_join_super('{invit_json}')",
+        "print('DOCKER: ', super.did)",
         "pytest.dm.terminate()",
         "super.terminate()",
     ])
-    output_lines = docker_container_new.run_python_code(python_code_2, timeout=CORRESP_JOIN_TIMEOUT_S + 5,print_output=True, background=False).split("\n")
-    second_last_line = output_lines[-2].strip()
-    super_id = output_lines[-1].strip()
+    
+    output_lines = docker_container_new.run_python_code(
+        python_code_2, timeout=CORRESP_JOIN_TIMEOUT_S + 5, print_output=False, background=False).split("\n")
+    docker_lines = [
+        line.replace("DOCKER: ", "").strip()
+        for line in output_lines if line.startswith("DOCKER: ")
+    ]
+    
+    second_last_line = docker_lines[-2] if len(docker_lines) > 1 else None
+    super_id = docker_lines[-1].strip()
+    
     expected_super_id = did_from_blockchain_id(
         invitation['blockchain_invitation']['blockchain_id'])
 
@@ -453,7 +494,7 @@ def test_auto_join_super(
     try:
         output = docker_container_new.run_python_code(
             python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
-            print_output=True, background=False
+            print_output=False, background=False
         ).split("GroupDidManager DIDs:")
     except DockerShellError as e:
         print(e)
@@ -482,32 +523,42 @@ def run_tests():
     if invitation:
         test_add_sub(pytest.containers[1], pytest.containers[0], invitation)
         test_load_dm(pytest.containers[1])
+    else:
+        mark(False, "No invitation")
     # create second dm with multiple devices
     test_setup_dm(pytest.containers[2])
     invitation = test_load_dm(pytest.containers[2])
     if invitation:
         test_add_sub(pytest.containers[3], pytest.containers[2], invitation)
         test_load_dm(pytest.containers[3])
+    else:
+        mark(False, "No invitation")
 
     # create superondence & share accross dms
     invitation = test_create_super(pytest.containers[0])
     if invitation:
         super_id = did_from_blockchain_id(
-            invitation['blockchain_invitation']['blockchain_id'])
-        # check that dm1's second device automatically joins the superondence
+            invitation['blockchain_invitation']['blockchain_id']
+        )
+
+        # test that dm1's second device automatically joins the correspondence
+        # after dm1's first device creates it
         test_auto_join_super(
-            pytest.containers[0], pytest.containers[1], super_id)
+            pytest.containers[0], pytest.containers[1], super_id
+        )
 
         # test that dm2 can join the superondence given an invitation
         test_join_super(
             pytest.containers[0], pytest.containers[2], invitation
         )
-        test_auto_join_super(
-            pytest.containers[2],
-            pytest.containers[3],
-            super_id
-        )
 
+        # test that dm2's second device automatically joins the correspondence
+        # after dm2's first device joins it
+        test_auto_join_super(
+            pytest.containers[2], pytest.containers[3], super_id
+        )
+    else:
+        mark(False, "No invitation")
     # create second dm with multiple devices
     test_cleanup()
     test_threads_cleanup()
@@ -518,4 +569,3 @@ if __name__ == "__main__":
     _testing_utils.BREAKPOINTS = True
     run_tests()
     _testing_utils.terminate()
-    

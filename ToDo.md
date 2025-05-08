@@ -1,8 +1,10 @@
 ## Next Steps:
 
-- debug endra:
-  - creating correspondence gets stuck after joining profile
-  - after joining profile, existing correspondences aren't shown
+- Walytis Invitations:
+  - ensure latest invitations are always published on DidManager
+  - ensure all peers add Walytis invitations published on DidManager
+  - ask all members of DidManager when joining with invitation
+  - Walytis: retry invitation requests in `join_blockchain` function
 - PeerMonitor for GroupDidManager members
 - make GroupDidManagerWrapper inherits from DidManagerWrapper
 - Blockchain invitation sharing across devices
