@@ -2,19 +2,19 @@
 
 Doesn't include machinery for managing other members.
 """
-from walytis_beta_embedded._walytis_beta.walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
 from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
 import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
 
 from .generic_did_manager import GenericDidManager
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
+import walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block, Blockchain, create_blockchain
+from walytis_beta_api import Block, Blockchain, create_blockchain
 from .utils import logger
 from . import did_manager_blocks
 from .did_manager_blocks import (

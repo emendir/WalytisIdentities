@@ -47,8 +47,8 @@ if __name__ == "__main__":
 
     # Execute Python command on the container
     python_output = docker_container.run_python_command(
-        "import walytis_beta_embedded._walytis_beta.walytis_beta_api;"
-        "print(walytis_beta_embedded._walytis_beta.walytis_beta_api.get_walytis_beta_version())"
+        "import walytis_beta_api;"
+        "print(walytis_beta_api.get_walytis_beta_version())"
     )
     print("Output of Python command:", python_output)
 

@@ -26,16 +26,16 @@ if WE_ARE_IN_DOCKER:
     USING_BRENTHY = True
 if True:
     print("USING_BRENTHY", USING_BRENTHY)
-    # ensure IPFS is initialised via Walytis_Beta.networking, not walytis_beta_embedded._walytis_beta.walytis_beta_api
+    # ensure IPFS is initialised via Walytis_Beta.networking, not walytis_beta_api
     if USING_BRENTHY:
         os.environ["USE_IPFS_NODE"] = "false"
         os.environ["WALYTIS_BETA_API_TYPE"] = "WALYTIS_BETA_BRENTHY_API"
     else:
         os.environ["USE_IPFS_NODE"] = "true"
 
-    from walytis_beta_embedded._walytis_beta.networking import ipfs
+    from walytis_beta_tools._experimental.config import ipfs
     import walytis_beta_embedded
-    from walytis_beta_embedded._walytis_beta import walytis_beta_api
+    import walytis_beta_api
     from brenthy_tools_beta import BrenthyNotRunningError
 
     if USING_BRENTHY:

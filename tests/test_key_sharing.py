@@ -7,7 +7,7 @@ from datetime import datetime
 import _testing_utils
 import pytest
 import walytis_identities
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
+import walytis_beta_api as walytis_api
 from _testing_utils import mark, polite_wait, test_threads_cleanup
 from walytis_identities.did_manager import DidManager
 from walytis_identities.did_objects import Key

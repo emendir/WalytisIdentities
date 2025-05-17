@@ -3,17 +3,17 @@ from time import sleep
 from multi_crypt import Crypt
 from .group_did_manager import GenericDidManager
 from .generics import DidManagerWrapper
-from walytis_beta_embedded._walytis_beta.walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_api.exceptions import BlockNotFoundError
 from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
 from typing import Type
 from typing import Callable
 from walytis_identities.did_manager_blocks import get_info_blocks
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain, join_blockchain, JoinFailureError, BlockchainAlreadyExistsError
+from walytis_beta_api import Blockchain, join_blockchain, JoinFailureError, BlockchainAlreadyExistsError
 from walytis_identities.did_manager import did_from_blockchain_id
 from threading import Lock, Event
 from walytis_identities.did_manager import blockchain_id_from_did
 import os
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import decode_short_id
+from walytis_beta_api import decode_short_id
 from brenthy_tools_beta.utils import bytes_to_string
 from walytis_identities.did_objects import Key
 from walytis_identities.did_manager_blocks import InfoBlock, SuperRegistrationBlock
@@ -22,12 +22,12 @@ from walytis_identities import DidManager
 from dataclasses import dataclass
 import json
 from walytis_identities.key_store import KeyStore
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block
+from walytis_beta_api import Block
 from .utils import logger
 from .generics import GroupDidManagerWrapper
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
 from collections.abc import Generator
-from walytis_beta_embedded._walytis_beta.walytis_beta_tools._experimental.generic_block import GenericBlock
+from walytis_beta_tools._experimental.generic_block import GenericBlock
 
 CRYPTO_FAMILY = "EC-secp256k1"
 

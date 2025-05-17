@@ -5,7 +5,7 @@ import tempfile
 import _testing_utils
 import pytest
 import walytis_identities
-import walytis_beta_embedded._walytis_beta.walytis_beta_api
+import walytis_beta_api
 from _testing_utils import mark
 from walytis_identities import did_manager, key_store
 from walytis_identities.did_manager import DidManager
@@ -138,8 +138,8 @@ def test_delete_person_identity() -> None:
     # ensure the blockchains of both the person and the member identities
     # have been deleted
     mark(
-        group_blockchain not in walytis_beta_embedded._walytis_beta.walytis_beta_api.list_blockchain_ids() and
-        member_blockchain not in walytis_beta_embedded._walytis_beta.walytis_beta_api.list_blockchain_ids(),
+        group_blockchain not in walytis_beta_api.list_blockchain_ids() and
+        member_blockchain not in walytis_beta_api.list_blockchain_ids(),
         "Delete GroupDidManager"
     )
 

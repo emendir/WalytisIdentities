@@ -2,14 +2,14 @@ import _testing_utils
 from walytis_identities.key_store import KeyStore
 from walytis_identities.did_manager import DidManager
 from datetime import datetime
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
+import walytis_beta_api as waly
 import os
 import shutil
 import tempfile
 
 import walytis_identities
 import pytest
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
+import walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walytis_identities.did_objects import Key
 from walytis_identities import did_manager_with_supers

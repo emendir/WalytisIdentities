@@ -1,9 +1,9 @@
 import _testing_utils
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental import generic_blockchain_testing
+from walytis_beta_api._experimental import generic_blockchain_testing
 from time import sleep
 import _testing_utils
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
+from walytis_beta_api._experimental.generic_blockchain_testing import test_generic_blockchain
+from walytis_beta_api import Blockchain
 import os
 import pytest
 import shutil
@@ -13,14 +13,14 @@ from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 import tempfile
 from datetime import datetime
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
+import walytis_beta_api as waly
 import os
 import shutil
 import tempfile
 
 import walytis_identities
 import pytest
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
+import walytis_beta_api as walytis_api
 from _testing_utils import mark, test_threads_cleanup
 from walytis_identities.did_objects import Key
 from walytis_identities import did_manager_with_supers

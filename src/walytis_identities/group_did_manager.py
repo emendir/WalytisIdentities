@@ -1,20 +1,20 @@
 """Classes for managing Person and Device identities."""
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import list_blockchain_ids
+from walytis_beta_api import list_blockchain_ids
 import traceback
 import json
-from walytis_beta_embedded._walytis_beta.walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
 from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-import walytis_beta_embedded._walytis_beta.walytis_beta_api
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
+import walytis_beta_api
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
 import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
 import ipfs_tk_transmission
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
+import walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Block, Blockchain, create_blockchain
+from walytis_beta_api import Block, Blockchain, create_blockchain
 from .utils import logger
 from . import did_manager_blocks
 from .did_manager_blocks import (
@@ -41,12 +41,12 @@ from typing import Callable, Type, TypeVar
 from walytis_beta_embedded import ipfs
 from walytis_beta_embedded import ipfs
 
-import walytis_beta_embedded._walytis_beta.walytis_beta_api
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_beta
+import walytis_beta_api
+import walytis_beta_api as walytis_beta
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from ipfs_tk_transmission.errors import ConvListenTimeout, CommunicationTimeout
 from .utils import logger
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import (
+from walytis_beta_api import (
     Block,
     Blockchain,
 

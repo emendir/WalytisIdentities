@@ -8,9 +8,9 @@ from dataclasses import asdict, dataclass
 from typing import Type, TypeVar
 from datetime import datetime
 from brenthy_tools_beta.utils import time_to_string, string_to_time
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as walytis_api
+import walytis_beta_api as walytis_api
 from multi_crypt import Crypt, verify_signature
-from walytis_beta_embedded._walytis_beta.walytis_beta_api import Blockchain
+from walytis_beta_api import Blockchain
 
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError

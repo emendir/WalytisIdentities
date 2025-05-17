@@ -7,7 +7,7 @@ from time import sleep
 from termcolor import colored as coloured
 from brenthy_tools_beta.utils import function_name
 from datetime import datetime
-import walytis_beta_embedded._walytis_beta.walytis_beta_api as waly
+import walytis_beta_api as waly
 import os
 import shutil
 import tempfile
@@ -16,7 +16,7 @@ import json
 from brenthy_docker import DockerShellError
 import walytis_identities
 import pytest
-from walytis_beta_embedded._walytis_beta import walytis_beta_api
+import walytis_beta_api
 from _testing_utils import mark, test_threads_cleanup
 from walytis_identities.did_objects import Key
 from walytis_identities import did_manager_with_supers

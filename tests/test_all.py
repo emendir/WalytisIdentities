@@ -8,7 +8,7 @@ import test_dmws_synchronisation
 import test_dmws_generic_blockchain_features
 import _testing_utils
 from time import sleep
-from walytis_beta_embedded._walytis_beta.walytis_beta_api._experimental import generic_blockchain_testing
+from walytis_beta_api._experimental import generic_blockchain_testing
 from walytis_auth_docker.build_docker import build_docker_image
 
 build_docker_image()
