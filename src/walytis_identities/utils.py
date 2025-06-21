@@ -1,19 +1,7 @@
 from base64 import urlsafe_b64encode
 from base64 import urlsafe_b64decode
 import rfc3987
-import loguru
-import sys
-try:
-    loguru.logger.remove(0)
-except ValueError:
-    pass
-import os
 
-LOG_PATH = ".walytis_identities.log"
-print(f"Logging to {os.path.abspath(LOG_PATH)}")
-loguru.logger.add(LOG_PATH, rotation="1 week")
-
-loguru.logger.add(sys.stdout, format="<level>{message}</level>",level="DEBUG")
 
 def is_valid_uri(uri):
     try:
@@ -73,18 +61,4 @@ def bytes_from_string(data: str, variable_name: str = "Value") -> bytes:
     ))
 
 
-class WalIdLogger:
-    prefix = "WalId"
-
-    def debug(self, message: str):
-        loguru.logger.debug(self._prefix_message(message))
-    def info(self, message: str):
-        loguru.logger.info(self._prefix_message(message))
-    def warning(self, message: str):
-        loguru.logger.warning(self._prefix_message(message))
-    def error(self, message: str):
-        loguru.logger.error(self._prefix_message(message))
-
-    def _prefix_message(self, message: str) -> str:
-        return f"[{self.prefix}] {message}"
-logger = WalIdLogger()
+from .log import logger_walid as logger

@@ -21,7 +21,7 @@ from walytis_auth_docker.walytis_auth_docker import (
 from walytis_auth_docker.build_docker import build_docker_image
 
 
-walytis_api.log.PRINT_DEBUG = False
+# walytis_api.log.PRINT_DEBUG = False
 print((os.path.dirname(__file__)))
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

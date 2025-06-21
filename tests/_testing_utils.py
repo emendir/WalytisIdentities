@@ -19,25 +19,23 @@ sys.path.insert(0, os.path.join(
 ))
 BREAKPOINTS = False
 PYTEST = True  # whether or not this script is being run by pytest
-USING_BRENTHY = False  # overridden to True in docker container
 WE_ARE_IN_DOCKER=os.path.exists('/.dockerenv')
 
 if WE_ARE_IN_DOCKER:
-    USING_BRENTHY = True
+    os.environ["USE_IPFS_NODE"] = "false"
+    os.environ["WALYTIS_BETA_API_TYPE"] = "WALYTIS_BETA_BRENTHY_API"
+
+# Walytis Config: use Brenthy by default if not otherwise specified by env var
+if os.environ.get("WALYTIS_BETA_API_TYPE", None) is None:
+    os.environ["WALYTIS_BETA_API_TYPE"] = "WALYTIS_BETA_BRENTHY_API"
 if True:
-    print("USING_BRENTHY", USING_BRENTHY)
-    # ensure IPFS is initialised via Walytis_Beta.networking, not walytis_beta_api
-    if USING_BRENTHY:
-        os.environ["USE_IPFS_NODE"] = "false"
-        os.environ["WALYTIS_BETA_API_TYPE"] = "WALYTIS_BETA_BRENTHY_API"
-    else:
-        os.environ["USE_IPFS_NODE"] = "true"
 
     from walytis_beta_tools._experimental.config import ipfs
     import walytis_beta_embedded
     import walytis_beta_api
     from brenthy_tools_beta import BrenthyNotRunningError
-
+    USING_BRENTHY= walytis_beta_api.walytis_beta_interface.WALYTIS_BETA_API_TYPE == walytis_beta_api.walytis_beta_interface.WalytisBetaApiTypes.WALYTIS_BETA_BRENTHY_API
+    logger.info(f"USING BRENTHY: {USING_BRENTHY}")
     if USING_BRENTHY:
         while True:
             try:

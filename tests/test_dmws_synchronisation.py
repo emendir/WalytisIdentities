@@ -11,7 +11,7 @@ import walytis_beta_api as waly
 import os
 import shutil
 import tempfile
-from walytis_identities.utils import logger, LOG_PATH
+from walytis_identities.utils import logger 
 import json
 from brenthy_docker import DockerShellError
 import walytis_identities
@@ -28,8 +28,6 @@ from walytis_auth_docker.walytis_auth_docker import (
 )
 from walytis_auth_docker.build_docker import build_docker_image
 
-
-walytis_beta_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager_with_supers

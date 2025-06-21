@@ -14,7 +14,7 @@ from _testing_utils import mark, test_threads_cleanup
 from walytis_identities.did_objects import Key
 from walytis_identities import did_manager_with_supers
 from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
-walytis_api.log.PRINT_DEBUG = False
+# walytis_api.log.PRINT_DEBUG = False
 
 _testing_utils.assert_is_loaded_from_source(
     source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager_with_supers

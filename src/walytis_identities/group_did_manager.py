@@ -663,7 +663,6 @@ class GroupDidManager(_GroupDidManager):
         # join blockchain
         try:
             # logger.debug(f"Joining blockchain {blockchain_invitation}")
-            walytis_beta.log.PRINT_DEBUG = True
             blockchain = Blockchain.join(blockchain_invitation)
         except BlockchainAlreadyExistsError:
             blockchain = Blockchain(blockchain_invitation["blockchain_id"])
