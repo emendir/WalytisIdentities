@@ -312,16 +312,20 @@ class DidManagerWithSupers(DidManagerWrapper):
         try:
             logger.info("DMWS: JAJ: Joining blockchain...")
             # join blockchain, preprocessing existing blocks
-            blockchain = Blockchain.join(
+            join_blockchain(
                 registration.invitation["blockchain_invitation"],
-                # appdata_dir=DidManager.get_blockchain_appdata_path(
-                #     key_store
-                # ),
             )
-            blockchain.terminate()
         except JoinFailureError:
             logger.warning("JAJ: Failed to join blockchain...")
-            return None
+            try:
+                logger.info("DMWS: JAJ: Joining blockchain, retrying...")
+                # join blockchain, preprocessing existing blocks
+                join_blockchain(
+                    registration.invitation["blockchain_invitation"],
+                )
+            except JoinFailureError:
+                logger.warning("JAJ: Failed to join blockchain...")
+                return None
         except BlockchainAlreadyExistsError:
             pass
         with self.lock:

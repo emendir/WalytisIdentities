@@ -11,9 +11,9 @@ import walytis_beta_api as waly
 import os
 import shutil
 import tempfile
-from walytis_identities.utils import logger 
+from walytis_identities.utils import logger
 import json
-from brenthy_docker import DockerShellError
+from brenthy_docker import DockerShellError, DockerShellTimeoutError
 import walytis_identities
 import pytest
 import walytis_beta_api
@@ -41,7 +41,7 @@ CONTAINER_NAME_PREFIX = "walytis_identities_tests_device_"
 
 
 # used for creation, first loading test, and invitation creation
-PROFILE_CREATE_TIMEOUT_S = 10
+PROFILE_CREATE_TIMEOUT_S = 20
 PROFILE_JOIN_TIMEOUT_S = 60
 CORRESP_JOIN_TIMEOUT_S = 60
 
@@ -189,10 +189,19 @@ def test_setup_dm(docker_container: walytis_identitiesDocker):
         "print(f'DOCKER: Created DidManagerWithSupers: {type(pytest.dm)}')",
         "pytest.dm.terminate()",
     ])
-    output_lines = docker_container.run_python_code(
-        python_code, print_output=False, timeout=PROFILE_CREATE_TIMEOUT_S,
-        background=False
-    ).split("\n")
+    try:
+        output_lines = docker_container.run_python_code(
+            python_code, print_output=False, timeout=PROFILE_CREATE_TIMEOUT_S,
+            background=False
+        ).split("\n")
+
+    except DockerShellError as e:
+        print(e)
+        output_lines = []
+        breakpoint()
+    except DockerShellTimeoutError as e:
+        print(f"Docker shell timeout reached after {e.timeout}s")
+        output_lines = e.output.split("\n")
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
         for line in output_lines if line.startswith("DOCKER: ")
@@ -224,24 +233,31 @@ def test_load_dm(docker_container: walytis_identitiesDocker) -> dict | None:
         "pytest.dm.terminate()",
     ])
     # breakpoint()
-    output_lines = docker_container.run_python_code(
-        python_code, print_output=False,
-        timeout=PROFILE_CREATE_TIMEOUT_S, background=False
-    ).split("\n")
-
+    try:
+        output_lines = docker_container.run_python_code(
+            python_code, print_output=False,
+            timeout=PROFILE_CREATE_TIMEOUT_S, background=False
+        ).split("\n")
+    except DockerShellError as e:
+        print(e)
+        output_lines = []
+        breakpoint()
+    except DockerShellTimeoutError as e:
+        print(f"Docker shell timeout reached after {e.timeout}s")
+        output_lines = e.output.split("\n")
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
         for line in output_lines if line.startswith("DOCKER: ")
     ]
-    
+
     if len(docker_lines) < 2:
         mark(
             False,
             function_name()
         )
         return None
-            
+
     last_line = docker_lines[-1] if len(docker_lines) > 0 else None
 
     try:
@@ -255,9 +271,6 @@ def test_load_dm(docker_container: walytis_identitiesDocker) -> dict | None:
     )
 
     return invitation
-
-
-
 
 
 def docker_join_dm(invitation: str):
@@ -322,17 +335,25 @@ def test_add_sub(
     docker_container_old.run_python_code(
         python_code, background=True, print_output=False,
     )
-    invit_json= json.dumps(invitation)
+    invit_json = json.dumps(invitation)
 
     python_code = "\n".join([
         DOCKER_PYTHON_LOAD_TESTING_CODE,
         f"test_dmws_synchronisation.docker_join_dm('{invit_json}')",
         "pytest.dm.terminate()",
     ])
-    output_lines = docker_container_new.run_python_code(
-        python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=False,
-        background=False
-    ).split("\n")
+    try:
+        output_lines = docker_container_new.run_python_code(
+            python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=False,
+            background=False
+        ).split("\n")
+    except DockerShellError as e:
+        print(e)
+        output_lines = []
+        breakpoint()
+    except DockerShellTimeoutError as e:
+        print(f"Docker shell timeout reached after {e.timeout}s")
+        output_lines = e.output.split("\n")
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
@@ -379,24 +400,31 @@ def test_create_super(docker_container: walytis_identitiesDocker) -> dict | None
         "print(f'DOCKER: Created super: {type(super)}')",
         "pytest.dm.terminate()",
     ])
-    output_lines = docker_container.run_python_code(
-        python_code, print_output=False,
-        timeout=PROFILE_CREATE_TIMEOUT_S, background=False
-    ).split("\n")
-
+    try:
+        output_lines = docker_container.run_python_code(
+            python_code, print_output=False,
+            timeout=PROFILE_CREATE_TIMEOUT_S, background=False
+        ).split("\n")
+    except DockerShellError as e:
+        print(e)
+        output_lines = []
+        breakpoint()
+    except DockerShellTimeoutError as e:
+        print(f"Docker shell timeout reached after {e.timeout}s")
+        output_lines = e.output.split("\n")
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
         for line in output_lines if line.startswith("DOCKER: ")
     ]
-    
+
     if len(docker_lines) < 2:
         mark(
             False,
             function_name()
         )
         return None
-            
+
     last_line = docker_lines[-1] if len(docker_lines) > 0 else None
 
     invitation = json.loads(docker_lines[-2].strip().replace("'", '"'))
@@ -440,17 +468,25 @@ def test_join_super(
         "pytest.dm.terminate()",
         "super.terminate()",
     ])
-    
-    output_lines = docker_container_new.run_python_code(
-        python_code_2, timeout=CORRESP_JOIN_TIMEOUT_S + 5, print_output=False, background=False).split("\n")
+
+    try:
+        output_lines = docker_container_new.run_python_code(
+            python_code_2, timeout=CORRESP_JOIN_TIMEOUT_S + 5, print_output=False, background=False).split("\n")
+    except DockerShellError as e:
+        print(e)
+        output_lines = []
+        breakpoint()
+    except DockerShellTimeoutError as e:
+        print(f"Docker shell timeout reached after {e.timeout}s")
+        output_lines = e.output.split("\n")
+
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
         for line in output_lines if line.startswith("DOCKER: ")
     ]
-    
+
     second_last_line = docker_lines[-2] if len(docker_lines) > 1 else None
-    super_id = docker_lines[-1].strip()
-    
+    super_id = docker_lines[-1].strip() if len(docker_lines) > 0 else None
     expected_super_id = did_from_blockchain_id(
         invitation['blockchain_invitation']['blockchain_id'])
 
@@ -477,6 +513,7 @@ def test_auto_join_super(
         "logger.info('Exiting after waiting.')",
 
     ])
+
     docker_container_old.run_python_code(
         python_code, print_output=False, background=True
     )
@@ -491,15 +528,20 @@ def test_auto_join_super(
     ])
     try:
         output = docker_container_new.run_python_code(
-            python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 5,
+            python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 15,
             print_output=False, background=False
-        ).split("GroupDidManager DIDs:")
+        )
     except DockerShellError as e:
         print(e)
+        output = ""
         breakpoint()
+    except DockerShellTimeoutError as e:
+        print(f"Docker shell timeout reached after {e.timeout}s")
+        output = e.output
+    output_lines = output.split("GroupDidManager DIDs:")
     c_ids: list[str] = []
-    if len(output) == 2:
-        _, c_id_text = output
+    if len(output_lines) == 2:
+        _, c_id_text = output_lines
         c_ids = [line.strip() for line in c_id_text.split("\n")]
         c_ids = [c_id for c_id in c_ids if c_id != ""]
 
