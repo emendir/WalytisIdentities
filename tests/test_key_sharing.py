@@ -14,11 +14,11 @@ from walytis_identities.did_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
-from walytis_auth_docker.walytis_auth_docker import (
+from walid_docker.walid_docker import (
     walytis_identitiesDocker,
     delete_containers,
 )
-from walytis_auth_docker.build_docker import build_docker_image
+from walid_docker.build_docker import build_docker_image
 
 
 # walytis_api.log.PRINT_DEBUG = False
@@ -49,7 +49,7 @@ def delete_path(path):
 
 def test_preparations(delete_files: bool = False):
     if DELETE_ALL_BRENTHY_DOCKERS:
-        delete_containers(image="local/walytis_auth_testing")
+        delete_containers(image="local/walid_testing")
 
     if REBUILD_DOCKER:
 

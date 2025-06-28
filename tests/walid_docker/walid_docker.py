@@ -15,7 +15,7 @@ from brenthy_docker import BrenthyDocker, delete_containers
 class walytis_identitiesDocker(BrenthyDocker):
     def __init__(
         self,
-        image: str = "local/walytis_auth_testing",
+        image: str = "local/walid_testing",
         **kwargs
     ):
         BrenthyDocker.__init__(self, image=image, **kwargs)

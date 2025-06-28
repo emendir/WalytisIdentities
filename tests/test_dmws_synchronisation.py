@@ -22,11 +22,11 @@ from walytis_identities.did_objects import Key
 from walytis_identities import did_manager_with_supers
 from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 
-from walytis_auth_docker.walytis_auth_docker import (
+from walid_docker.walid_docker import (
     walytis_identitiesDocker,
     delete_containers,
 )
-from walytis_auth_docker.build_docker import build_docker_image
+from walid_docker.build_docker import build_docker_image
 
 
 _testing_utils.assert_is_loaded_from_source(
@@ -76,7 +76,7 @@ pytest.containers: list[walytis_identitiesDocker] = []
 def test_preparations():
     if DELETE_ALL_BRENTHY_DOCKERS:
         delete_containers(container_name_substr=CONTAINER_NAME_PREFIX,
-                          image="local/walytis_auth_testing")
+                          image="local/walid_testing")
 
     if REBUILD_DOCKER:
 

@@ -1,4 +1,4 @@
-FROM local/walytis_auth_prereqs:latest
+FROM local/walid_prereqs:latest
 WORKDIR /opt/walytis_identities
 COPY . /opt/walytis_identities
 RUN touch /opt/we_are_in_docker
@@ -7,4 +7,4 @@ RUN touch /opt/we_are_in_docker
 
 # RUN pip show walytis_identities
 ## Run with:
-# docker run -it --privileged local/walytis_auth_testing
+# docker run -it --privileged local/walid_testing
