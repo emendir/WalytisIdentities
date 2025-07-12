@@ -1,3 +1,4 @@
+import _auto_run_with_pytest  # noqa
 import _testing_utils
 from walytis_beta_api._experimental import generic_blockchain_testing
 from time import sleep
@@ -35,7 +36,22 @@ _testing_utils.assert_is_loaded_from_source(
 )
 
 
-def test_preparations() -> None:
+@pytest.fixture(scope="module", autouse=True)
+def setup_and_teardown() -> None:
+    """Wrap around tests, running preparations and cleaning up afterwards.
+
+    A module-level fixture that runs once for all tests in this file.
+    """
+    # Setup: code here runs before tests that uses this fixture
+    print(f"\nRunning tests for {__name__}\n")
+    prepare()
+
+    yield  # This separates setup from teardown
+
+    # Teardown: code here runs after the tests
+    print(f"\nFinished tests for {__name__}\n")
+    cleanup()
+def prepare() -> None:
     """Setup resources in preparation for tests."""
     # declare 'global' variables
     pytest.profile_config_dir = tempfile.mkdtemp()
@@ -75,7 +91,7 @@ def test_preparations() -> None:
     pytest.dmws.terminate()
 
 
-def test_cleanup() -> None:
+def cleanup() -> None:
     """Clean up resources used during tests."""
     if pytest.dmws:
         pytest.dmws.delete()
@@ -105,17 +121,22 @@ def test_super():
         member=pytest.super.member_did_manager.key_store
     )
     super.terminate()
+from emtest import await_thread_cleanup
+def test_threads_cleanup() -> None:
+    """Test that no threads are left running."""
+    cleanup()
+    assert await_thread_cleanup(timeout=5)
 
 
 def run_tests():
     print("Running test for DidManagerWithSupers Generic Blockchain features...")
-    test_preparations()
+    prepare()
     test_profile()
     test_super()
     pytest.group_did_manager.terminate()
     pytest.super.terminate()
     pytest.dmws.terminate()
-    test_cleanup()
+    cleanup()
 
 
 if __name__ == "__main__":

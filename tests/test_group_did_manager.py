@@ -1,3 +1,4 @@
+import _auto_run_with_pytest  # noqa
 import os
 import shutil
 import tempfile
@@ -26,8 +27,23 @@ _testing_utils.assert_is_loaded_from_source(
 
 _testing_utils.BREAKPOINTS = True
 
+@pytest.fixture(scope="module", autouse=True)
+def setup_and_teardown() -> None:
+    """Wrap around tests, running preparations and cleaning up afterwards.
 
-def test_preparations() -> None:
+    A module-level fixture that runs once for all tests in this file.
+    """
+    # Setup: code here runs before tests that uses this fixture
+    print(f"\nRunning tests for {__name__}\n")
+    prepare()
+
+    yield  # This separates setup from teardown
+
+    # Teardown: code here runs after the tests
+    print(f"\nFinished tests for {__name__}\n")
+    cleanup()
+
+def prepare() -> None:
     """Setup resources in preparation for tests."""
     # declare 'global' variables
     pytest.person_config_dir = tempfile.mkdtemp()
@@ -40,7 +56,7 @@ def test_preparations() -> None:
     pytest.KEY = Key.create(pytest.CRYPTO_FAMILY)
 
 
-def test_cleanup() -> None:
+def cleanup() -> None:
     """Clean up resources used during tests."""
     shutil.rmtree(pytest.person_config_dir)
     shutil.rmtree(pytest.person_config_dir2)
@@ -60,12 +76,12 @@ def test_create_person_identity() -> None:
     )
 
     members = pytest.group_1.get_members()
-    mark(
-        isinstance(pytest.group_1, GroupDidManager)
+    
+    assert (isinstance(pytest.group_1, GroupDidManager)
         and len(members) == 1
-        and pytest.group_1.member_did_manager.did in members[0].did,
-        "Create GroupDidManager"
-    )
+        and pytest.group_1.member_did_manager.did in members[0].did
+    ),    "Create GroupDidManager"
+
     pytest.group_1.terminate()
 
 
@@ -84,13 +100,13 @@ def test_load_person_identity() -> None:
     member_did = pytest.group_1.member_did_manager.did
     person_did = pytest.group_1.did
     members = group_1.get_members()
-    mark(
-        group_1.member_did_manager.did == member_did
+    
+    assert (group_1.member_did_manager.did == member_did
         and group_1.did == person_did
         and len(members) == 1
-        and group_1.member_did_manager.did in members[0].did,
-        "Load GroupDidManager"
-    )
+        and group_1.member_did_manager.did in members[0].did
+    ),    "Load GroupDidManager"
+
     # group_1.terminate()
     pytest.group_1 = group_1
 
@@ -103,15 +119,15 @@ def test_encryption() -> None:
     pytest.group_1.renew_control_key()
     cipher_2 = pytest.group_1.encrypt(PLAIN_TEXT)
 
-    mark(
-        (
+    
+    assert (
             CodePackage.deserialise_bytes(cipher_1).public_key !=
             CodePackage.deserialise_bytes(cipher_2).public_key
             and pytest.group_1.decrypt(cipher_1) == PLAIN_TEXT
             and pytest.group_1.decrypt(cipher_2) == PLAIN_TEXT
         ),
         "Encryption across key renewal works"
-    )
+
 
 
 def test_signing() -> None:
@@ -119,15 +135,15 @@ def test_signing() -> None:
     pytest.group_1.renew_control_key()
     signature_2 = pytest.group_1.sign(PLAIN_TEXT)
 
-    mark(
-        (
+    
+    assert (
             CodePackage.deserialise_bytes(signature_1).public_key !=
             CodePackage.deserialise_bytes(signature_2).public_key
             and pytest.group_1.verify_signature(signature_1, PLAIN_TEXT)
             and pytest.group_1.verify_signature(signature_2, PLAIN_TEXT)
         ),
         "Signature verification across key renewal works"
-    )
+
 
 
 def test_delete_person_identity() -> None:
@@ -137,11 +153,11 @@ def test_delete_person_identity() -> None:
 
     # ensure the blockchains of both the person and the member identities
     # have been deleted
-    mark(
-        group_blockchain not in walytis_beta_api.list_blockchain_ids() and
-        member_blockchain not in walytis_beta_api.list_blockchain_ids(),
-        "Delete GroupDidManager"
-    )
+    
+    assert (group_blockchain not in walytis_beta_api.list_blockchain_ids() and
+        member_blockchain not in walytis_beta_api.list_blockchain_ids()
+    ),    "Delete GroupDidManager"
+
 
 
 def test_create_member_given_path() -> None:
@@ -154,12 +170,12 @@ def test_create_member_given_path() -> None:
     key = pytest.member.key_store.key
     reloaded = DidManager(KeyStore(key_store_path, key))
     reloaded.terminate()
-    mark(
-        os.path.exists(key_store_path)
+    
+    assert( os.path.exists(key_store_path)
         and reloaded.get_control_key().private_key
-        == pytest.member.get_control_key().private_key,
-        "Created member given a directory."
-    )
+        == pytest.member.get_control_key().private_key
+    ),    "Created member given a directory."
+
 
 
 def test_create_group_given_path() -> None:
@@ -174,18 +190,23 @@ def test_create_group_given_path() -> None:
     reloaded = GroupDidManager(KeyStore(key_store_path, key), pytest.member)
     reloaded.terminate()
 
-    mark(
-        os.path.exists(key_store_path)
+    
+    assert (os.path.exists(key_store_path)
         and reloaded.get_control_key().private_key
-        == pytest.group.get_control_key().private_key,
-        "Created group given a directory."
-    )
+        == pytest.group.get_control_key().private_key
+    ),    "Created group given a directory."
 
+
+from emtest import await_thread_cleanup
+def test_threads_cleanup() -> None:
+    """Test that no threads are left running."""
+    cleanup()
+    assert await_thread_cleanup(timeout=5)
 
 def run_tests() -> None:
     print("\nRunning tests for GroupDidManager:")
     _testing_utils.PYTEST = False
-    test_preparations()  # run test preparations
+    prepare()  # run test preparations
 
     # run tests
     test_create_person_identity()
@@ -196,7 +217,7 @@ def run_tests() -> None:
 
     test_create_member_given_path()
     test_create_group_given_path()
-    test_cleanup()  # run test cleanup
+    cleanup()  # run test cleanup
 
 
 if __name__ == "__main__":

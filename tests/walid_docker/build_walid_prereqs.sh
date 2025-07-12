@@ -6,8 +6,9 @@ cd $work_dir/../..
 
 rsync -XAva ../../IPFS-Monitoring tests/walid_docker/
 rsync -XAva ../../MultiCrypt tests/walid_docker/python_packages/
-rsync -XAva ../../Brenthy/Brenthy/blockchains/Walytis_Beta tests/walid_docker/python_packages/
-rsync -XALva ../../Brenthy/Deployment/walytis_beta_embedded tests/walid_docker/python_packages/
+rsync -XAva ../../Emtest tests/walid_docker/python_packages/
+rsync -XAva ../../Waly/Brenthy/Brenthy/blockchains/Walytis_Beta tests/walid_docker/python_packages/
+rsync -XALva ../../Waly/Brenthy/Brenthy/blockchains/Walytis_Beta/legacy_packaging/walytis_beta_embedded tests/walid_docker/python_packages/
 
 docker build -t local/walid_prereqs -f tests/walid_docker/walid_prereqs.dockerfile .
 

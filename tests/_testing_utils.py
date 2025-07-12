@@ -30,7 +30,7 @@ if os.environ.get("WALYTIS_BETA_API_TYPE", None) is None:
     os.environ["WALYTIS_BETA_API_TYPE"] = "WALYTIS_BETA_BRENTHY_API"
 if True:
 
-    from walytis_beta_tools._experimental.config import ipfs
+    from walytis_beta_tools._experimental.ipfs_interface import ipfs
     import walytis_beta_embedded
     import walytis_beta_api
     from brenthy_tools_beta import BrenthyNotRunningError

@@ -1,3 +1,4 @@
+import _auto_run_with_pytest  # noqa
 import json
 import os
 import shutil
@@ -15,7 +16,7 @@ from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
 from walid_docker.walid_docker import (
-    walytis_identitiesDocker,
+    WalytisIdentitiesDocker,
     delete_containers,
 )
 from walid_docker.build_docker import build_docker_image
@@ -46,8 +47,23 @@ def delete_path(path):
     elif os.path.exists(path):
         os.remove(path)
 
+@pytest.fixture(scope="module", autouse=True)
+def setup_and_teardown() -> None:
+    """Wrap around tests, running preparations and cleaning up afterwards.
 
-def test_preparations(delete_files: bool = False):
+    A module-level fixture that runs once for all tests in this file.
+    """
+    # Setup: code here runs before tests that uses this fixture
+    print(f"\nRunning tests for {__name__}\n")
+    prepare()
+
+    yield  # This separates setup from teardown
+
+    # Teardown: code here runs after the tests
+    print(f"\nFinished tests for {__name__}\n")
+    cleanup()
+
+def prepare(delete_files: bool = False):
     if DELETE_ALL_BRENTHY_DOCKERS:
         delete_containers(image="local/walid_testing")
 
@@ -88,7 +104,7 @@ def test_preparations(delete_files: bool = False):
         private_key=b'\xd9\xd1\\D\x80\xd7\x1a\xe6E\x0bt\xdf\xd0z\x88\xeaQ\xe8\x04\x91\x11\xaf\\%wC\x83~\x0eGP\xd8',
         creation_time=datetime(2024, 11, 6, 19, 17, 45, 713000)
     )
-    pytest.containers: list[walytis_identitiesDocker] = []
+    pytest.containers: list[WalytisIdentitiesDocker] = []
     pytest.invitation = None
 
 
@@ -97,7 +113,7 @@ N_DOCKER_CONTAINERS = 1
 
 def test_create_docker_containers():
     for i in range(N_DOCKER_CONTAINERS):
-        pytest.containers.append(walytis_identitiesDocker())
+        pytest.containers.append(WalytisIdentitiesDocker())
 
 
 def cleanup():
@@ -252,7 +268,7 @@ def test_create_identity_and_invitation():
         "import test_key_sharing;",
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
-        "test_key_sharing.test_preparations();",
+        "test_key_sharing.prepare();",
         "test_key_sharing.docker_create_identity_and_invitation();",
     ])
     output = None
@@ -270,10 +286,11 @@ def test_create_identity_and_invitation():
     except:
         print(f"\n{python_code}\n")
         pass
-    mark(
-        pytest.invitation is not None,
-        "created identity and invitation on docker"
-    )
+    
+    assert (
+        pytest.invitation is not None
+    ),    "created identity and invitation on docker"
+
 
 
 def test_add_member_identity():
@@ -309,7 +326,7 @@ def test_add_member_identity():
         "from test_key_sharing import logger;"
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
-        "test_key_sharing.test_preparations();"
+        "test_key_sharing.prepare();"
         f"test_key_sharing.docker_check_new_member('{member.did}');"
         f"logger.debug(threading.enumerate());"
     )
@@ -320,10 +337,10 @@ def test_add_member_identity():
 
     # print(output)
 
-    mark(
-        "Member has joined!" in output,
-        "Added member"
-    )
+    
+    assert ("Member has joined!" in output
+    ),    "Added member"
+
 
 
 def test_get_control_key():
@@ -337,7 +354,7 @@ def test_get_control_key():
         "logger.info('DOCKER: Testing control key sharing...');"
         "test_key_sharing.REBUILD_DOCKER=False;"
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
-        "test_key_sharing.test_preparations();"
+        "test_key_sharing.prepare();"
         "test_key_sharing.docker_be_online_30s()"
     )
     bash_code = (f'/bin/python -c "{python_code}"')
@@ -346,10 +363,11 @@ def test_get_control_key():
     # print(bash_code)
     print("Waiting for key sharing...")
     polite_wait(wait_dur_s)
-    mark(
-        pytest.group_2.get_control_key().private_key,
-        "Got control key ownership"
-    )
+    
+    assert (
+        pytest.group_2.get_control_key().private_key
+    ),        "Got control key ownership"
+
     # wait a little to allow proper resources cleanup on docker container
     sleep(15)
 
@@ -367,7 +385,7 @@ def test_renew_control_key():
         "logger.info('DOCKER: Testing control key renewal part 1...');",
         "test_key_sharing.REBUILD_DOCKER=False;",
         "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;",
-        "test_key_sharing.test_preparations();",
+        "test_key_sharing.prepare();",
         "test_key_sharing.docker_renew_control_key();",
         "logger.info('DOCKER: Finished control key renewal part 1!');",
 
@@ -403,7 +421,7 @@ def test_renew_control_key():
             "logger.info('DOCKER: Testing control key renewal part 2...');"
             "test_key_sharing.REBUILD_DOCKER=False;"
             "test_key_sharing.DELETE_ALL_BRENTHY_DOCKERS=False;"
-            "test_key_sharing.test_preparations();"
+            "test_key_sharing.prepare();"
             "test_key_sharing.docker_be_online_30s();"
             "logger.info('DOCKER: Finished Control Key Renewal test part 2.');"
 
@@ -420,15 +438,20 @@ def test_renew_control_key():
             new_key.unlock(private_key)
         except:
             success = False
-    mark(
-        success,
-        "Shared key on renewal."
-    )
+    
+    assert (success
+            ),        "Shared key on renewal."
 
 
+
+from emtest import await_thread_cleanup
+def test_threads_cleanup() -> None:
+    """Test that no threads are left running."""
+    cleanup()
+    assert await_thread_cleanup(timeout=5)
 def run_tests():
     print("\nRunning tests for Key Sharing:")
-    test_preparations(delete_files=True)
+    prepare(delete_files=True)
 
     test_create_docker_containers()
 
