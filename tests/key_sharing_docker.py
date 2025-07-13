@@ -4,7 +4,7 @@ import os
 from time import sleep
 
 from emtest import are_we_in_docker
-from testing_utils import CRYPTO_FAMILY,KEY, delete_path, make_dir
+from testing_utils import CRYPTO_FAMILY,KEY
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
 )
@@ -14,7 +14,7 @@ from walytis_identities.did_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
-
+from emtest import make_dir, delete_path
 
 wait_dur_s = 30
 

@@ -18,14 +18,3 @@ PROFILE_JOIN_TIMEOUT_S = 60
 CORRESP_JOIN_TIMEOUT_S = 60
 
 
-def make_dir(dir_path: str) -> str:
-    if not os.path.isdir(dir_path):
-        os.makedirs(dir_path)
-    return dir_path
-
-
-def delete_path(path):
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-    elif os.path.exists(path):
-        os.remove(path)
