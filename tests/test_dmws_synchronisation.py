@@ -34,7 +34,6 @@ from testing_utils import (
     PROFILE_JOIN_TIMEOUT_S,
     CORRESP_JOIN_TIMEOUT_S,
 )
-print("DMWS-T imports")
 
 REBUILD_DOCKER = True
 

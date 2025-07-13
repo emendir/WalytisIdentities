@@ -41,7 +41,8 @@ def prepare():
 
 def cleanup():
     """Clean up resources used during tests."""
-    shutil.rmtree(shared_data.tempdir)
+    if os.path.exists(shared_data.tempdir):
+        shutil.rmtree(shared_data.tempdir)
 
 
 def test_create_did_manager():
@@ -141,19 +142,3 @@ def test_threads_cleanup() -> None:
     cleanup()
     assert await_thread_cleanup(timeout=5)
 
-def run_tests():
-    print("\nRunning tests for DidManager:")
-    pytest_configure()  # run test preparations
-
-    # run tests
-    test_create_did_manager()
-    test_renew_control_key()
-    test_update_did_doc()
-    test_reload_did_manager()
-    test_encryption()
-    test_signing()
-    test_delete_did_manager()
-    pytest_unconfigure()  # run test cleanup
-
-
-    

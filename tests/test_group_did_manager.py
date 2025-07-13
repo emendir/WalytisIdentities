@@ -1,228 +1,187 @@
+from emtest import await_thread_cleanup
 import _auto_run_with_pytest  # noqa
 import os
 import shutil
 import tempfile
 
-import _testing_utils
 import pytest
 import walytis_identities
 import walytis_beta_api
-from _testing_utils import mark
 from walytis_identities import did_manager, key_store
 from walytis_identities.did_manager import DidManager
 from walytis_identities.did_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import CodePackage, KeyStore
-
-_testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=walytis_identities
-)
-_testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=key_store
-)
-_testing_utils.assert_is_loaded_from_source(
-    source_dir=os.path.dirname(os.path.dirname(__file__)), module=did_manager
-)
+from testing_utils import CRYPTO_FAMILY
 
 
-_testing_utils.BREAKPOINTS = True
+class SharedData:
+    def __init__(self):
+        self.member_1: DidManager | None = None
+        self.group_1: GroupDidManager | None = None
+        self.member: DidManager | None = None
+        self.group: GroupDidManager | None = None
+        self.person_config_dir = tempfile.mkdtemp()
+        self.person_config_dir1 = tempfile.mkdtemp()
+        self.key_store_path = os.path.join(
+            self.person_config_dir, "master_keystore.json")
 
-@pytest.fixture(scope="module", autouse=True)
-def setup_and_teardown() -> None:
-    """Wrap around tests, running preparations and cleaning up afterwards.
-
-    A module-level fixture that runs once for all tests in this file.
-    """
-    # Setup: code here runs before tests that uses this fixture
-    print(f"\nRunning tests for {__name__}\n")
-    prepare()
-
-    yield  # This separates setup from teardown
-
-    # Teardown: code here runs after the tests
-    print(f"\nFinished tests for {__name__}\n")
-    cleanup()
-
-def prepare() -> None:
-    """Setup resources in preparation for tests."""
-    # declare 'global' variables
-    pytest.person_config_dir = tempfile.mkdtemp()
-    pytest.person_config_dir2 = tempfile.mkdtemp()
-    pytest.key_store_path = os.path.join(
-        pytest.person_config_dir, "master_keystore.json")
-
-    # the cryptographic family to use for the tests
-    pytest.CRYPTO_FAMILY = "EC-secp256k1"
-    pytest.KEY = Key.create(pytest.CRYPTO_FAMILY)
+        # the cryptographic family to use for the tests
+        self.CRYPTO_FAMILY = CRYPTO_FAMILY
+        self.KEY = Key.create(self.CRYPTO_FAMILY)
 
 
-def cleanup() -> None:
-    """Clean up resources used during tests."""
-    shutil.rmtree(pytest.person_config_dir)
-    shutil.rmtree(pytest.person_config_dir2)
+shared_data = SharedData()
 
 
 def test_create_person_identity() -> None:
     device_keystore_path = os.path.join(
-        pytest.person_config_dir, "device_keystore.json")
+        shared_data.person_config_dir, "device_keystore.json")
     profile_keystore_path = os.path.join(
-        pytest.person_config_dir, "profile_keystore.json")
+        shared_data.person_config_dir, "profile_keystore.json")
 
-    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
-    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
-    pytest.member_1 = DidManager.create(device_did_keystore)
-    pytest.group_1 = GroupDidManager.create(
-        profile_did_keystore, pytest.member_1
+    device_did_keystore = KeyStore(device_keystore_path, shared_data.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, shared_data.KEY)
+    shared_data.member_1 = DidManager.create(device_did_keystore)
+    shared_data.group_1 = GroupDidManager.create(
+        profile_did_keystore, shared_data.member_1
     )
 
-    members = pytest.group_1.get_members()
-    
-    assert (isinstance(pytest.group_1, GroupDidManager)
-        and len(members) == 1
-        and pytest.group_1.member_did_manager.did in members[0].did
-    ),    "Create GroupDidManager"
+    members = shared_data.group_1.get_members()
 
-    pytest.group_1.terminate()
+    assert (isinstance(shared_data.group_1, GroupDidManager)
+            and len(members) == 1
+            and shared_data.group_1.member_did_manager.did in members[0].did
+            ),    "Create GroupDidManager"
+
+    shared_data.group_1.terminate()
 
 
 def test_load_person_identity() -> None:
+    if not shared_data.member_1 or not shared_data.group_1:
+        pytest.skip("Aborting test due to previous failures")
     device_keystore_path = os.path.join(
-        pytest.person_config_dir, "device_keystore.json")
+        shared_data.person_config_dir, "device_keystore.json")
     profile_keystore_path = os.path.join(
-        pytest.person_config_dir, "profile_keystore.json")
+        shared_data.person_config_dir, "profile_keystore.json")
 
-    device_did_keystore = KeyStore(device_keystore_path, pytest.KEY)
-    profile_did_keystore = KeyStore(profile_keystore_path, pytest.KEY)
+    device_did_keystore = KeyStore(device_keystore_path, shared_data.KEY)
+    profile_did_keystore = KeyStore(profile_keystore_path, shared_data.KEY)
     group_1 = GroupDidManager(
         profile_did_keystore,
         device_did_keystore
     )
-    member_did = pytest.group_1.member_did_manager.did
-    person_did = pytest.group_1.did
+    member_did = shared_data.group_1.member_did_manager.did
+    person_did = shared_data.group_1.did
     members = group_1.get_members()
-    
+
     assert (group_1.member_did_manager.did == member_did
-        and group_1.did == person_did
-        and len(members) == 1
-        and group_1.member_did_manager.did in members[0].did
-    ),    "Load GroupDidManager"
+            and group_1.did == person_did
+            and len(members) == 1
+            and group_1.member_did_manager.did in members[0].did
+            ),    "Load GroupDidManager"
 
     # group_1.terminate()
-    pytest.group_1 = group_1
+    shared_data.group_1 = group_1
 
 
 PLAIN_TEXT = "Hello there!".encode()
 
 
 def test_encryption() -> None:
-    cipher_1 = pytest.group_1.encrypt(PLAIN_TEXT)
-    pytest.group_1.renew_control_key()
-    cipher_2 = pytest.group_1.encrypt(PLAIN_TEXT)
+    if not shared_data.member_1 or not shared_data.group_1:
+        pytest.skip("Aborting test due to previous failures")
+    cipher_1 = shared_data.group_1.encrypt(PLAIN_TEXT)
+    shared_data.group_1.renew_control_key()
+    cipher_2 = shared_data.group_1.encrypt(PLAIN_TEXT)
 
-    
     assert (
-            CodePackage.deserialise_bytes(cipher_1).public_key !=
-            CodePackage.deserialise_bytes(cipher_2).public_key
-            and pytest.group_1.decrypt(cipher_1) == PLAIN_TEXT
-            and pytest.group_1.decrypt(cipher_2) == PLAIN_TEXT
-        ),
-        "Encryption across key renewal works"
-
+        CodePackage.deserialise_bytes(cipher_1).public_key !=
+        CodePackage.deserialise_bytes(cipher_2).public_key
+        and shared_data.group_1.decrypt(cipher_1) == PLAIN_TEXT
+        and shared_data.group_1.decrypt(cipher_2) == PLAIN_TEXT
+    ), "Encryption across key renewal works"
 
 
 def test_signing() -> None:
-    signature_1 = pytest.group_1.sign(PLAIN_TEXT)
-    pytest.group_1.renew_control_key()
-    signature_2 = pytest.group_1.sign(PLAIN_TEXT)
+    if not shared_data.member_1 or not shared_data.group_1:
+        pytest.skip("Aborting test due to previous failures")
+    signature_1 = shared_data.group_1.sign(PLAIN_TEXT)
+    shared_data.group_1.renew_control_key()
+    signature_2 = shared_data.group_1.sign(PLAIN_TEXT)
 
-    
     assert (
-            CodePackage.deserialise_bytes(signature_1).public_key !=
-            CodePackage.deserialise_bytes(signature_2).public_key
-            and pytest.group_1.verify_signature(signature_1, PLAIN_TEXT)
-            and pytest.group_1.verify_signature(signature_2, PLAIN_TEXT)
-        ),
-        "Signature verification across key renewal works"
-
+        CodePackage.deserialise_bytes(signature_1).public_key !=
+        CodePackage.deserialise_bytes(signature_2).public_key
+        and shared_data.group_1.verify_signature(signature_1, PLAIN_TEXT)
+        and shared_data.group_1.verify_signature(signature_2, PLAIN_TEXT)
+    ), "Signature verification across key renewal works"
 
 
 def test_delete_person_identity() -> None:
-    group_blockchain = pytest.group_1.blockchain.blockchain_id
-    member_blockchain = pytest.group_1.member_did_manager.blockchain.blockchain_id
-    pytest.group_1.delete()
+    if not shared_data.member_1 or not shared_data.group_1:
+        pytest.skip("Aborting test due to previous failures")
+    group_blockchain = shared_data.group_1.blockchain.blockchain_id
+    member_blockchain = shared_data.group_1.member_did_manager.blockchain.blockchain_id
+    shared_data.group_1.delete()
 
     # ensure the blockchains of both the person and the member identities
     # have been deleted
-    
-    assert (group_blockchain not in walytis_beta_api.list_blockchain_ids() and
-        member_blockchain not in walytis_beta_api.list_blockchain_ids()
-    ),    "Delete GroupDidManager"
 
+    assert (group_blockchain not in walytis_beta_api.list_blockchain_ids() and
+            member_blockchain not in walytis_beta_api.list_blockchain_ids()
+            ),    "Delete GroupDidManager"
 
 
 def test_create_member_given_path() -> None:
     """Test DidManager instantiation given a path instead of a Keystore."""
+    if not shared_data.member_1 or not shared_data.group_1:
+        pytest.skip("Aborting test due to previous failures")
     conf_dir = tempfile.mkdtemp()
-    pytest.member = DidManager.create(conf_dir)
-    pytest.member.terminate()
+    shared_data.member = DidManager.create(conf_dir)
+    shared_data.member.terminate()
     key_store_path = os.path.join(
-        conf_dir, pytest.member.blockchain.blockchain_id + ".json")
-    key = pytest.member.key_store.key
+        conf_dir, shared_data.member.blockchain.blockchain_id + ".json")
+    key = shared_data.member.key_store.key
     reloaded = DidManager(KeyStore(key_store_path, key))
     reloaded.terminate()
-    
-    assert( os.path.exists(key_store_path)
-        and reloaded.get_control_key().private_key
-        == pytest.member.get_control_key().private_key
-    ),    "Created member given a directory."
 
+    assert (os.path.exists(key_store_path)
+            and reloaded.get_control_key().private_key
+            == shared_data.member.get_control_key().private_key
+            ),    "Created member given a directory."
 
 
 def test_create_group_given_path() -> None:
     """Test DidManager instantiation given a path instead of a Keystore."""
+    if not shared_data.member:
+        pytest.skip("Aborting test due to previous failures")
+    if not shared_data.member_1 or not shared_data.group_1:
+        pytest.skip("Aborting test due to previous failures")
     conf_dir = tempfile.mkdtemp()
-    pytest.group = GroupDidManager.create(conf_dir, pytest.member)
-    pytest.group.terminate()
+    shared_data.group = GroupDidManager.create(conf_dir, shared_data.member)
+    shared_data.group.terminate()
     key_store_path = os.path.join(
-        conf_dir, pytest.group.blockchain.blockchain_id + ".json")
-    key = pytest.group.key_store.key
+        conf_dir, shared_data.group.blockchain.blockchain_id + ".json")
+    key = shared_data.group.key_store.key
 
-    reloaded = GroupDidManager(KeyStore(key_store_path, key), pytest.member)
+    reloaded = GroupDidManager(
+        KeyStore(key_store_path, key), shared_data.member)
     reloaded.terminate()
 
-    
     assert (os.path.exists(key_store_path)
-        and reloaded.get_control_key().private_key
-        == pytest.group.get_control_key().private_key
-    ),    "Created group given a directory."
+            and reloaded.get_control_key().private_key
+            == shared_data.group.get_control_key().private_key
+            ),    "Created group given a directory."
 
 
-from emtest import await_thread_cleanup
+def cleanup() -> None:
+    """Clean up resources used during tests."""
+    if os.path.exists(shared_data.person_config_dir):
+        shutil.rmtree(shared_data.person_config_dir)
+
+
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     cleanup()
     assert await_thread_cleanup(timeout=5)
-
-def run_tests() -> None:
-    print("\nRunning tests for GroupDidManager:")
-    _testing_utils.PYTEST = False
-    prepare()  # run test preparations
-
-    # run tests
-    test_create_person_identity()
-    test_load_person_identity()
-    test_encryption()
-    test_signing()
-    test_delete_person_identity()
-
-    test_create_member_given_path()
-    test_create_group_given_path()
-    cleanup()  # run test cleanup
-
-
-if __name__ == "__main__":
-    _testing_utils.PYTEST = False
-    _testing_utils.BREAKPOINTS = False
-    run_tests()
-    _testing_utils.terminate()
-    

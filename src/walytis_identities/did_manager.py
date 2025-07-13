@@ -15,7 +15,7 @@ import walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
 from walytis_beta_api import Block, Blockchain, create_blockchain
-from .utils import logger
+from .log import logger_dm as logger
 from . import did_manager_blocks
 from .did_manager_blocks import (
     ControlKeyBlock,
@@ -431,12 +431,11 @@ class DidManager(GenericDidManager):
 
     def terminate(self) -> None:
         """Stop this DID-Manager, cleaning up resources."""
+        logger.debug("DM: terminating key store...")
         self._key_store.terminate()
-        try:
-
-            self._blockchain.terminate()
-        except waly.exceptions.NoSuchBlockchainError:
-            pass
+        logger.debug("DM: terminating blockchain...")
+        self._blockchain.terminate()
+        logger.debug("DM: terminated!")
 
     def __del__(self):
         """Stop this DID-Manager, cleaning up resources."""
