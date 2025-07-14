@@ -2,6 +2,7 @@
 
 Runs automatically when pytest runs a test before loading the test module.
 """
+import logging
 from emtest import assert_is_loaded_from_source
 from emtest import set_env_var
 from loguru import logger
@@ -34,7 +35,7 @@ def pytest_configure(config):
     """Make changes to pytest's behaviour."""
     configure_pytest_reporter(config, print_errors=PRINT_ERRORS)
 
-import logging
+
 if True:
     # Walytis Config: use Brenthy by default if not otherwise specified by env var
     if are_we_in_docker():
@@ -43,12 +44,18 @@ if True:
     set_env_var("WALYTIS_BETA_API_TYPE",
                 "WALYTIS_BETA_BRENTHY_API", override=False)
 
-    set_env_var("WALYTIS_BETA_LOG_PATH", os.path.join(os.getcwd(), "Walytis.log"), override=True)
+    set_env_var("WALYTIS_BETA_LOG_PATH", os.path.join(
+        os.getcwd(), "Walytis.log"), override=True)
     from walytis_beta_tools._experimental.ipfs_interface import ipfs
     import walytis_beta_embedded
     import walytis_beta_api
     from brenthy_tools_beta import BrenthyNotRunningError
     import walytis_beta_tools
+    from brenthy_tools_beta import brenthy_api
+
+    def assert_brenthy_online(timeout: int = 2) -> None:
+        """Check if Brenthy is reachable, raising an error if not."""
+        brenthy_api.get_brenthy_version(timeout=timeout)
     # walytis_beta_tools.log.logger_blockchain_model.setLevel(logging.DEBUG)
     # walytis_beta_tools.log.file_handler.setLevel(logging.DEBUG)
     USING_BRENTHY = walytis_beta_api.walytis_beta_interface.get_walytis_beta_api_type(
@@ -57,7 +64,7 @@ if True:
     if USING_BRENTHY:
         while True:
             try:
-                walytis_beta_api.list_blockchain_names()
+                assert_brenthy_online()
                 break
             except BrenthyNotRunningError as e:
                 logger.error(e)
@@ -71,4 +78,3 @@ if True:
         assert_is_loaded_from_source(SRC_DIR, walytis_identities)
     walytis_identities.log.console_handler.setLevel(logging.DEBUG)
     walytis_beta_embedded.set_appdata_dir("./.blockchains")
-    
