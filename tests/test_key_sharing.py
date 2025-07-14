@@ -4,9 +4,8 @@ import shutil
 from time import sleep
 
 import _auto_run_with_pytest  # noqa
-import pytest
 import walytis_beta_api as walytis_api
-from emtest import await_thread_cleanup, polite_wait
+from emtest import await_thread_cleanup, env_vars, polite_wait
 from key_sharing_docker import SharedData, wait_dur_s
 from walid_docker.build_docker import build_docker_image
 from walid_docker.walid_docker import (
@@ -21,6 +20,7 @@ from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
 
 REBUILD_DOCKER = True
+REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
 
 # automatically remove all docker containers after failed tests
 DELETE_ALL_BRENTHY_DOCKERS = True
@@ -40,6 +40,7 @@ import key_sharing_docker
 from key_sharing_docker import shared_data
 from key_sharing_docker import logger
 '''
+
 
 def test_preparations(delete_files: bool = False):
     if DELETE_ALL_BRENTHY_DOCKERS:
@@ -168,8 +169,6 @@ def test_get_control_key():
 
     # wait a little to allow proper resources cleanup on docker container
     sleep(15)
-
-
 
 
 def test_renew_control_key():

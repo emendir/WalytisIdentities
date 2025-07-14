@@ -1,45 +1,35 @@
-from emtest import await_thread_cleanup
-import _auto_run_with_pytest  # noqa
-from walytis_identities.key_store import KeyStore
-from walytis_identities.did_manager import DidManager
-from threading import Thread
-from walytis_identities.did_manager import did_from_blockchain_id
-from time import sleep
-from termcolor import colored as coloured
-from brenthy_tools_beta.utils import function_name
-from datetime import datetime
-import walytis_beta_api as waly
+import json
 import os
 import shutil
-import tempfile
-from walytis_identities.utils import logger
-import json
-from brenthy_docker import DockerShellError, DockerShellTimeoutError
-import walytis_identities
-import pytest
-import walytis_beta_api
-from emtest import await_thread_cleanup
-from walytis_identities.did_objects import Key
-from walytis_identities import did_manager_with_supers
-from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
+from threading import Thread
 
-from emtest import are_we_in_docker
+import _auto_run_with_pytest  # noqa
+import pytest
+from brenthy_docker import DockerShellError, DockerShellTimeoutError
+from brenthy_tools_beta.utils import function_name
+from emtest import are_we_in_docker, await_thread_cleanup, env_vars
+from termcolor import colored as coloured
+from testing_utils import (
+    CORRESP_JOIN_TIMEOUT_S,
+    CRYPTO_FAMILY,
+    KEY,
+    PROFILE_CREATE_TIMEOUT_S,
+    PROFILE_JOIN_TIMEOUT_S,
+    dm_config_dir,
+)
+from walid_docker.build_docker import build_docker_image
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
     delete_containers,
 )
-from walid_docker.build_docker import build_docker_image
-from testing_utils import (
-    PROFILE_CREATE_TIMEOUT_S,
-    PROFILE_JOIN_TIMEOUT_S,
-    CORRESP_JOIN_TIMEOUT_S,
-)
+
+from walytis_identities.did_manager import did_from_blockchain_id
+from walytis_identities.utils import logger
 
 REBUILD_DOCKER = True
-
+REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
 
 CONTAINER_NAME_PREFIX = "walytis_identities_tests_device_"
-
 
 
 # Boilerplate python code when for running python tests in a docker container
@@ -63,7 +53,7 @@ DOCKER_PYTHON_FINISH_TESTING_CODE = '''
 '''
 
 N_DOCKER_CONTAINERS = 4
-from testing_utils import KEY, CRYPTO_FAMILY, dm_config_dir
+
 
 class SharedData:
     def __init__(self):
@@ -75,9 +65,8 @@ class SharedData:
 
         # the cryptographic family to use for the tests
         self.CRYPTO_FAMILY = CRYPTO_FAMILY
-        self.KEY=KEY
+        self.KEY = KEY
         print("Setting up docker containers...")
-        
 
         self.containers: list[WalytisIdentitiesDocker] = [
             None] * N_DOCKER_CONTAINERS
@@ -145,8 +134,6 @@ def cleanup():
         shared_data.super.delete()
     if shared_data.dm:
         shared_data.dm.delete()
-
-
 
 
 def setup_dm(docker_container: WalytisIdentitiesDocker):
@@ -237,15 +224,12 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
     return invitation
 
 
-
-
 def add_sub(
     docker_container_new: WalytisIdentitiesDocker,
     docker_container_old: WalytisIdentitiesDocker,
     invitation: dict
 ) -> None:
-    """
-    Join an existing Endra dm on a new docker container.
+    """Join an existing Endra dm on a new docker container.
 
     Args:
         docker_container_new: the container on which to set up Endra, joining
@@ -297,7 +281,6 @@ def add_sub(
     last_line = docker_lines[-1] if len(docker_lines) > 0 else None
 
     assert last_line == "Got control key!", function_name()
-
 
 
 def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
@@ -438,7 +421,7 @@ def auto_join_super(
     output_lines = output.split("GroupDidManager DIDs:")
     c_ids: list[str] = []
     if len(output_lines) == 2:
-        _, c_id_text = output_lines
+        none, c_id_text = output_lines  # noqa
         c_ids = [line.strip() for line in c_id_text.split("\n")]
         c_ids = [c_id for c_id in c_ids if c_id != ""]
 
