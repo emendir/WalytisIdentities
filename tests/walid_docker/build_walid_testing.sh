@@ -2,14 +2,12 @@
 
 set -e # exit on error
 
-# Get the directory of this script
-work_dir="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-# change to root directory of the Brenthy repo
-cd $work_dir/../..
+# the directory of this script
+SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-rsync -XAva ../../MultiCrypt tests/walid_docker/python_packages/
-rsync -XAva ../Brenthy/Brenthy/blockchains/Walytis_Beta tests/walid_docker/python_packages/
-
+# the root directory of this project
+PROJ_DIR=$(realpath $SCRIPT_DIR/../..)
+cd $PROJ_DIR
 
 docker build -t local/walid_testing -f tests/walid_docker/walid_testing.dockerfile .
 

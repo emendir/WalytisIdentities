@@ -3,21 +3,17 @@
 Runs automatically when pytest runs a test before loading the test module.
 """
 import logging
-from emtest import assert_is_loaded_from_source
-from emtest import set_env_var
-from loguru import logger
-from walytis_beta_tools._experimental.config import (
-    WalytisTestModes,
-    get_walytis_test_mode,
-)
 import os
 
 import pytest
 from emtest import (
     add_path_to_python,
     are_we_in_docker,
+    assert_is_loaded_from_source,
     configure_pytest_reporter,
+    set_env_var,
 )
+from loguru import logger
 
 PRINT_ERRORS = True  # whether or not to print error messages after failed tests
 
@@ -46,12 +42,10 @@ if True:
 
     set_env_var("WALYTIS_BETA_LOG_PATH", os.path.join(
         os.getcwd(), "Walytis.log"), override=True)
-    from walytis_beta_tools._experimental.ipfs_interface import ipfs
-    import walytis_beta_embedded
     import walytis_beta_api
-    from brenthy_tools_beta import BrenthyNotRunningError
-    import walytis_beta_tools
-    from brenthy_tools_beta import brenthy_api
+    import walytis_beta_embedded
+    from brenthy_tools_beta import BrenthyNotRunningError, brenthy_api
+    from walytis_beta_tools._experimental.ipfs_interface import ipfs
 
     def assert_brenthy_online(timeout: int = 2) -> None:
         """Check if Brenthy is reachable, raising an error if not."""
