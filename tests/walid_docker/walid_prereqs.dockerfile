@@ -11,7 +11,7 @@ RUN pip install --break-system-packages --root-user-action ignore -r /opt/walyti
 RUN pip install --break-system-packages --root-user-action ignore -r /opt/walytis_identities/requirements.txt
 RUN pip install --break-system-packages --root-user-action ignore -e /opt/walytis_identities/
 
-RUN for python_package in /opt/walytis_identities/tests/walid_docker/python_packages/*; do [ -e "$python_packages" ] || continue; pip install --break-system-packages --root-user-action ignore "$python_package"; done
+RUN for python_package in /opt/walytis_identities/tests/walid_docker/python_packages/*; do [ -e "$python_package" ] || continue; pip install --break-system-packages --root-user-action ignore "$python_package"; done
 
 # RUN pip show walytis_identities
 ## Run with:

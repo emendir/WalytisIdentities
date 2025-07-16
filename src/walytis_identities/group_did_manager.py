@@ -1,64 +1,41 @@
 """Classes for managing Person and Device identities."""
-from walytis_beta_api import list_blockchain_ids
-import traceback
 import json
-from walytis_beta_api.exceptions import BlockNotFoundError
-from collections.abc import Generator
-from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-import walytis_beta_api
-from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
-import os
-from dataclasses import dataclass
-from typing import Callable, TypeVar
-import ipfs_tk_transmission
-import walytis_beta_api as waly
-from brenthy_tools_beta.utils import bytes_to_string
-from multi_crypt import Crypt
-from walytis_beta_api import Block, Blockchain, create_blockchain
-from .utils import logger
-from . import did_manager_blocks
-from .did_manager_blocks import (
-    ControlKeyBlock,
-    DidDocBlock,
-    InfoBlock,
-    get_block_type,
-    get_latest_control_key,
-    get_latest_did_doc,
-    get_info_blocks,
-)
-import walytis_beta_tools
-from .did_objects import Key
-from .exceptions import NotValidDidBlockchainError
-from .key_store import CodePackage, KeyStore
-from .generic_did_manager import GenericDidManager
 import os
 import time
+import traceback
+from collections.abc import Generator
 from datetime import datetime, timedelta
-from threading import Thread
+from threading import Lock, Thread
 from time import sleep
 from typing import Callable, Type, TypeVar
 
-from walytis_beta_embedded import ipfs
-from walytis_beta_embedded import ipfs
-
-import walytis_beta_api
-import walytis_beta_api as walytis_beta
+import ipfs_tk_transmission
+import walytis_beta_tools
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
-from ipfs_tk_transmission.errors import ConvListenTimeout, CommunicationTimeout
-from .utils import logger
+from ipfs_tk_transmission.errors import CommunicationTimeout, ConvListenTimeout
 from walytis_beta_api import (
     Block,
     Blockchain,
-
     list_blockchain_ids,
+)
+from walytis_beta_api._experimental.generic_blockchain import (
+    GenericBlock,
+)
+from walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_embedded import ipfs
+from walytis_beta_tools._experimental.block_lazy_loading import (
+    BlockLazilyLoaded,
+    BlocksList,
 )
 from walytis_beta_tools.exceptions import (
     BlockchainAlreadyExistsError,
     JoinFailureError,
 )
+
 from . import did_manager_blocks
 from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
+    InfoBlock,
     KeyOwnershipBlock,
     MemberInvitationBlock,
     MemberJoiningBlock,
@@ -68,12 +45,13 @@ from .did_manager_blocks import (
     get_latest_control_key,
     get_latest_did_doc,
     get_members,
-    InfoBlock,
 )
 from .did_objects import Key
+from .generic_did_manager import GenericDidManager
 from .key_store import KeyStore, UnknownKeyError
 from .settings import CTRL_KEY_MAX_RENEWAL_DUR_HR, CTRL_KEY_RENEWAL_AGE_HR
-from .utils import validate_did_doc
+from .utils import logger, validate_did_doc
+
 WALYTIS_BLOCK_TOPIC = "GroupDidManager"
 
 DID_METHOD_NAME = "wlaytis-contacts"
@@ -97,6 +75,7 @@ class Member:
     def __init__(self, did: str, invitation: str, blockchain: Blockchain = None):
         self.did = did
         self.invitation = invitation
+        self._blockchain_lock = Lock()
         if blockchain:
             self._blockchain = blockchain
         else:
@@ -111,10 +90,12 @@ class Member:
 
     @property
     def blockchain(self):
-        if self._blockchain:
+
+        with self._blockchain_lock:
+            if self._blockchain:
+                return self._blockchain
+            self._blockchain = self._get_member_blockchain()
             return self._blockchain
-        self._blockchain = self._get_member_blockchain()
-        return self._blockchain
 
     def _get_member_ipfs_ids(self) -> set[str]:
         did_doc = self._get_member_did_doc()
@@ -150,12 +131,12 @@ class Member:
 
             try:
                 blockchain = Blockchain.join(self.invitation)
-            except (BlockchainAlreadyExistsError) as e:
+            except (BlockchainAlreadyExistsError):
                 blockchain = Blockchain(blockchain_id)
             except ipfs_tk_transmission.errors.CommunicationTimeout:
                 try:
                     blockchain = Blockchain.join(self.invitation)
-                except (Exception, BlockchainAlreadyExistsError, walytis_beta_tools.exceptions.BlockchainAlreadyExistsError) as e:
+                except (Exception, BlockchainAlreadyExistsError, walytis_beta_tools.exceptions.BlockchainAlreadyExistsError):
                     blockchain = Blockchain(blockchain_id)
             logger.debug(f"GDM: joined member's blockchain! {self.did}")
         else:
@@ -324,7 +305,7 @@ class _GroupDidManager(DidManager):
     ) -> None:
         """Add an existing DID-Manager as a member to this Group-DID."""
         logger.debug("GDM: Adding DidManager as member...")
-        
+
         invitation_key = Key.create(CRYPTO_FAMILY)
 
         group_blockchain_invitation = json.loads(
@@ -357,7 +338,6 @@ class _GroupDidManager(DidManager):
         if self.get_control_key().private_key:
             self.update_did_doc(self.generate_did_doc())
         logger.debug("GDM: Added DidManager as member!")
-        
 
     def make_member(
         self,
@@ -399,7 +379,6 @@ class _GroupDidManager(DidManager):
         if self.get_control_key().private_key:
             self.update_did_doc(self.generate_did_doc())
         logger.debug("GDM: Member joined!")
-        
 
     def _init_blocks_list_gdm(self):
         # present to other programs all blocks not created by this DidManager
@@ -564,13 +543,13 @@ class GroupDidManager(_GroupDidManager):
         _GroupDidManager.load_missed_blocks(self)
         if not self.control_key_manager_thr:
             self.control_key_manager_thr = Thread(
-                target=self.manage_control_key
+                target=self.manage_control_key, name="GDM-control_key_manager"
             )
             self.control_key_manager_thr.start()
 
         if not self.member_keys_manager_thr:
             self.member_keys_manager_thr = Thread(
-                target=self.manage_member_keys
+                target=self.manage_member_keys, name="GDM-member_keys_manager"
             )
             self.member_keys_manager_thr.start()
 
@@ -582,12 +561,12 @@ class GroupDidManager(_GroupDidManager):
         other_blocks_handler: Callable[[Block], None] | None = None,
     ):
         """Create a new GroupDidManager object.
+
         Args:
             group_key_store: KeyStore for this DidManager to store private keys
                     If a directory is passed, a KeyStore is created in there
                     named after the blockchain ID of the created DidManager.
         """
-
         if isinstance(member, KeyStore):
             logger.debug("GDM: Creating member DID manager...")
             member_did_manager = DidManager(
@@ -631,7 +610,6 @@ class GroupDidManager(_GroupDidManager):
     ) -> GroupDidManagerType:
         """Join an exisiting Group-DID-Manager.
 
-
         Uses the provided DidManager as the member if provided,
         otherwise creates a new member DID.
 
@@ -641,7 +619,6 @@ class GroupDidManager(_GroupDidManager):
                     named after the blockchain ID of the created DidManager.
 
         """
-
         if isinstance(member, KeyStore):
             member = DidManager(
                 key_store=member,
@@ -759,7 +736,6 @@ class GroupDidManager(_GroupDidManager):
                     f"GDM: Request for control key failed. {self.did}")
             sleep(0.5)
 
-
     def manage_control_key(self):
         # logger.debug(f"Starting Control key manager for {self.did}")
         while not self._terminate:
@@ -801,7 +777,6 @@ class GroupDidManager(_GroupDidManager):
 
     def generate_member_did_doc(self) -> dict:
         """Generate a DID-document."""
-
         did_doc = {
             "id": self.member_did_manager.did,
             "verificationMethod": [
@@ -884,7 +859,7 @@ class GroupDidManager(_GroupDidManager):
             if self._terminate:
                 conv.close()
             logger.debug("KRH: got key request.")
-            peer_did = message["did"] # member DID of peer who is requesting
+            peer_did = message["did"]  # member DID of peer who is requesting
             key_id = message["key_id"]
             sig = bytes.fromhex(message["signature"])
 
@@ -894,8 +869,8 @@ class GroupDidManager(_GroupDidManager):
                 peer_key = self.get_member_control_key(peer_did)
                 logger.debug("Got member control key!")
             except NotMemberError as error:
-                ## the peer requesting the key
-                ## is not known to us to be a member of this GroupDidManager
+                # the peer requesting the key
+                # is not known to us to be a member of this GroupDidManager
                 logger.warning(str(error))
                 logger.debug(
                     "KRH: Sending NotMemberError. "
@@ -1038,7 +1013,7 @@ class GroupDidManager(_GroupDidManager):
 
                 try:
                     # receive salutation
-                    _ = conv.listen(timeout=LISTEN_TIMEOUT)
+                    _d = conv.listen(timeout=LISTEN_TIMEOUT)
                 except ConvListenTimeout:
                     logger.warning("RK: Timeout waiting for salutation.")
                     conv.close()
@@ -1260,12 +1235,10 @@ class GroupDidManager(_GroupDidManager):
             except Exception as e:
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass
-            
-            
+
         logger.debug("GDM: terminating _GroupDidManager...")
         _GroupDidManager.terminate(self)
         logger.debug("GDM: terminated!")
-        
 
     def __del__(self):
         """Stop this Identity object, cleaning up resources."""
