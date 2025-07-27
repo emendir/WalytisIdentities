@@ -1,8 +1,37 @@
-# Walytis Decentralised Identity Management
+# Walytis Identity 
 
-A system for managing identities, contacts and their cryptographic keys based on the Walytis blockchain.
+_P2P multi-controller cryptographic identity management, based on the Walytis blockchain._
 
-It implements the [World-Wide-Web-Consoritum's (W3C's) Decentralised Identifiers (DIDs) specifications](https://www.w3.org/TR/did-core/).
+Walytis is a peer-to-peer cryptographic identity management system that supports multiple controllers per identity.
+
+The purpose of this system is to enable secure communications between distributed identities in peer-to-peer networks, which means:
+- encrypting messages so that they can be decrypted only by a specific identity
+- verifying the authenticity of received messages, ensuring they were authored by a specific identity
+
+To achieve this goal in a sustainably secure fashion, WalytisIdentities' core task lies in managing the ephemeral cryptographic keys belonging to digital identities:
+- it automatically renews keys at regular intervals
+- it publishes the new public keys in a verifiable manner
+- it securely distributes the private keys to all controllers of the identity
+## Features
+
+- fully peer-to-peer: no servers of any kind involved
+- multi-controller support: a Walytis Identity can be managed by any number of controllers
+- identity nesting: Walytis Identities can be controlled by other Walytis Identities
+- ephemeral cryptography: regular key renewal, algorithm-agnostic, room for future algorithms
+
+_See [Related Projects](#Related%20Projects) if this isn't quite what you're looking for!_
+
+## Use cases
+
+WalytisIdentities was developed to empower developers to build peer-to-peer distributed applications that require secure communications between digital identities.
+A classic example of such a use case is a peer-to-peer messenger, which is being developed in the [Endra Project](https://github.com/emendir/Endra).
+
+## Underlying Technologies
+- Walytis Database-Blockchain: a blockchain that serves as a p2p distributed database
+- IPFS: the peer-to-peer network layer which Walytis is built on
+### DID Compatibility
+
+WalytisIdentities implements the [World-Wide-Web-Consoritum's (W3C's) Decentralised Identifiers (DIDs) specifications](https://www.w3.org/TR/did-core/).
 
 In the context of W3C's DID architecture, walytis_identities is a [DID method](https://www.w3.org/TR/did-core/#methods),
 meaning that walytis_identities is a system for creating DIDs and managing DID-Documents.
@@ -16,48 +45,23 @@ The API of this library IS LIKELY TO CHANGE in the near future!
 
 ## Basic Functionality
 
-### Communication With a walytis_identities Identity
-
-- A WaltyisFriends identity is served by a Walytis blockchain.
+- A Walytis identity is served by a Walytis blockchain.
 - The blockchain is used to publish DID-documents, which contain cryptographic public keys.
 - Other parties can join a walytis_identities identity's blockchain, get the currently valid DID document, and use the cryptographic keys therein for authentication and encryption when communicating with that identity.
 
-### Security of DID-Document Publishing
-
-- When creating a walytis_identities identity, a set of cryptographic keys called identity-control-keys are generated. These are used for authenticating the publication of DID-documents. These keys are distinct from the keys published in the DID-documents, instead they are published on the blockchain alongside DID-documents and used to sign the DID-documents. These keys are the ownership of the identity.
-- These keys are automatically renewed, by publishing the new keys on the blockchain, signed by the latest currently valid key.
-- The management of these keys, and their validity and renewal, is independent of the management, validity and renewal of DID-documents and the keys publishing therein.
-
-### Managing Multiple Devices _(Identity Owners)_
-
-#### Device Management
-
-- the list of devices that are members of an identity is published on the identity-control blockchain
-
-#### Device Authentication
-
-- each device has cryptographic keys which they use for authentication
-- each device updates its keys using a dedicated device-keys blockchain
-
-#### Inter-Device Communication
-
-- data is only shared with devices that authenticate as one of the identity-member-devices listed on the identity-control-blockchain
-- identity owners need to share the following keys whenever an owner renews any of the keys: - private keys for the public keys published in DID documents - private keys for the identity control keys
-
-#### Key Renewal For Identity Control And Communication
-
-- A device decides to renew the keys.
-- It waits until a significant number of its other devices are online
-- it shares the new private key with the others
-- it publishes the public key on the blockchain
-
-#### Services:
 
 URI specs: https://www.rfc-editor.org/rfc/rfc3986
 
 ## Related Projects
+### The Endra Tech Stack
 
-For more info, see:
+- [IPFS](https://ipfs.tech):  A p2p communication and content addressing protocol developed by ProtocolLabs.
+- [Walytis](https://github.com/emendir/Walytis_Beta): A flexible, lightweight, nonlinear database-blockchain, built on IPFS.
+- [WalytisIdentities](https://github.com/emendir/WalytisIdentities): P2P multi-controller cryptographic identity management, built on Walytis.
+- [WalytisOffchain](https://github.com/emendir/WalytisOffchain): Secure access-controlled database-blockchain, built on WalytisIdentities.
+- [WalytisMutability](https://github.com/emendir/WalytisMutability): A Walytis blockchain overlay featuring block mutability.
+- [Endra](https://github.com/emendir/Endra): A p2p encrypted messaging protocol with multiple devices per user, built on Walytis.
+- [EndraApp](https://github.com/emendir/EndraApp): A p2p encrypted messenger supporting multiple devices per user, built on Walytis.
 
-- https://github.com/emendir/Endra
-- https://github.com/emendir/BrenthyAndWalytis
+### Alternative Technologies
+- OrbitDB: a distributed IPFS-based database written in go

@@ -36,11 +36,14 @@
     - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
   - same solution for PrivateBlockchain?
 - Proper caching (replace with thorough implementation of block handlers?)
-- Ensure full conformity with DID specifications
 
 - GroupDidManagerWithSupers sometimes has to check whether self.super_type is a subclass of GroupDidManagerWrapper or GroupDidManager, because they have different constructors. Can we simplify this?
 - GroupDidManagerWithSupers: implement BlocksList to avoid loading SuperRegistrationBlocks
 - find better way of getting DidManager's peer ID than using blockchain invitation? see GroupDidManager.get_ipfs_ids
+- reduce probability of different GDM members renewing to different keys
+- separate control key from communications keys published as verificationMethod in DID-Docs
+  - ensure communication keys are read from DID-Docs, not ControlKeyBlocks
+  - renew communication keys separately from control keys
 
 ### Tests
 

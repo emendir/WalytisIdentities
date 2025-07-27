@@ -2,10 +2,17 @@
 
 Doesn't include machinery for managing other members.
 """
+
 from walytis_beta_api.exceptions import BlockNotFoundError
 from collections.abc import Generator
-from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
+from walytis_beta_tools._experimental.block_lazy_loading import (
+    BlockLazilyLoaded,
+    BlocksList,
+)
+from walytis_beta_api._experimental.generic_blockchain import (
+    GenericBlockchain,
+    GenericBlock,
+)
 import os
 from dataclasses import dataclass
 from typing import Callable, TypeVar
@@ -29,12 +36,11 @@ from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .key_store import CodePackage, KeyStore
 
-DID_METHOD_NAME = "wlaytis-contacts"
-DID_URI_PROTOCOL_NAME = "waco"  # https://www.rfc-editor.org/rfc/rfc3986#section-3.1
+DID_METHOD_NAME = "walytisidentities"
 
 CRYPTO_FAMILY = "EC-secp256k1"
 
-_DidManager = TypeVar('_DidManager', bound='DidManager')
+_DidManager = TypeVar("_DidManager", bound="DidManager")
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
 WALYTIS_BLOCK_TOPIC = "DidManager"
 
@@ -108,6 +114,7 @@ class DidManager(GenericDidManager):
             DidManager.load_missed_blocks(self)
 
         # logger.debug("DM: Built DID-Manager object!")
+
     def load_missed_blocks(self):
         self._blockchain.load_missed_blocks(
             waly.blockchain_model.N_STARTUP_BLOCKS
@@ -166,7 +173,7 @@ class DidManager(GenericDidManager):
         keyblock.sign(ctrl_key)
         blockchain.add_block(
             keyblock.generate_block_content(),
-            topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic]
+            topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic],
         )
 
         # logger.debug("DM: Adding DID-Doc block...")
@@ -176,7 +183,7 @@ class DidManager(GenericDidManager):
         did_doc_block.sign(ctrl_key)
         blockchain.add_block(
             did_doc_block.generate_block_content(),
-            [WALYTIS_BLOCK_TOPIC, did_doc_block.walytis_block_topic]
+            [WALYTIS_BLOCK_TOPIC, did_doc_block.walytis_block_topic],
         )
         # logger.debug("DM: Instantiating...")
 
@@ -197,6 +204,7 @@ class DidManager(GenericDidManager):
         The KeyStore's file is in a temporary folder.
         """
         import tempfile
+
         key = Key.create(CRYPTO_FAMILY)
         key_store_path = os.path.join(
             tempfile.mkdtemp(), blockchain_id + ".json"
@@ -206,7 +214,9 @@ class DidManager(GenericDidManager):
         return cls(key_store)
 
     @staticmethod
-    def assign_keystore(key_store: KeyStore | str, blockchain_id: str) -> KeyStore:
+    def assign_keystore(
+        key_store: KeyStore | str, blockchain_id: str
+    ) -> KeyStore:
         """Mark a key_store as belonging to a DidManager.
 
         Args:
@@ -222,9 +232,7 @@ class DidManager(GenericDidManager):
                 )
             # use blockchain ID instead of DID
             # as some filesystems don't support colons
-            key_store_path = os.path.join(
-                key_store, blockchain_id + ".json"
-            )
+            key_store_path = os.path.join(key_store, blockchain_id + ".json")
             key_store = KeyStore(key_store_path, Key.create(CRYPTO_FAMILY))
         # TODO: assert that key store has control key
         # encode our DID into the keystore
@@ -258,7 +266,7 @@ class DidManager(GenericDidManager):
 
         self._blockchain.add_block(
             keyblock.generate_block_content(),
-            topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic]
+            topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic],
         )
 
         self._control_key_id = new_ctrl_key.get_key_id()
@@ -274,7 +282,7 @@ class DidManager(GenericDidManager):
             block.sign(self.get_control_key())
         return self._blockchain.add_block(
             block.generate_block_content(),
-            [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic]
+            [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic],
         )
 
     def check_control_key(self) -> Key:
@@ -346,11 +354,7 @@ class DidManager(GenericDidManager):
             # TODO: raise custom exception
             raise Exception("Don't have control key yet!")
 
-    def encrypt(
-        self,
-        data: bytes,
-        encryption_options: str = ""
-    ) -> bytes:
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
         """Encrypt the provided data using the specified public key.
 
         Args:
@@ -416,10 +420,7 @@ class DidManager(GenericDidManager):
             bool: whether or not the signature matches the data
         """
         signature_package = CodePackage.deserialise_bytes(signature)
-        return self._key_store.verify_signature(
-            signature_package,
-            data=data
-        )
+        return self._key_store.verify_signature(signature_package, data=data)
 
     def delete(self) -> None:
         """Delete this DID-Manager."""
@@ -473,11 +474,14 @@ class DidManager(GenericDidManager):
     def _init_blocks_list_dm(self):
         # present to other programs all blocks not created by this DidManager
         blocks = [
-            block for block in self._blockchain.get_blocks()
-            if WALYTIS_BLOCK_TOPIC not in block.topics and block.topics != ["genesis"]
+            block
+            for block in self._blockchain.get_blocks()
+            if WALYTIS_BLOCK_TOPIC not in block.topics
+            and block.topics != ["genesis"]
         ]
         self._blocks_list_dm = BlocksList.from_blocks(
-            blocks, BlockLazilyLoaded)
+            blocks, BlockLazilyLoaded
+        )
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
         return self._blocks_list_dm.get_blocks(reverse=reverse)
@@ -489,7 +493,6 @@ class DidManager(GenericDidManager):
         return self._blocks_list_dm.get_num_blocks()
 
     def get_block(self, id: bytes) -> GenericBlock:
-
         # if index is passed instead of block_id, get block_id from index
         if isinstance(id, int):
             try:
@@ -503,7 +506,9 @@ class DidManager(GenericDidManager):
         else:
             id_bytearray = bytearray(id)
             len_id = len(id_bytearray)
-            if bytearray([0, 0, 0, 0]) not in id_bytearray:  # if a short ID was passed
+            if (
+                bytearray([0, 0, 0, 0]) not in id_bytearray
+            ):  # if a short ID was passed
                 short_id = None
                 for long_id in self.get_block_ids():
                     if bytearray(long_id)[:len_id] == id_bytearray:
@@ -518,7 +523,6 @@ class DidManager(GenericDidManager):
             block = self._blocks_list_dm[id]
             return block
         except KeyError:
-
             error = BlockNotFoundError(
                 "This block isn't recorded (by brenthy_api.Blockchain) as being "
                 "part of this blockchain."
@@ -541,8 +545,7 @@ class DidManager(GenericDidManager):
         keystore_did = DidManager.get_keystore_did(key_store)
         blockchain_id = blockchain_id_from_did(keystore_did)
         appdata_path = os.path.join(
-            os.path.dirname(key_store.key_store_path),
-            blockchain_id
+            os.path.dirname(key_store.key_store_path), blockchain_id
         )
         if not os.path.exists(appdata_path):
             os.makedirs(appdata_path)
