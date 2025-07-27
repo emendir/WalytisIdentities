@@ -9,11 +9,12 @@ from walytis_beta_api._experimental.generic_blockchain import (
     GenericBlock,
 )
 
+from .did_manager import DidManager
+from .generic_did_manager import GenericDidManager
 from .group_did_manager import GroupDidManager
 from .key_store import KeyStore
 
-from .generic_did_manager import GenericDidManager
-from .did_manager import DidManager
+
 class DidManagerWrapper(GenericDidManager,ABC):
 
     @abstractmethod

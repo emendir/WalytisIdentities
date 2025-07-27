@@ -1,7 +1,7 @@
 from datetime import datetime
+
 from walytis_identities.did_objects import Key
-import os
-import shutil
+
 CRYPTO_FAMILY = "EC-secp256k1"
 KEY = Key(
     family=CRYPTO_FAMILY,

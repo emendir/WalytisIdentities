@@ -3,26 +3,23 @@
 Doesn't include machinery for managing other members.
 """
 
-from walytis_beta_api.exceptions import BlockNotFoundError
-from collections.abc import Generator
-from walytis_beta_tools._experimental.block_lazy_loading import (
-    BlockLazilyLoaded,
-    BlocksList,
-)
-from walytis_beta_api._experimental.generic_blockchain import (
-    GenericBlockchain,
-    GenericBlock,
-)
 import os
-from dataclasses import dataclass
+from collections.abc import Generator
 from typing import Callable, TypeVar
 
-from .generic_did_manager import GenericDidManager
 import walytis_beta_api as waly
 from brenthy_tools_beta.utils import bytes_to_string
 from multi_crypt import Crypt
 from walytis_beta_api import Block, Blockchain, create_blockchain
-from .log import logger_dm as logger
+from walytis_beta_api._experimental.generic_blockchain import (
+    GenericBlock,
+)
+from walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_tools._experimental.block_lazy_loading import (
+    BlockLazilyLoaded,
+    BlocksList,
+)
+
 from . import did_manager_blocks
 from .did_manager_blocks import (
     ControlKeyBlock,
@@ -34,7 +31,9 @@ from .did_manager_blocks import (
 )
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
+from .generic_did_manager import GenericDidManager
 from .key_store import CodePackage, KeyStore
+from .log import logger_dm as logger
 
 DID_METHOD_NAME = "walytisidentities"
 
@@ -77,7 +76,6 @@ class DidManager(GenericDidManager):
             other_blocks_handler: eventhandler for blocks published on
                 `blockchain` that aren't related to this DID-Manager work
         """
-
         if not isinstance(key_store, KeyStore):
             raise TypeError(
                 "The parameter `key_store` must be of type KeyStore, "

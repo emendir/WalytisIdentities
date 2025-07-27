@@ -1,13 +1,14 @@
-from typing import Type, TypeVar
-from typing import Any
-from strict_typing import strictly_typed
-from decorate_all import decorate_all_functions
-from .did_objects import Key
 import json
 import os
-from .utils import bytes_to_string, bytes_from_string
 from dataclasses import dataclass
+from typing import Type, TypeVar
+
 import portalocker
+from decorate_all import decorate_all_functions
+from strict_typing import strictly_typed
+
+from .did_objects import Key
+from .utils import bytes_from_string, bytes_to_string
 
 _CodePackage = TypeVar('_CodePackage', bound='CodePackage')
 
@@ -15,6 +16,7 @@ _CodePackage = TypeVar('_CodePackage', bound='CodePackage')
 @dataclass
 class CodePackage:
     """Package of encrypted data or a signature with crypto-key-metadata."""
+
     code: bytes  # cipher or signature
     public_key: bytes
     family: str

@@ -1,18 +1,17 @@
-from emtest import await_thread_cleanup
-import _auto_run_with_pytest  # noqa
 import os
 import shutil
 import tempfile
 
+import _auto_run_with_pytest  # noqa
 import pytest
-import walytis_identities
 import walytis_beta_api
-from walytis_identities import did_manager, key_store
+from emtest import await_thread_cleanup
+from testing_utils import CRYPTO_FAMILY
+
 from walytis_identities.did_manager import DidManager
 from walytis_identities.did_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import CodePackage, KeyStore
-from testing_utils import CRYPTO_FAMILY
 
 
 class SharedData:

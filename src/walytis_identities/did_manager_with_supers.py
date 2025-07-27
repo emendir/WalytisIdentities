@@ -1,33 +1,40 @@
-from threading import Thread
-from time import sleep
-from multi_crypt import Crypt
-from .group_did_manager import GenericDidManager
-from .generics import DidManagerWrapper
-from walytis_beta_api.exceptions import BlockNotFoundError
-from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-from typing import Type
-from typing import Callable
-from walytis_identities.did_manager_blocks import get_info_blocks
-from walytis_beta_api import Blockchain, join_blockchain, JoinFailureError, BlockchainAlreadyExistsError
-from walytis_identities.did_manager import did_from_blockchain_id
-from threading import Lock, Event
-from walytis_identities.did_manager import blockchain_id_from_did
-import os
-from walytis_beta_api import decode_short_id
-from brenthy_tools_beta.utils import bytes_to_string
-from walytis_identities.did_objects import Key
-from walytis_identities.did_manager_blocks import InfoBlock, SuperRegistrationBlock
-from walytis_identities.group_did_manager import GroupDidManager
-from walytis_identities import DidManager
-from dataclasses import dataclass
 import json
-from walytis_identities.key_store import KeyStore
-from walytis_beta_api import Block
-from .utils import logger
-from .generics import GroupDidManagerWrapper
-from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
+import os
 from collections.abc import Generator
+from threading import Lock, Thread
+from time import sleep
+from typing import Callable, Type
+
+from multi_crypt import Crypt
+from walytis_beta_api import (
+    Block,
+    BlockchainAlreadyExistsError,
+    JoinFailureError,
+    join_blockchain,
+)
+from walytis_beta_api.exceptions import BlockNotFoundError
+from walytis_beta_tools._experimental.block_lazy_loading import (
+    BlockLazilyLoaded,
+    BlocksList,
+)
 from walytis_beta_tools._experimental.generic_block import GenericBlock
+
+from walytis_identities import DidManager
+from walytis_identities.did_manager import (
+    blockchain_id_from_did,
+    did_from_blockchain_id,
+)
+from walytis_identities.did_manager_blocks import (
+    SuperRegistrationBlock,
+    get_info_blocks,
+)
+from walytis_identities.did_objects import Key
+from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities.key_store import KeyStore
+
+from .generics import DidManagerWrapper, GroupDidManagerWrapper
+from .group_did_manager import GenericDidManager
+from .utils import logger
 
 CRYPTO_FAMILY = "EC-secp256k1"
 
@@ -233,10 +240,9 @@ class DidManagerWithSupers(DidManagerWrapper):
             return correspondence
 
     def join_super(self, invitation: dict | str, register=True) -> GroupDidManager:
-        """
-        Args:
-            register: whether or not the new correspondence still needs to be
-                        registered on our DidManagerWithSupers's blockchain
+        """Args:
+        register: whether or not the new correspondence still needs to be
+                    registered on our DidManagerWithSupers's blockchain
         """
         logger.debug("Joining super...")
         with self.lock:

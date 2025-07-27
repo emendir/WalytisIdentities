@@ -2,10 +2,12 @@
 
 import json
 import os
+import random
 import time
 import traceback
 from collections.abc import Generator
 from datetime import datetime, timedelta
+from random import randint
 from threading import Lock, Thread
 from time import sleep
 from typing import Callable, Type, TypeVar
@@ -34,7 +36,7 @@ from walytis_beta_tools.exceptions import (
 )
 
 from . import did_manager_blocks
-from .did_manager import DidManager, blockchain_id_from_did, DID_METHOD_NAME
+from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
     InfoBlock,
     KeyOwnershipBlock,
@@ -56,10 +58,6 @@ from .settings import (
     CTRL_KEY_RENEWAL_RANDOMISER_MAX,
 )
 from .utils import logger, validate_did_doc
-
-import random
-from random import randint
-from datetime import datetime
 
 random.seed(datetime.now().microsecond)
 
@@ -223,7 +221,7 @@ class _GroupDidManager(DidManager):
                     self.check_control_key()
                 case did_manager_blocks.MemberInvitationBlock:
                     pass
-                case 0:
+                case _:
                     logger.warning(
                         "This block is marked as belong to GroupDidManager, "
                         "but it's InfoBlock type is not handled: "

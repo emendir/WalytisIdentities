@@ -2,7 +2,13 @@ import os
 from time import sleep
 
 from loguru import logger
-from testing_utils import KEY, dm_config_dir
+from testing_utils import (
+    CORRESP_JOIN_TIMEOUT_S,
+    KEY,
+    PROFILE_JOIN_TIMEOUT_S,
+    dm_config_dir,
+)
+
 from walytis_identities.did_manager import DidManager
 from walytis_identities.did_manager_with_supers import (
     DidManagerWithSupers,
@@ -11,17 +17,17 @@ from walytis_identities.did_manager_with_supers import (
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
 
-
-from testing_utils import (
-    PROFILE_CREATE_TIMEOUT_S,
-    PROFILE_JOIN_TIMEOUT_S,
-    CORRESP_JOIN_TIMEOUT_S,
-)
 if not os.path.exists(dm_config_dir):
     os.makedirs(dm_config_dir)
+
+
 class SharedData:
     pass
+
+
 shared_data = SharedData()
+
+
 def docker_create_dm():
     logger.info("DOCKER: Creating DidManagerWithSupers...")
     config_dir = dm_config_dir
@@ -38,9 +44,7 @@ def docker_create_dm():
     )
     profile_did_manager.terminate()
     group_did_manager = GroupDidManager(
-        profile_did_keystore,
-        device_did_manager,
-        auto_load_missed_blocks=False
+        profile_did_keystore, device_did_manager, auto_load_missed_blocks=False
     )
     dmws = DidManagerWithSupers(
         did_manager=group_did_manager,
@@ -61,7 +65,7 @@ def docker_load_dm():
     group_did_manager = GroupDidManager(
         profile_did_keystore,
         device_did_keystore,
-        auto_load_missed_blocks=False
+        auto_load_missed_blocks=False,
     )
     dmws = DidManagerWithSupers(
         did_manager=group_did_manager,
@@ -69,8 +73,9 @@ def docker_load_dm():
     logger.info("DOCKER: Loaded DidManagerWithSupers!")
     shared_data.dm = dmws
 
+
 def docker_join_dm(invitation: str):
-    logger.info("Joining Endra dm...")
+    logger.info("Joining dm...")
 
     config_dir = dm_config_dir
     key = KEY
@@ -81,9 +86,7 @@ def docker_join_dm(invitation: str):
     device_did_manager = DidManager.create(device_did_keystore)
 
     profile_did_manager = GroupDidManager.join(
-        invitation,
-        profile_did_keystore,
-        device_did_manager
+        invitation, profile_did_keystore, device_did_manager
     )
 
     dmws = DidManagerWithSupers(
@@ -112,7 +115,8 @@ def docker_join_super(invitation: str | dict):
     super = shared_data.dm.join_super(invitation)
     print(super.did)
     logger.info(
-        "DOCKER: Joined Endra GroupDidManager, waiting to get control key...")
+        "DOCKER: Joined Endra GroupDidManager, waiting to get control key..."
+    )
 
     sleep(CORRESP_JOIN_TIMEOUT_S)
     ctrl_key = super.get_control_key()

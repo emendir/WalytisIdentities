@@ -26,7 +26,7 @@ set_env_var("TESTS_REBUILD_DOCKER", False)
 # set_env_var("WALYTIS_TEST_MODE", "RUN_BRENTHY")
 # print("Running tests with Brenthy...")
 # run_tests()
-# 
+#
 # set_env_var("WALYTIS_TEST_MODE", "EMBEDDED")
 # print("Running tests with Walytis Embedded...")
 run_tests()

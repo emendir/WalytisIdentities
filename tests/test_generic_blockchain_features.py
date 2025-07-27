@@ -66,7 +66,7 @@ def test_member():
 def test_group():
     print("\nRunning Generic Blockchain feature tests for GroupDidManager...")
     blockchain = generic_blockchain_testing.run_generic_blockchain_test(
-        GroupDidManager, group_key_store=shared_data.profile_did_keystore, 
+        GroupDidManager, group_key_store=shared_data.profile_did_keystore,
         member=shared_data.member_1
     )
     blockchain.terminate()

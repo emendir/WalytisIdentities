@@ -1,25 +1,23 @@
 """Machinery for working with Walytis blocks for the DID-Manager."""
-from .utils import logger
-from decorate_all import decorate_all_functions
-from strict_typing import strictly_typed
+
 import json
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Type, TypeVar
-from datetime import datetime
-from brenthy_tools_beta.utils import time_to_string, string_to_time
-import walytis_beta_api as walytis_api
+
+from brenthy_tools_beta.utils import string_to_time, time_to_string
 from multi_crypt import Crypt, verify_signature
+from strict_typing import strictly_typed
 from walytis_beta_api import Blockchain
 
 from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
-from .utils import bytes_from_string, bytes_to_string
+from .utils import bytes_from_string, bytes_to_string, logger
 
 PRIBLOCKS_VERSION = (0, 0, 1)
 
 
-_ControlKeyBlock = TypeVar('_ControlKeyBlock', bound='ControlKeyBlock')
+_ControlKeyBlock = TypeVar("_ControlKeyBlock", bound="ControlKeyBlock")
 
 
 @strictly_typed
@@ -53,7 +51,7 @@ class ControlKeyBlock:
             new_key_type=new_key.family,
             new_key_timestamp=time_to_string(new_key.creation_time),
             priblocks_version=PRIBLOCKS_VERSION,
-            signature=""
+            signature="",
         )
 
     def get_signature_data(self) -> bytes:
@@ -97,7 +95,7 @@ class ControlKeyBlock:
         )
 
 
-_InfoBlock = TypeVar('_InfoBlock', bound='InfoBlock')
+_InfoBlock = TypeVar("_InfoBlock", bound="InfoBlock")
 
 
 # @strictly_typed
@@ -120,10 +118,7 @@ class InfoBlock(ABC):
         """The Walytis block topic that identifies this type of block."""
 
     @classmethod
-    def new(
-            cls: Type[_InfoBlock],
-            info_content: dict | list
-    ) -> _InfoBlock:
+    def new(cls: Type[_InfoBlock], info_content: dict | list) -> _InfoBlock:
         """Prepare a Block (not yet signed).
 
         Args:
@@ -133,12 +128,12 @@ class InfoBlock(ABC):
         return cls(
             info_content=info_content,
             priblocks_version=PRIBLOCKS_VERSION,
-            signature=""
+            signature="",
         )
 
     @classmethod
     def load_from_block_content(
-            cls: Type[_InfoBlock], block_content: bytes | bytearray
+        cls: Type[_InfoBlock], block_content: bytes | bytearray
     ) -> _InfoBlock:
         """Create a BlockInfo object given raw block content."""
         return cls(**json.loads(block_content.decode()))
@@ -161,7 +156,7 @@ class InfoBlock(ABC):
             key.family,
             bytes_from_string(self.signature),
             self.get_signature_data(),
-            key.public_key
+            key.public_key,
         )
 
 
@@ -224,17 +219,21 @@ class MemberUpdateBlock(InfoBlock):
         """Get the DID-Document which this block publishes."""
         return self.info_content
 
+
 @dataclass
 class SuperRegistrationBlock(InfoBlock):
     """Block in a DidManagerWithSupers's blockchain registering a GroupDidManager."""
+
     walytis_block_topic = "endra_corresp_reg"
     info_content: dict
 
     @classmethod
     def create(
-        cls, correspondence_id: str, active: bool, invitation: dict | None,
-    ) -> 'SuperRegistrationBlock':
-
+        cls,
+        correspondence_id: str,
+        active: bool,
+        invitation: dict | None,
+    ) -> "SuperRegistrationBlock":
         info_content = {
             "correspondence_id": correspondence_id,
             "active": active,
@@ -254,11 +253,12 @@ class SuperRegistrationBlock(InfoBlock):
     def invitation(self) -> dict | None:
         return self.info_content["invitation"]
 
+
 @strictly_typed
 class KeyOwnershipBlock(InfoBlock):
     """Representation of a block publishing annoucing key ownership."""
 
-    walytis_block_topic = 'key_ownership'
+    walytis_block_topic = "key_ownership"
     info_content: dict
 
     def get_key_ownership(self) -> dict:
@@ -267,7 +267,7 @@ class KeyOwnershipBlock(InfoBlock):
 
 
 def verify_control_key_update(
-        key_block_1: ControlKeyBlock, key_block_2: ControlKeyBlock
+    key_block_1: ControlKeyBlock, key_block_2: ControlKeyBlock
 ) -> bool:
     """Verify a control-key-update's validity.
 
@@ -276,8 +276,8 @@ def verify_control_key_update(
     """
     # assert that the new block refers to the old block's key
     if not (
-        key_block_1.new_key == key_block_2.old_key and
-        key_block_1.new_key_type == key_block_2.old_key_type
+        key_block_1.new_key == key_block_2.old_key
+        and key_block_1.new_key_type == key_block_2.old_key_type
     ):
         return False
 
@@ -286,7 +286,7 @@ def verify_control_key_update(
         key_block_1.old_key_type,
         bytes_from_string(key_block_2.signature),
         key_block_2.get_signature_data(),
-        bytes_from_string(key_block_1.new_key)
+        bytes_from_string(key_block_1.new_key),
     )
 
 
@@ -294,14 +294,14 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
     """Get a DID-Manager's blockchain's newest control-key."""
     # get all key blocks from blockchain
     ctrl_key_blocks = [
-        ControlKeyBlock.load_from_block_content(
-            block.content
-        )
+        ControlKeyBlock.load_from_block_content(block.content)
         for block in blockchain.get_blocks()
         if get_block_type(block.topics) == ControlKeyBlock
     ]
     if not ctrl_key_blocks:
-        raise Exception(f"Blockchain has no control keys! {blockchain.blockchain_id}")
+        raise Exception(
+            f"Blockchain has no control keys! {blockchain.blockchain_id}"
+        )
     # ensure the first ControlKeyBlock has identical current and new keys
     if not (
         ctrl_key_blocks[0].old_key == ctrl_key_blocks[0].new_key
@@ -323,12 +323,12 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
 
 
 # type representing the child-classes of InfoBlocks
-InfoBlockType = TypeVar('InfoBlockType', bound=InfoBlock)
+InfoBlockType = TypeVar("InfoBlockType", bound=InfoBlock)
 
 
 def get_info_blocks(
     blockchain: Blockchain,
-    block_types: Type[InfoBlockType] | set[Type[InfoBlockType]]
+    block_types: Type[InfoBlockType] | set[Type[InfoBlockType]],
 ) -> list[InfoBlockType]:
     """Get the latest validly signed block of the given topic.
 
@@ -372,10 +372,11 @@ def get_info_blocks(
                 if not (
                     ctrl_key_block.old_key == ctrl_key_block.new_key
                     and ctrl_key_block.old_key_type
-                   == ctrl_key_block.new_key_type
-                   ):
+                    == ctrl_key_block.new_key_type
+                ):
                     raise Exception(
-                        "First key block doesn't have identical keys!")
+                        "First key block doesn't have identical keys!"
+                    )
                 last_key_block = ctrl_key_block
                 if ControlKeyBlock in block_types:
                     valid_blocks.append(block)
@@ -393,23 +394,23 @@ def get_info_blocks(
                 block.content
             )
             invitation = invitation_block.get_member_invitation()
-            if (last_key_block and
-                    invitation_block.verify_signature(last_key_block.get_new_key())):
-
+            if last_key_block and invitation_block.verify_signature(
+                last_key_block.get_new_key()
+            ):
                 # set this to the latest info-block
                 valid_member_invitations.update(
-                    {invitation["invitation_key"]: invitation})
+                    {invitation["invitation_key"]: invitation}
+                )
                 if block_type in block_types:
                     valid_blocks.append(invitation_block)
             else:
                 print("Found info-block Block with invalid signature")
         elif block_type == MemberJoiningBlock and block_type in block_types:
-            joining_block = block_type.load_from_block_content(
-                block.content
-            )
+            joining_block = block_type.load_from_block_content(block.content)
             member = joining_block.get_member()
             _invitation = valid_member_invitations.get(
-                member["invitation_key"])
+                member["invitation_key"]
+            )
             if _invitation and joining_block.verify_signature(
                 Key.from_key_id(_invitation["invitation_key"])
             ):
@@ -421,13 +422,12 @@ def get_info_blocks(
         elif block_type in block_types:
             # load block content
             # logger.debug("WAB: Getting block...")
-            info_block = block_type.load_from_block_content(
-                block.content
-            )
+            info_block = block_type.load_from_block_content(block.content)
             # logger.debug("WAB: Processing block...")
             # if its signature is validated by the last ctrl key
-            if (last_key_block and
-                    info_block.verify_signature(last_key_block.get_new_key())):
+            if last_key_block and info_block.verify_signature(
+                last_key_block.get_new_key()
+            ):
                 # set this to the latest info-block
                 valid_blocks.append(info_block)
             else:
@@ -436,8 +436,7 @@ def get_info_blocks(
 
 
 def get_latest_block(
-    blockchain: Blockchain,
-    block_type: Type[InfoBlockType]
+    blockchain: Blockchain, block_type: Type[InfoBlockType]
 ) -> InfoBlockType | None:
     blocks = get_info_blocks(blockchain, block_type)
     if blocks:
@@ -460,10 +459,7 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
     Returns:
         dict: the currently valid DID-document of the identity
     """
-    latest_block = get_latest_block(
-        blockchain,
-        DidDocBlock
-    )
+    latest_block = get_latest_block(blockchain, DidDocBlock)
     if not latest_block:
         raise NotValidDidBlockchainError()
     if not isinstance(latest_block, DidDocBlock):
@@ -521,7 +517,9 @@ INFO_BLOCK_TYPES: set[InfoBlockType] = {
 }
 
 
-def get_block_type(topics: list[str] | str) -> InfoBlockType | type(ControlKeyBlock) | None:
+def get_block_type(
+    topics: list[str] | str,
+) -> InfoBlockType | type(ControlKeyBlock) | None:
     """Get the block's DID-Manager block-type given its IDs.
 
     Is strict and detects invalid block IDs.

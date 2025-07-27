@@ -2,32 +2,16 @@
 
 Doesn't include machinery for managing other members.
 """
-from walytis_beta_api.exceptions import BlockNotFoundError
-from collections.abc import Generator
-from walytis_beta_tools._experimental.block_lazy_loading import BlockLazilyLoaded, BlocksList
-from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain, GenericBlock
-import os
-from dataclasses import dataclass
-from typing import Callable, TypeVar
-
-import walytis_beta_api as waly
-from brenthy_tools_beta.utils import bytes_to_string
-from multi_crypt import Crypt
-from walytis_beta_api import Block, Blockchain, create_blockchain
-from .utils import logger
-from . import did_manager_blocks
-from .did_manager_blocks import (
-    ControlKeyBlock,
-    DidDocBlock,
-    InfoBlock,
-    get_block_type,
-    get_latest_control_key,
-    get_latest_did_doc,
-)
-from .did_objects import Key
-from .exceptions import NotValidDidBlockchainError
-from .key_store import CodePackage, KeyStore
 from abc import ABC, abstractmethod, abstractproperty
+from typing import Callable
+
+from multi_crypt import Crypt
+from walytis_beta_api import Block, Blockchain
+from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
+
+from .did_objects import Key
+from .key_store import KeyStore
+
 
 class GenericDidManager(GenericBlockchain, ABC):
     """Manage DID documents using a Walytis blockchain.
@@ -36,6 +20,7 @@ class GenericDidManager(GenericBlockchain, ABC):
     control key system.
     DOESN'T create ID documents.
     """
+
     @abstractproperty
     def blockchain(self)->Blockchain:
         pass
@@ -45,7 +30,7 @@ class GenericDidManager(GenericBlockchain, ABC):
         pass
 
 
-    
+
     @abstractproperty
     def did_doc(self):
         pass
@@ -151,4 +136,4 @@ class GenericDidManager(GenericBlockchain, ABC):
     @abstractproperty
     def block_received_handler(self) -> Callable[[Block], None] | None:
         pass
-    
+

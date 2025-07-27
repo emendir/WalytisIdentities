@@ -1,11 +1,10 @@
-from brenthy_tools_beta.utils import (
-    bytes_to_string, time_to_string, string_to_time
-)
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Type, TypeVar
-from multi_crypt import Crypt
+
+from brenthy_tools_beta.utils import string_to_time, time_to_string
 from decorate_all import decorate_all_functions
+from multi_crypt import Crypt
 from strict_typing import strictly_typed
 
 _Service = TypeVar('_Service', bound='Service')

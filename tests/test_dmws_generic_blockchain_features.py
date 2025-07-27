@@ -1,29 +1,21 @@
-from emtest import await_thread_cleanup
-import _auto_run_with_pytest  # noqa
-from walytis_beta_api._experimental import generic_blockchain_testing
-from time import sleep
-from walytis_beta_api._experimental import generic_blockchain_testing  
-from walytis_beta_api import Blockchain
 import os
-import pytest
 import shutil
+import tempfile
+from time import sleep
+
+import _auto_run_with_pytest  # noqa
+from emtest import await_thread_cleanup
+from walytis_beta_api._experimental import generic_blockchain_testing
+
 from walytis_identities.did_manager import DidManager
+from walytis_identities.did_manager_with_supers import (
+    DidManagerWithSupers,
+    GroupDidManager,
+)
 from walytis_identities.did_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
-import tempfile
-from datetime import datetime
-import walytis_beta_api as waly
-import os
-import shutil
-import tempfile
 
-import walytis_identities
-import pytest
-import walytis_beta_api as walytis_api
-from walytis_identities.did_objects import Key
-from walytis_identities import did_manager_with_supers
-from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 # walytis_api.log.PRINT_DEBUG = False
 
 
@@ -97,7 +89,7 @@ def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     if shared_data.dmws:
         shared_data.dmws.delete()
-    if os.path.exists(shared_data.profile_config_dir):    
+    if os.path.exists(shared_data.profile_config_dir):
         shutil.rmtree(shared_data.profile_config_dir)
     if shared_data.group_did_manager:
         shared_data.group_did_manager.terminate()

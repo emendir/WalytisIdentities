@@ -1,6 +1,6 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
 
 LOG_PATH = ".walytis_identities.log"
 print(f"Logging to {os.path.abspath(LOG_PATH)}")

@@ -1,19 +1,13 @@
 import _auto_run_with_pytest  # noqa
 from walytis_identities.key_store import KeyStore
 from walytis_identities.did_manager import DidManager
-from datetime import datetime
 import walytis_beta_api as waly
 import os
 import shutil
-import tempfile
-import walytis_identities
 import pytest
-import walytis_beta_api as walytis_api
-from walytis_identities.did_objects import Key
-from walytis_identities import did_manager_with_supers
 from walytis_identities.did_manager_with_supers import DidManagerWithSupers, GroupDidManager
 # walytis_api.log.PRINT_DEBUG = False
-from testing_utils import KEY, CRYPTO_FAMILY, dm_config_dir
+from testing_utils import KEY, dm_config_dir
 class SharedData:
     pass
 shared_data = SharedData()
@@ -142,6 +136,8 @@ def test_delete_dm():
 
 
 from emtest import await_thread_cleanup
+
+
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     cleanup()

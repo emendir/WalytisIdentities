@@ -3,7 +3,6 @@ import os
 import shutil
 import tempfile
 
-import walytis_identities
 import pytest
 import walytis_beta_api as walytis_api
 from walytis_identities.did_manager import DidManager
@@ -50,7 +49,7 @@ def test_create_did_manager():
     shared_data.did_manager = DidManager.create(shared_data.keystore)
     blockchain_id = shared_data.did_manager.blockchain.blockchain_id
 
-    
+
     assert ((isinstance(shared_data.did_manager, DidManager)
         and blockchain_id in walytis_api.list_blockchain_ids())
     ),        "Create DidManager"
@@ -65,7 +64,7 @@ def test_renew_control_key():
     shared_data.did_manager.renew_control_key()
 
     shared_data.new_control_key = shared_data.did_manager.get_control_key()
-    
+
     assert (
             isinstance(old_control_key, Key)
             and isinstance(shared_data.new_control_key, Key)
@@ -106,7 +105,7 @@ def test_encryption():
     shared_data.did_manager.renew_control_key()
     cipher_2 = shared_data.did_manager.encrypt(PLAIN_TEXT)
 
-    
+
     assert (
             CodePackage.deserialise_bytes(cipher_1).public_key !=
             CodePackage.deserialise_bytes(cipher_2).public_key
@@ -121,7 +120,7 @@ def test_signing():
     shared_data.did_manager.renew_control_key()
     signature_2 = shared_data.did_manager.sign(PLAIN_TEXT)
 
-    
+
     assert (
             CodePackage.deserialise_bytes(signature_1).public_key !=
             CodePackage.deserialise_bytes(signature_2).public_key
@@ -137,6 +136,8 @@ def test_delete_did_manager():
             ),        "Delete DidManager"
 
 from emtest import await_thread_cleanup
+
+
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     cleanup()
