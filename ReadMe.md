@@ -52,6 +52,12 @@ The API of this library IS LIKELY TO CHANGE in the near future!
 
 URI specs: https://www.rfc-editor.org/rfc/rfc3986
 
+## Documentation
+
+The thorough documentation for this project and the technologies it's based on live in a dedicated repository:
+
+https://github.com/emendir/WalytisTechnologies
+
 ## Related Projects
 ### The Endra Tech Stack
 
