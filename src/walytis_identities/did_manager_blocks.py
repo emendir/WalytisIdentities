@@ -14,7 +14,7 @@ from .did_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .utils import bytes_from_string, bytes_to_string, logger
 
-PRIBLOCKS_VERSION = (0, 0, 1)
+PRIBLOCKS_VERSION = (0, 0, 1)  # TODO: What's this exactly?
 
 
 _ControlKeyBlock = TypeVar("_ControlKeyBlock", bound="ControlKeyBlock")

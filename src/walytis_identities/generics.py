@@ -15,8 +15,7 @@ from .group_did_manager import GroupDidManager
 from .key_store import KeyStore
 
 
-class DidManagerWrapper(GenericDidManager,ABC):
-
+class DidManagerWrapper(GenericDidManager, ABC):
     @abstractmethod
     def __init__(self, did_manager: GroupDidManager):
         pass
@@ -41,13 +40,10 @@ class DidManagerWrapper(GenericDidManager,ABC):
         )
         return cls(did_manager)
 
-
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
-        return self.did_manager.add_block(
-            content=content, topics=topics
-        )
+        return self.did_manager.add_block(content=content, topics=topics)
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
         return self.did_manager.get_blocks(reverse=reverse)
@@ -60,11 +56,8 @@ class DidManagerWrapper(GenericDidManager,ABC):
 
     def get_block(self, id: bytes) -> GenericBlock:
         return self.did_manager.get_block(id=id)
-    def encrypt(
-        self,
-        data: bytes,
-        encryption_options: str = ""
-    ) -> bytes:
+
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
         """Encrypt the provided data using the specified public key.
 
         Args:
@@ -118,8 +111,6 @@ class DidManagerWrapper(GenericDidManager,ABC):
             data=data,
         )
 
-
-
     def get_peers(self) -> list[str]:
         return self.org_did_manager.get_peers()
 
@@ -140,8 +131,8 @@ class DidManagerWrapper(GenericDidManager,ABC):
     def __del__(self):
         self.terminate()
 
-class GroupDidManagerWrapper(ABC):
 
+class GroupDidManagerWrapper(ABC):
     @abstractmethod
     def __init__(self, did_manager: GroupDidManager):
         pass
@@ -186,12 +177,11 @@ class GroupDidManagerWrapper(ABC):
 
     def invite_member(self) -> dict:
         return self.org_did_manager.invite_member()
+
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
-        return self.did_manager.add_block(
-            content=content, topics=topics
-        )
+        return self.did_manager.add_block(content=content, topics=topics)
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
         return self.did_manager.get_blocks(reverse=reverse)
@@ -204,11 +194,8 @@ class GroupDidManagerWrapper(ABC):
 
     def get_block(self, id: bytes) -> GenericBlock:
         return self.did_manager.get_block(id=id)
-    def encrypt(
-        self,
-        data: bytes,
-        encryption_options: str = ""
-    ) -> bytes:
+
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
         """Encrypt the provided data using the specified public key.
 
         Args:
@@ -289,8 +276,8 @@ class GroupDidManagerWrapper(ABC):
     def terminate(self, terminate_member: bool = True):
         self.did_manager.terminate(terminate_member=terminate_member)
 
-    def delete(self):
-        self.did_manager.delete()
+    def delete(self, terminate_member: bool = True):
+        self.did_manager.delete(terminate_member=terminate_member)
 
     def __del__(self):
         self.terminate()

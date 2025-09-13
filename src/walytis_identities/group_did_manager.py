@@ -263,6 +263,13 @@ class _GroupDidManager(DidManager):
 
         return list(self._members.values())
 
+    def get_members_dict(self, no_cache: bool = False) -> dict[Member]:
+        """Get the current list of member-members."""
+        if no_cache or not self._members:
+            self._update_members()
+
+        return list(self._members)
+
     def get_members_dids(self, no_cache: bool = False) -> set[str]:
         if no_cache or not self._members:
             self._update_members()
