@@ -65,8 +65,10 @@ def docker_part():
     def eventhandler(conv: Conversation):
         logger.debug("Received transmission!")
         data = conv.listen(COMMS_TIMEOUT_S)
-        logger.debug(f"Received data: {data}")
+        logger.debug("Received message!")
+        # logger.debug(f"Received data: {data}")
         if data == HELLO_THERE:
+            logger.debug("Sending response...")
             conv.say(HI)
         else:
             conv.say("TEST FAILED".encode())

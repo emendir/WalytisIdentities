@@ -93,10 +93,10 @@ def cleanup():
 
 
 def test_load_blockchain():
-    """Test that we can create a PrivateBlockchain and add a block."""
-    logger.debug("Creating private blockchain...")
+    """Test that we can load the prebuilt GroupDidManager."""
+    logger.debug("Loading prebuilt GDM...")
     assert isinstance(shared_data.group_did_manager, GroupDidManager), (
-        "Created private blockchain"
+        "Load prebuilt GDM"
     )
 
 
@@ -139,7 +139,9 @@ def test_datatransmission():
             logger.warning("Timeout starting conversation...")
         sleep(5)
     if conv:
+        logger.debug("Sending message...")
         conv.say(HELLO_THERE)
+        logger.debug("Awaiting response...")
         reply = conv.listen(COMMS_TIMEOUT_S)
 
     assert conv and reply == HI, "Datatransmission failed"

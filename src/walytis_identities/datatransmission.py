@@ -37,14 +37,14 @@ def listen_for_conversations(
     def handle_join_request(conv_name, peer_id, salutation_start):
         salutation = json.loads(salutation_start.decode())
         their_one_time_key = Crypt.deserialise(salutation["one_time_key"])
-        one_time_key = Crypt.new(gdm.get_control_key().family)
+        our_one_time_key = Crypt.new(gdm.get_control_key().family)
         their_challenge = salutation["challenge_data"]
         data = handle_challenge(gdm, their_challenge)
         our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
         data.update(
             {
-                "member_did": gdm.member_did_manager.did,
-                "one_time_key": one_time_key.serialise_public(),
+                # "member_did": gdm.member_did_manager.did,
+                "one_time_key": our_one_time_key.serialise_public(),
                 "challenge_data": our_challenge_data,
             }
         )
@@ -71,6 +71,23 @@ def listen_for_conversations(
 
         if verify_challenge(gdm, message, our_challenge_data):
             conv.say(json.dumps({"challenge_result": "passed"}).encode())
+            member = gdm.get_members_dict()[message["member_did"]]
+
+            def _encrypt(plaintext: bytearray) -> bytearray:
+                return encrypt(
+                    plaintext=plaintext,
+                    gdm=gdm,
+                    member=member,
+                    one_time_key=their_one_time_key,
+                )
+
+            def _decrypt(cipher: bytearray) -> bytearray:
+                return decrypt(
+                    cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
+                )
+
+            conv._encryption_callback = _encrypt
+            conv._decryption_callback = _decrypt
             eventhandler(conv)
         else:
             conv.say(json.dumps({"challenge_result": "failed"}).encode())
@@ -86,11 +103,12 @@ def listen_for_conversations(
 def start_conversation(
     gdm: GroupDidManager, conv_name, peer, others_conv_listener
 ) -> Conversation | None:
-    one_time_key = Crypt.new(gdm.get_control_key().family)
+    our_one_time_key = Crypt.new(gdm.get_control_key().family)
     our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
     salutation = json.dumps(
         {
-            "one_time_key": one_time_key.serialise_public(),
+            # "member_did": gdm.member_did_manager.did,
+            "one_time_key": our_one_time_key.serialise_public(),
             "challenge_data": our_challenge_data,
         }
     ).encode()
@@ -123,7 +141,69 @@ def start_conversation(
             logger.debug(f"DataTr: received unexpected reply: {message}")
             conv.close()
             return
+    member = gdm.get_members_dict()[salutation_join["member_did"]]
+    their_one_time_key = Crypt.deserialise(salutation_join["one_time_key"])
+
+    def _encrypt(plaintext: bytearray) -> bytearray:
+        return encrypt(
+            plaintext=plaintext,
+            gdm=gdm,
+            member=member,
+            one_time_key=their_one_time_key,
+        )
+
+    def _decrypt(cipher: bytearray) -> bytearray:
+        return decrypt(cipher=cipher, gdm=gdm, one_time_key=our_one_time_key)
+
+    conv._encryption_callback = _encrypt
+    conv._decryption_callback = _decrypt
     return conv
+
+
+def encrypt(
+    plaintext: bytearray,
+    gdm: GroupDidManager,
+    member: Member,
+    one_time_key: Crypt,
+) -> bytearray:
+    logger.debug("Encrypting content...")
+    latest_member_key = member._get_member_control_key()
+
+    logger.debug("Encrypting with Group Key...")
+    # encrypt with Group key (serialised CodePackage)
+    cipher_1 = gdm.encrypt(plaintext)
+
+    logger.debug("Encrypting with Member Key...")
+    # encrypt with peer's Member key (serialised CodePackage)
+    cipher_2 = CodePackage.encrypt(
+        data=cipher_1, key=latest_member_key
+    ).serialise_bytes()
+
+    logger.debug("Encrypting with OneTime Key...")
+    # encrypt with peer's OneTime Key (without CodePackage)
+
+    cipher_3 = one_time_key.encrypt(cipher_2)
+    return cipher_3
+
+
+def decrypt(
+    cipher: bytearray, gdm: GroupDidManager, one_time_key: Crypt
+) -> bytearray:
+    logger.debug("Decrypting content...")
+
+    logger.debug("Decrypting with OneTime Key...")
+    # decrypt with our One-Time Key
+    layer_2 = one_time_key.decrypt(cipher)
+
+    logger.debug("Decrypting with Member Key...")
+    # decrypt with our Member Key (serialised CodePackage)
+    layer_1 = gdm.member_did_manager.decrypt(layer_2)
+
+    logger.debug("Decrypting with Group Key...")
+    # decrypt with Group Key (serialied CodePackage)
+    plaintext = gdm.decrypt(layer_1)
+
+    return plaintext
 
 
 def handle_challenge(gdm: GroupDidManager, _their_challenge: str):
