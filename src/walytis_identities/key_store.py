@@ -1,4 +1,5 @@
 import json
+from multi_crypt import Crypt
 import os
 from dataclasses import dataclass
 from typing import Type, TypeVar
@@ -10,7 +11,7 @@ from strict_typing import strictly_typed
 from .did_objects import Key
 from .utils import bytes_from_string, bytes_to_string
 
-_CodePackage = TypeVar('_CodePackage', bound='CodePackage')
+_CodePackage = TypeVar("_CodePackage", bound="CodePackage")
 
 
 @dataclass
@@ -20,7 +21,9 @@ class CodePackage:
     code: bytes  # cipher or signature
     public_key: bytes
     family: str
-    operation_options: str  # additional cryptographic signing or encryption options
+    operation_options: (
+        str  # additional cryptographic signing or encryption options
+    )
 
     @classmethod
     def deserialise(cls: Type[_CodePackage], data: str) -> _CodePackage:
@@ -33,20 +36,63 @@ class CodePackage:
         )
 
     @classmethod
-    def deserialise_bytes(cls: Type[_CodePackage], data: bytes) -> _CodePackage:
+    def deserialise_bytes(
+        cls: Type[_CodePackage], data: bytes
+    ) -> _CodePackage:
         _data = data.decode()
         return cls.deserialise(_data)
 
     def serialise(self) -> str:
-        return json.dumps({
-            "code": bytes_to_string(self.code),
-            "public_key": bytes_to_string(self.public_key),
-            "family": self.family,
-            "operation_options": self.operation_options
-        })
+        return json.dumps(
+            {
+                "code": bytes_to_string(self.code),
+                "public_key": bytes_to_string(self.public_key),
+                "family": self.family,
+                "operation_options": self.operation_options,
+            }
+        )
 
     def serialise_bytes(self) -> bytes:
         return self.serialise().encode()
+
+    def verify_signature(self, signed_data: bytes) -> bool:
+        """Assuming self.code is a signature, verify it against the signed data."""
+        key = Crypt(
+            family=self.family,
+            public_key=self.public_key,
+        )
+        signature = self.code
+        return key.verify_signature(
+            signature=signature,
+            data=signed_data,
+            signature_options=self.operation_options,
+        )
+
+    @staticmethod
+    def encrypt(
+        data: bytes, key: Key, encryption_options: str = ""
+    ) -> _CodePackage:
+        """Encrypt the provided data using the specified key.
+
+        Args:
+            data (bytes): the data to encrypt
+            key (Key): the key to use to encrypt the data
+            encryption_options (str): specification code for which
+                            encryption/decryption protocol should be used
+        Returns:
+            CodePackage: an object containing the ciphertext, public-key,
+                            crypto-family and encryption-options
+        """
+        cipher = key.encrypt(
+            data_to_encrypt=data,
+            encryption_options=encryption_options,
+        )
+        return CodePackage(
+            code=cipher,
+            public_key=key.public_key,
+            family=key.family,
+            operation_options=encryption_options,
+        )
 
 
 class KeyStore:
@@ -62,7 +108,6 @@ class KeyStore:
         self._load_appdata()
 
     def _load_appdata(self):
-
         if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError(
                 "The directory of the keystore path doesn't exist:\n"
@@ -115,7 +160,7 @@ class KeyStore:
         data = {
             "appdata_encryption_public_key": self.key.get_key_id(),
             "keys": encrypted_keys,
-            "custom_metadata": self._custom_metadata
+            "custom_metadata": self._custom_metadata,
         }
 
         with open(self.key_store_path, "w+") as file:
@@ -148,9 +193,7 @@ class KeyStore:
 
     @staticmethod
     def encrypt(
-        data: bytes,
-        key: Key,
-        encryption_options: str = ""
+        data: bytes, key: Key, encryption_options: str = ""
     ) -> CodePackage:
         """Encrypt the provided data using the specified key.
 
@@ -163,21 +206,11 @@ class KeyStore:
             CodePackage: an object containing the ciphertext, public-key,
                             crypto-family and encryption-options
         """
-        cipher = key.encrypt(
-            data_to_encrypt=data,
-            encryption_options=encryption_options,
-        )
-        return CodePackage(
-            code=cipher,
-            public_key=key.public_key,
-            family=key.family,
-            operation_options=encryption_options
+        return CodePackage.encrypt(
+            data=data, key=key, encryption_options=encryption_options
         )
 
-    def decrypt(
-        self,
-        code_package: CodePackage
-    ) -> bytes:
+    def decrypt(self, code_package: CodePackage) -> bytes:
         """Decrypt the provided data using the specified private key.
 
         Args:
@@ -187,7 +220,8 @@ class KeyStore:
             bytes: the decrypted data
         """
         key = self.get_key_from_public(
-            code_package.public_key, code_package.family)
+            code_package.public_key, code_package.family
+        )
         encrypted_data = code_package.code
         return key.decrypt(
             encrypted_data=encrypted_data,
@@ -196,9 +230,7 @@ class KeyStore:
 
     @staticmethod
     def sign(
-        data: bytes,
-        key: Key,
-        signature_options: str = ""
+        data: bytes, key: Key, signature_options: str = ""
     ) -> CodePackage:
         """Sign the provided data using the specified key.
 
@@ -219,14 +251,10 @@ class KeyStore:
             code=signature,
             public_key=key.public_key,
             family=key.family,
-            operation_options=signature_options
+            operation_options=signature_options,
         )
 
-    def verify_signature(
-        self,
-        code_package: CodePackage,
-        data: bytes
-    ) -> bool:
+    def verify_signature(self, code_package: CodePackage, data: bytes) -> bool:
         """Decrypt the provided data using the specified private key.
 
         Args:
@@ -237,7 +265,8 @@ class KeyStore:
             bytes: the decrypted data
         """
         key = self.get_key_from_public(
-            code_package.public_key, code_package.family)
+            code_package.public_key, code_package.family
+        )
         signature = code_package.code
         return key.verify_signature(
             signature=signature,
@@ -256,7 +285,7 @@ class KeyStore:
     def terminate(self):
         self.app_lock.release()
 
-    def reload(self) -> 'KeyStore':
+    def reload(self) -> "KeyStore":
         self._load_appdata()
         return self
 

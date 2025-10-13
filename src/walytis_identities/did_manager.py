@@ -27,6 +27,7 @@ from .did_manager_blocks import (
     InfoBlock,
     get_block_type,
     get_latest_control_key,
+    get_all_control_keys,
     get_latest_did_doc,
 )
 from .did_objects import Key
@@ -304,6 +305,9 @@ class DidManager(GenericDidManager):
         # load key from key store to get potential private key
         control_key = self._key_store.get_key(self._control_key_id)
         return control_key
+
+    def get_control_keys(self) -> list[Key]:
+        return get_all_control_keys(self._blockchain)
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""

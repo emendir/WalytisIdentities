@@ -45,6 +45,7 @@ from .did_manager_blocks import (
     MemberLeavingBlock,
     MemberUpdateBlock,
     get_block_type,
+    get_all_control_keys,
     get_latest_control_key,
     get_latest_did_doc,
     get_members,
@@ -119,8 +120,10 @@ class Member:
         return did_doc
 
     def _get_member_control_key(self) -> Key:
-        ctrl_key = get_latest_control_key(self.blockchain)
-        return ctrl_key
+        return get_latest_control_key(self.blockchain)
+
+    def _get_member_control_keys(self) -> list[Key]:
+        return get_all_control_keys(self.blockchain)
 
     def _get_member_blockchain(self) -> Blockchain:
         # logger.debug("Getting member blockchain...")
@@ -155,6 +158,22 @@ class Member:
             blockchain = Blockchain(blockchain_id)
         # logger.debug("Got member blockchain!")
         return blockchain
+
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
+        """Encrypt the provided data using the specified public key.
+
+        Args:
+            data_to_encrypt (bytes): the data to encrypt
+            encryption_options (str): specification code for which
+                                    encryption/decryption protocol should be used
+        Returns:
+            bytes: the encrypted data
+        """
+        return self._key_store.encrypt(
+            data=data,
+            key=self._get_control_key(),
+            encryption_options=encryption_options,
+        ).serialise_bytes()
 
     def __del__(self):
         self.terminate()
@@ -268,7 +287,7 @@ class _GroupDidManager(DidManager):
         if no_cache or not self._members:
             self._update_members()
 
-        return list(self._members)
+        return self._members
 
     def get_members_dids(self, no_cache: bool = False) -> set[str]:
         if no_cache or not self._members:

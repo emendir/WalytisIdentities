@@ -290,8 +290,11 @@ def verify_control_key_update(
     )
 
 
-def get_latest_control_key(blockchain: Blockchain) -> Key:
-    """Get a DID-Manager's blockchain's newest control-key."""
+def get_all_control_keys(blockchain: Blockchain) -> list[Key]:
+    """Get all a DID-Managers control keys.
+
+    All the control keys ever issued are listed in chronological order.
+    """
     # get all key blocks from blockchain
     ctrl_key_blocks = [
         ControlKeyBlock.load_from_block_content(block.content)
@@ -313,13 +316,20 @@ def get_latest_control_key(blockchain: Blockchain) -> Key:
     # to determine the currently valid ControlKeyBlock
     i = 1
     last_key_block = ctrl_key_blocks[0]
+    verified_keys = [last_key_block.get_new_key()]
     while i < len(ctrl_key_blocks):
         if verify_control_key_update(last_key_block, ctrl_key_blocks[i]):
+            verified_keys.append(ctrl_key_blocks[i].get_new_key())
             last_key_block = ctrl_key_blocks[i]
         i += 1
 
     control_key = last_key_block.get_new_key()
-    return control_key
+    return verified_keys
+
+
+def get_latest_control_key(blockchain: Blockchain) -> Key:
+    """Get a DID-Manager's blockchain's newest control-key."""
+    return get_all_control_keys(blockchain)[-1]
 
 
 # type representing the child-classes of InfoBlocks

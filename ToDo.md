@@ -1,5 +1,8 @@
 ## Next Steps:
 
+- [ ] triple-layer encryption for key sharing: GroupDidManager, Member & spontaneous ephemeral keys
+- [ ] multi-algorithm multi-layer cryptography: multiple simultaneous current-control-keys in different algorithms
+- [ ] write a test to verify that private keys are stored encrypted
 - Walytis Invitations:
   - ensure latest invitations are always published on DidManager
   - ensure all peers add Walytis invitations published on DidManager
@@ -10,6 +13,10 @@
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
 - Check TODO marks in code
+
+## API
+
+- DidManager Encrypt, Decrypt, Sign, Verify: use CodePackage object instead of serialised CodePackage as parameters and return types
 
 ## Generics
 

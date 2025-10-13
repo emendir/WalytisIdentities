@@ -5,4 +5,5 @@ decorate_all
 py_strict_typing
 loguru
 portalocker
-multi_crypt
+multi_crypt>=0.0.4
+ipfs_tk >=0.1.6

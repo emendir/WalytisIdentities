@@ -1,3 +1,5 @@
+import secrets
+import string
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
 import rfc3987
@@ -66,3 +68,12 @@ def bytes_from_string(data: str, variable_name: str = "Value") -> bytes:
     raise ValueError(
         (f"{variable_name} must be of type str, not {type(data)}")
     )
+
+
+def generate_random_string(num_chars: int):
+    # Define the alphabet you want to use
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+
+    # Generate a 200-character secure random string
+    secure_string = "".join(secrets.choice(alphabet) for _ in range(num_chars))
+    return secure_string
