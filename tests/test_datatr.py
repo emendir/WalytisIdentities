@@ -143,6 +143,7 @@ def test_datatransmission():
         conv.say(HELLO_THERE)
         logger.debug("Awaiting response...")
         reply = conv.listen(COMMS_TIMEOUT_S)
+        logger.debug("Got response!")
 
     assert conv and reply == HI, "Datatransmission failed"
 

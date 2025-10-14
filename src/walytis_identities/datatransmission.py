@@ -1,30 +1,17 @@
 from ipfs_tk_transmission import Conversation
 from walytis_identities.key_store import CodePackage
 from .utils import generate_random_string
-from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
 from multi_crypt import Crypt
-import multi_crypt
-from threading import Thread
-from datetime import datetime
-import threading
-from time import sleep
 import json
 from walytis_beta_embedded import ipfs
-from walytis_identities.did_manager_with_supers import DidManagerWithSupers
-from walytis_identities.did_manager_blocks import MemberJoiningBlock
 from typing import Callable
-import walytis_beta_api
 from walytis_beta_embedded import ipfs
 
-from walytis_identities.did_manager import DidManager
-from walytis_identities.group_did_manager import GroupDidManager, Member
-from walytis_beta_api import decode_short_id
 from walytis_beta_api._experimental.generic_blockchain import (
     GenericBlock,
     GenericBlockchain,
 )
-from walytis_identities.did_manager import blockchain_id_from_did
-from .group_did_manager import GroupDidManager, ipfs, logger
+from .log import logger_datatr as logger
 import json
 
 COMMS_TIMEOUT_S = 30
@@ -32,7 +19,7 @@ CHALLENGE_STRING_LENGTH = 200
 
 
 def listen_for_conversations(
-    gdm: GroupDidManager, listener_name: str, eventhandler: Callable
+    gdm: "GroupDidManager", listener_name: str, eventhandler: Callable
 ):
     def handle_join_request(conv_name, peer_id, salutation_start):
         salutation = json.loads(salutation_start.decode())
@@ -101,7 +88,7 @@ def listen_for_conversations(
 
 
 def start_conversation(
-    gdm: GroupDidManager, conv_name, peer, others_conv_listener
+    gdm: "GroupDidManager", conv_name, peer_id, others_req_listener
 ) -> Conversation | None:
     our_one_time_key = Crypt.new(gdm.get_control_key().family)
     our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
@@ -115,8 +102,8 @@ def start_conversation(
 
     conv: ipfs.Conversation = ipfs.start_conversation(
         conv_name,
-        peer,
-        f"WalIdenDatatr-{gdm.blockchain_id}-{others_conv_listener}",
+        peer_id,
+        f"WalIdenDatatr-{gdm.blockchain_id}-{others_req_listener}",
         salutation_message=salutation,
     )
     salutation_join = json.loads(conv.salutation_join.decode())
@@ -162,8 +149,8 @@ def start_conversation(
 
 def encrypt(
     plaintext: bytearray,
-    gdm: GroupDidManager,
-    member: Member,
+    gdm: "GroupDidManager",
+    member: "Member",
     one_time_key: Crypt,
 ) -> bytearray:
     logger.debug("Encrypting content...")
@@ -187,7 +174,7 @@ def encrypt(
 
 
 def decrypt(
-    cipher: bytearray, gdm: GroupDidManager, one_time_key: Crypt
+    cipher: bytearray, gdm: "GroupDidManager", one_time_key: Crypt
 ) -> bytearray:
     logger.debug("Decrypting content...")
 
@@ -206,7 +193,7 @@ def decrypt(
     return plaintext
 
 
-def handle_challenge(gdm: GroupDidManager, _their_challenge: str):
+def handle_challenge(gdm: "GroupDidManager", _their_challenge: str):
     their_challenge = _their_challenge.encode()
     signature_group = CodePackage.deserialise_bytes(
         gdm.sign(their_challenge)
@@ -222,7 +209,7 @@ def handle_challenge(gdm: GroupDidManager, _their_challenge: str):
     return data
 
 
-def verify_challenge(gdm: GroupDidManager, data: dict, _challenge: str):
+def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
     group_key_proof = CodePackage.deserialise(data["group_key_proof"])
     member_key_proof = CodePackage.deserialise(data["member_key_proof"])
     challenge = _challenge.encode()
@@ -235,7 +222,7 @@ def verify_challenge(gdm: GroupDidManager, data: dict, _challenge: str):
         group_key_proof.public_key, family=group_key_proof.family
     )
     logger.debug(gdm.get_members_dict())
-    member: Member = gdm.get_members_dict().get(member_did)
+    member = gdm.get_members_dict().get(member_did)
     if not member:
         logger.debug("Member DID not validated.")
         return False
@@ -278,84 +265,3 @@ def verify_challenge(gdm: GroupDidManager, data: dict, _challenge: str):
     logger.debug("Verified challenge.")
 
     return True
-
-
-def handle_content_request(
-    gdm: GroupDidManager, conv_name: str, peer_id: str
-) -> None:
-    if gdm._terminate:
-        return
-    logger.debug("Received content request...")
-    conv = ipfs.join_conversation(
-        conv_name + peer_id,
-        peer_id,
-        conv_name,
-    )
-    try:
-        _request = conv.listen(timeout=COMMS_TIMEOUT_S)
-        request = json.loads(_request.decode())
-        block_id = string_to_bytes(request["block_long_id"])
-        logger.debug("Processing content request...")
-
-        one_time_key = Crypt.deserialise(request["one_time_key"])
-        group_key_proof = CodePackage.deserialise(request["group_key_proof"])
-        member_key_proof = CodePackage.deserialise(request["member_key_proof"])
-        member_did = request["member_did"]
-
-        # verify the signatures with which peer
-        # proves they own this group and their member keys
-
-        # assert group key actually belongs to this GroupDidManager
-        gdm.key_store.get_key_from_public(
-            group_key_proof.public_key, family=group_key_proof.family
-        )
-        logger.debug(gdm.get_members_dict())
-        member: Member = gdm.get_members_dict()[member_did]
-        logger.debug(member_key_proof.public_key.hex())
-        logger.debug(
-            [
-                key.get_public_key_str()
-                for key in member._get_member_control_keys()
-            ]
-        )
-        if not member_key_proof.public_key.hex() in [
-            key.get_public_key_str()
-            for key in member._get_member_control_keys()
-        ]:
-            raise Exception("Member key not validated.")
-        logger.debug("Member key validated.")
-        if not group_key_proof.verify_signature(their_challenge):
-            raise Exception("Group Key Proof not Validated")
-        logger.debug("Group key proof validated.")
-        if not member_key_proof.verify_signature(their_challenge):
-            raise Exception("Member Key Proof not Validated")
-        logger.debug("Verified content request. Getting content...")
-        content = gdm.get_block_content(block_id)
-        logger.debug("Got content.")
-        if content:
-            logger.debug("Encrypting content...")
-            latest_member_key = member._get_member_control_key()
-
-            logger.debug("Encrypting with Group Key...")
-            # encrypt with Group key (serialised CodePackage)
-            cipher_1 = gdm.encrypt(content)
-
-            logger.debug("Encrypting with Member Key...")
-            # encrypt with peer's Member key (serialised CodePackage)
-            cipher_2 = CodePackage.encrypt(
-                data=cipher_1, key=latest_member_key
-            ).serialise_bytes()
-
-            logger.debug("Encrypting with OneTime Key...")
-            # encrypt with peer's OneTime Key (without CodePackage)
-
-            cipher_3 = one_time_key.encrypt(cipher_2)
-            logger.debug("Transmitting content...")
-            conv.say(cipher_3, timeout_sec=COMMS_TIMEOUT_S)
-        else:
-            logger.debug("Didn't find requested content.")
-        conv.close()
-    except Exception as e:
-        logger.error("Failed to handle content request:")
-        logger.error(e)
-        conv.close()

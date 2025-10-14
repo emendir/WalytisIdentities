@@ -7,7 +7,7 @@ from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
 from strict_typing import strictly_typed
 
-_Service = TypeVar('_Service', bound='Service')
+_Service = TypeVar("_Service", bound="Service")
 
 
 @dataclass
@@ -27,9 +27,9 @@ class Service:
     def from_service_spec(cls: Type[_Service], service_spec: dict) -> _Service:
         """Initialise a Service from a DID service spec from a DID document."""
         return cls(
-            service_id=service_spec['id'].strip("#"),
-            family=service_spec['family'],
-            service_endpoint=['serviceEndpoint']
+            service_id=service_spec["id"].strip("#"),
+            family=service_spec["family"],
+            service_endpoint=["serviceEndpoint"],
         )
 
     def generate_service_spec(self) -> dict:
@@ -37,11 +37,11 @@ class Service:
         return {
             "id": f"#{self.service_id}",
             "family": self.family,
-            "serviceEndpoint": self.service_endpoint
+            "serviceEndpoint": self.service_endpoint,
         }
 
 
-_Key = TypeVar('_Key', bound='Key')
+_Key = TypeVar("_Key", bound="Key")
 
 
 @dataclass
@@ -70,8 +70,11 @@ class Key(Crypt):
         self.public_key = public_key
         self.private_key = private_key
         self.creation_time = creation_time
-        super().__init__(family=self.family,
-                         private_key=self.private_key, public_key=self.public_key)
+        super().__init__(
+            family=self.family,
+            private_key=self.private_key,
+            public_key=self.public_key,
+        )
 
     @classmethod
     def create(cls: Type[_Key], family: str) -> _Key:
@@ -82,14 +85,12 @@ class Key(Crypt):
             family=crypt.family,
             public_key=crypt.public_key,
             private_key=crypt.private_key,
-            creation_time=datetime.utcnow()
+            creation_time=datetime.utcnow(),
         )
 
     @classmethod
     def from_crypt(
-        cls: Type[_Key],
-        crypt: Crypt,
-        creation_time: datetime
+        cls: Type[_Key], crypt: Crypt, creation_time: datetime
     ) -> _Key:
         """Create a Key object from a Crypt object."""
         return cls(
@@ -103,12 +104,12 @@ class Key(Crypt):
     def from_key_spec(cls: Type[_Key], key_spec: dict) -> _Key:
         """Initialise a Key from a DID key spec from a DID document."""
         key = cls(
-            family=key_spec['type'],
-            public_key=key_spec['publicKeyMultibase'],
+            family=key_spec["type"],
+            public_key=key_spec["publicKeyMultibase"],
             private_key=None,
-            creation_time=string_to_time(key_spec['creation_time']),
+            creation_time=string_to_time(key_spec["creation_time"]),
         )
-        if key_spec['id'].strip("#") != key.get_key_id():
+        if key_spec["id"].strip("#") != key.get_key_id():
             raise ValueError(
                 "The key-spec's key ID doesn't match our convention"
             )
@@ -139,7 +140,9 @@ class Key(Crypt):
             "controller": controller,
         }
 
-    def serialise(self, crypt: Crypt, allow_missing_private_key: bool = False) -> dict:
+    def serialise(
+        self, crypt: Crypt, allow_missing_private_key: bool = False
+    ) -> dict:
         """Serialise this key's data, including the private key encrypted."""
         if not allow_missing_private_key and not self.private_key:
             raise ValueError(
@@ -149,17 +152,18 @@ class Key(Crypt):
             )
 
         if not (self.family and self.public_key and self.creation_time):
-            error_message = ("Not all of this objects' fields are set!"
-                             "\n".join([
-                                 f"family: {type(self.family)}",
-                                 f"public_key: {type(self.public_key)}",
-                                 f"creation_time: {type(self.creation_time)}",
-                             ])
-                             )
+            error_message = "Not all of this objects' fields are set!\n".join(
+                [
+                    f"family: {type(self.family)}",
+                    f"public_key: {type(self.public_key)}",
+                    f"creation_time: {type(self.creation_time)}",
+                ]
+            )
             raise ValueError(error_message)
 
-        private_key = crypt.encrypt(
-            self.private_key).hex() if self.private_key else None
+        private_key = (
+            crypt.encrypt(self.private_key).hex() if self.private_key else None
+        )
         return {
             "family": self.family,
             "public_key": self.public_key.hex(),
@@ -170,13 +174,16 @@ class Key(Crypt):
     @classmethod
     def deserialise(cls: Type[_Key], data: dict, crypt: Crypt) -> _Key:
         """Deserialise data with encrypted private key."""
-        private_key = crypt.decrypt(bytes.fromhex(
-            data["private_key"]))if data["private_key"] else None
+        private_key = (
+            crypt.decrypt(bytes.fromhex(data["private_key"]))
+            if data["private_key"]
+            else None
+        )
         return cls(
             family=data["family"],
             public_key=data["public_key"],
             private_key=private_key,
-            creation_time=string_to_time(data["creation_time"])
+            creation_time=string_to_time(data["creation_time"]),
         )
 
     def get_public_key(self) -> str:
@@ -191,6 +198,14 @@ class Key(Crypt):
         if not (self.family and self.public_key and self.creation_time):
             raise ValueError("Not all of this objects' fields are set.")
         return f"{self.family}:{time_to_string(self.creation_time)}:{self.get_public_key()}"
+
+    def clone_public(self) -> "Key":
+        return Key(
+            public_key=self.public_key,
+            private_key=None,
+            family=self.family,
+            creation_time=self.creation_time,
+        )
 
     def __str__(self):
         return self.get_key_id()

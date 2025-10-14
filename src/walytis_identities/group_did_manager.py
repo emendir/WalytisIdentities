@@ -1,5 +1,8 @@
 """Classes for managing Person and Device identities."""
 
+from dataclasses_json import dataclass_json
+from dataclasses import dataclass
+from . import datatransmission
 import json
 import os
 import random
@@ -574,13 +577,14 @@ class GroupDidManager(_GroupDidManager):
 
         self.get_published_candidate_keys()
 
-        self.key_requests_listener = ipfs.listen_for_conversations(
-            f"{self.did}-KeyRequests", self.key_requests_handler
+        self.key_requests_listener = datatransmission.listen_for_conversations(
+            self, f"{self.did}-KeyRequests", self.key_requests_handler
         )
 
         self.control_key_manager_thr = None
         self.member_keys_manager_thr = None
 
+        self.invitation_manager = list[InvitationManager]
         if auto_load_missed_blocks:
             GroupDidManager.load_missed_blocks(self)
 
@@ -1068,11 +1072,11 @@ class GroupDidManager(_GroupDidManager):
             try:
                 conv = None
                 try:
-                    conv = ipfs.start_conversation(
+                    conv = datatransmission.start_conversation(
+                        self,
                         conv_name=f"KeyRequest-{key_id}",
                         peer_id=peer_id,
                         others_req_listener=f"{self.did}-KeyRequests",
-                        timeout_sec=SEND_TIMEOUT,
                     )
                 except CommunicationTimeout:
                     logger.warning(
@@ -1348,6 +1352,120 @@ class GroupDidManager(_GroupDidManager):
 
     def __del__(self):
         """Stop this Identity object, cleaning up resources."""
+        self.terminate()
+
+    def invite_member2(self):
+        pass
+
+
+@dataclass_json
+@dataclass
+class InvitationCode:
+    key: Key
+    ipfs_id: str
+    ipfs_addresses: list[str]
+
+    def serialise(self) -> str:
+        return json.dumps(
+            {
+                "key": self.key.get_key_id(),
+                "ipfs_id": self.ipfs_id,
+                "ipfs_addresses": self.ipfs_addresses,
+            }
+        )
+
+    @classmethod
+    def deserialise(cls, code: str):
+        data = json.loads(code)
+        return cls(
+            key=Key.from_key_id(data["key"]),
+            ipfs_id=data["ipfs_id"],
+            ipfs_addresses=data["ipfs_addresses"],
+        )
+
+
+def join_blockchain2(invitation_code: InvitationCode):
+    one_time_key = Key.create(CRYPTO_FAMILY)
+
+    def encrypt(data):
+        return invitation_code.key.encrypt(data)
+
+    def decrypt(data):
+        return one_time_key.decrypt(data)
+
+    conv = ipfs_tk_transmission.Conversation.start(
+        conv_name=f"WalidJoin-{invitation_code.key.get_public_key()}",
+        peer_id=invitation_code.ipfs_id,
+        others_req_listener=f"WaliInvite-{
+            invitation_code.key.get_public_key()
+        }",
+        encryption_callbacks=(encrypt, decrypt),
+        salutation_message=one_time_key.get_key_id().encode(),
+    )
+
+    reply = conv.listen(datatransmission.COMMS_TIMEOUT_S)
+    data = json.loads(str.decode(reply))
+
+    blockchain_invitation = data["blockchain_invitation"]
+    gdm_key = Key.deserialise(data["group_key"], one_time_key)
+
+
+class InvitationManager:
+    def __init__(self, gdm: GroupDidManager, key: Key):
+        self.gdm = gdm
+        self.key = key
+        self.listener = ipfs_tk_transmission.ConversationListener(
+            ipfs_client=ipfs,
+            listener_name=f"WaliInvite-{self.key.get_public_key()}",
+            eventhandler=self.handler,
+        )
+
+    @classmethod
+    def create(cls, gdm: GroupDidManager):
+        return cls(gdm=gdm, key=Key.create(CRYPTO_FAMILY))
+
+    def handler(self, conv_name, peer_id, salutation_start):
+        their_key = Key.from_key_id(salutation_start.decode())
+
+        def encrypt(data):
+            return their_key.encrypt(data)
+
+        def decrypt(data):
+            return self.key.decrypt(data)
+
+        conv = ipfs_tk_transmission.Conversation.join(
+            conv_name=conv_name,
+            peer_id=peer_id,
+            others_trsm_listener=conv_name,
+            encryption_callbacks=(encrypt, decrypt),
+        )
+        conv.say(
+            str.encode(
+                json.dumps(
+                    {
+                        "group_key": self.gdm.get_control_key().serialise(
+                            their_key
+                        ),
+                        "blockchain_invitation": self.gdm.blockchain.create_invitation(
+                            one_time=True, shared=False
+                        ),
+                    }
+                )
+            )
+        )
+        conv.terminate()
+
+    def generate_code(self) -> InvitationCode:
+        return InvitationCode(
+            key=self.key.clone_public(),
+            ipfs_id=ipfs.peer_id,
+            ipfs_addresses=ipfs.get_addrs(),
+        )
+
+    def terminate(self):
+        self.listener.terminate()
+
+    def __del__(self):
         self.terminate()
 
 
