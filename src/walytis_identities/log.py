@@ -44,6 +44,11 @@ logger_gdm.setLevel(logging.INFO)
 logger_gdm.addHandler(file_handler)
 logger_gdm.addHandler(console_handler)
 
+logger_gdm_join = logging.getLogger("WalId.GDM-Join")
+logger_gdm_join.setLevel(logging.INFO)
+logger_gdm_join.addHandler(file_handler)
+logger_gdm_join.addHandler(console_handler)
+
 logger_datatr = logging.getLogger("WalId.Datatr")
 logger_datatr.setLevel(logging.INFO)
 logger_datatr.addHandler(file_handler)

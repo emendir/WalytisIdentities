@@ -1,4 +1,6 @@
 import conftest  # noqa
+
+from threading import Thread
 import os
 import shutil
 import tarfile
@@ -11,10 +13,16 @@ from walytis_identities.did_manager import (
     DidManager,
     blockchain_id_from_did,
 )
+from walytis_identities.did_manager_blocks import get_all_control_keys
 from walytis_identities.did_objects import Key
-from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities.group_did_manager import GroupDidManager, logger
 from walytis_identities.key_store import KeyStore
 
+import logging
+from walytis_identities.log import logger_dm, logger_gdm
+
+logger_dm.setLevel(logging.DEBUG)
+logger_gdm.setLevel(logging.DEBUG)
 os.chdir(os.path.dirname(__file__))
 config_dir_1 = tempfile.mkdtemp()
 config_dir_2 = tempfile.mkdtemp()
@@ -83,23 +91,28 @@ def create_did_managers():
     group_1_keystore = KeyStore(
         os.path.join(config_dir_1, "group_keys.json"), key
     )
-    group_2_keystore = KeyStore(
+    group_2_keystore = group_1_keystore.clone(
         os.path.join(config_dir_2, "group_keys.json"), key
     )
     group_did_manager_1 = GroupDidManager.create(
         group_1_keystore, member_1_did_manager
     )
+    logger.debug(group_did_manager_1.blockchain.blockchain_id)
+    logger.debug(group_did_manager_1.get_active_control_keys())
+    logger.debug(get_all_control_keys(group_did_manager_1.blockchain))
+    assert isinstance(group_did_manager_1.get_control_keys(), list)
+
     from time import sleep
 
-    sleep(2)
     print("Inviting member...")
-    invitation = group_did_manager_1.invite_member()
-    group_did_manager_2 = GroupDidManager.join(
-        invitation, group_2_keystore, member_2_did_manager
+    group_did_manager_1.add_member(member_2_did_manager)
+    group_did_manager_2 = GroupDidManager(
+        group_2_keystore, member_2_did_manager
     )
     group_did_manager_2.unlock(
         group_did_manager_1.get_control_key().private_key
     )
+    assert isinstance(group_did_manager_2.get_control_keys(), list)
 
     print("Copying blockchain data...")
     shutil.copy(
@@ -108,8 +121,24 @@ def create_did_managers():
     )
     shutil.copy(
         group_did_manager_1.member_did_manager.blockchain.get_blockchain_data(),
-        os.path.join(config_dir_1, "member_blockchain.zip"),
+        os.path.join(config_dir_1, "member1_blockchain.zip"),
     )
+    shutil.copy(
+        group_did_manager_2.member_did_manager.blockchain.get_blockchain_data(),
+        os.path.join(config_dir_1, "member2_blockchain.zip"),
+    )
+    with open(
+        os.path.join(config_dir_1, "member1_blockchain_id.txt"), "w+"
+    ) as file:
+        file.write(
+            group_did_manager_1.member_did_manager.blockchain.blockchain_id
+        )
+    with open(
+        os.path.join(config_dir_1, "member2_blockchain_id.txt"), "w+"
+    ) as file:
+        file.write(
+            group_did_manager_2.member_did_manager.blockchain.blockchain_id
+        )
 
     shutil.copy(
         group_did_manager_2.blockchain.get_blockchain_data(),
@@ -117,8 +146,24 @@ def create_did_managers():
     )
     shutil.copy(
         group_did_manager_2.member_did_manager.blockchain.get_blockchain_data(),
-        os.path.join(config_dir_2, "member_blockchain.zip"),
+        os.path.join(config_dir_2, "member2_blockchain.zip"),
     )
+    shutil.copy(
+        group_did_manager_1.member_did_manager.blockchain.get_blockchain_data(),
+        os.path.join(config_dir_2, "member1_blockchain.zip"),
+    )
+    with open(
+        os.path.join(config_dir_2, "member1_blockchain_id.txt"), "w+"
+    ) as file:
+        file.write(
+            group_did_manager_1.member_did_manager.blockchain.blockchain_id
+        )
+    with open(
+        os.path.join(config_dir_2, "member2_blockchain_id.txt"), "w+"
+    ) as file:
+        file.write(
+            group_did_manager_2.member_did_manager.blockchain.blockchain_id
+        )
     print("Terminating...")
     group_did_manager_1.terminate()
     group_did_manager_2.terminate()
@@ -145,22 +190,50 @@ def load_did_manager(tarfile: str):
     group_blockchain_id = blockchain_id_from_did(
         group_keystore.get_custom_metadata()[KEYSTORE_DID]
     )
-    member_blockchain_id = blockchain_id_from_did(
-        member_keystore.get_custom_metadata()[KEYSTORE_DID]
-    )
 
+    with open(
+        os.path.join(appdata_path, "member1_blockchain_id.txt"), "r"
+    ) as file:
+        member_1_bc_id = file.readline().strip()
+    with open(
+        os.path.join(appdata_path, "member2_blockchain_id.txt"), "r"
+    ) as file:
+        member_2_bc_id = file.readline().strip()
+
+    def del_1():
+        if member_1_bc_id in waly.list_blockchain_ids():
+            waly.delete_blockchain(member_1_bc_id)
+
+    def del_2():
+        if member_2_bc_id in waly.list_blockchain_ids():
+            waly.delete_blockchain(member_2_bc_id)
+
+    thr_1 = Thread(target=del_1)
+    thr_2 = Thread(target=del_2)
+    thr_1.start()
+    thr_2.start()
+    thr_1.join()
+    thr_2.join()
     try:
-        if member_blockchain_id in waly.list_blockchain_ids():
-            waly.delete_blockchain(member_blockchain_id)
         waly.join_blockchain_from_zip(
-            member_blockchain_id,
-            os.path.join(appdata_path, "member_blockchain.zip"),
+            member_1_bc_id,
+            os.path.join(appdata_path, "member1_blockchain.zip"),
         )
     except waly.BlockchainAlreadyExistsError:
-        raise Exception("Delete this blockchain first")
+        pass
+        # raise Exception("Delete this blockchain first")
     try:
-        if group_blockchain_id in waly.list_blockchain_ids():
-            waly.delete_blockchain(group_blockchain_id)
+        waly.join_blockchain_from_zip(
+            member_2_bc_id,
+            os.path.join(appdata_path, "member2_blockchain.zip"),
+        )
+    except waly.BlockchainAlreadyExistsError:
+        pass
+        # raise Exception("Delete this blockchain first")
+
+    if group_blockchain_id in waly.list_blockchain_ids():
+        waly.delete_blockchain(group_blockchain_id)
+    try:
         waly.join_blockchain_from_zip(
             group_blockchain_id,
             os.path.join(appdata_path, "group_blockchain.zip"),
@@ -169,7 +242,15 @@ def load_did_manager(tarfile: str):
         raise Exception("Delete this blockchain first")
         pass
 
-    return GroupDidManager(group_keystore, member_keystore)
+    group_did_manager = GroupDidManager(group_keystore, member_keystore)
+
+    assert isinstance(group_did_manager.get_control_keys(), list), (
+        "control keys available"
+    )
+    assert isinstance(
+        get_all_control_keys(group_did_manager.blockchain), list
+    ), "control keys available"
+    return group_did_manager
 
 
 if __name__ == "__main__":

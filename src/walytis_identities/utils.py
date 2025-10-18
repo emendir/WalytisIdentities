@@ -5,6 +5,11 @@ from base64 import urlsafe_b64decode, urlsafe_b64encode
 import rfc3987
 
 from .log import logger_walid as logger  # noqa
+from brenthy_tools_beta.utils import time_to_string, string_to_time  # noqa
+
+# GroupDidManager Settings
+NUM_NEW_CONTROL_KEYS = 1
+NUM_ACTIVE_CONTROL_KEYS = NUM_NEW_CONTROL_KEYS * 2
 
 
 def is_valid_uri(uri):

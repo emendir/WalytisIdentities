@@ -399,34 +399,11 @@ def get_info_blocks(
                     valid_blocks.append(block)
             else:
                 print("Found Control Key Block with invalid signature")
-        elif block_type == MemberInvitationBlock:
-            invitation_block = MemberInvitationBlock.load_from_block_content(
-                block.content
-            )
-            invitation = invitation_block.get_member_invitation()
-            if last_key_block and invitation_block.verify_signature(
-                last_key_block.get_new_key()
-            ):
-                # set this to the latest info-block
-                valid_member_invitations.update(
-                    {invitation["invitation_key"]: invitation}
-                )
-                if block_type in block_types:
-                    valid_blocks.append(invitation_block)
-            else:
-                print("Found info-block Block with invalid signature")
         elif block_type == MemberJoiningBlock and block_type in block_types:
             joining_block = block_type.load_from_block_content(block.content)
             member = joining_block.get_member()
-            _invitation = valid_member_invitations.get(
-                member["invitation_key"]
-            )
-            if _invitation and joining_block.verify_signature(
-                Key.from_key_id(_invitation["invitation_key"])
-            ):
-                valid_blocks.append(joining_block)
-            else:
-                logger.warning("Found joining block with invalid signature.")
+            # TODO: validate signature
+            valid_blocks.append(joining_block)
 
         # if this block is of the type we are looking for
         elif block_type in block_types:
@@ -443,6 +420,15 @@ def get_info_blocks(
             else:
                 logger.warning(f"Found {block_type} with invalid signature")
     return valid_blocks
+
+
+def get_control_key_age(blockchain: Blockchain, key_id: str):
+    keys = get_all_control_keys(blockchain)
+    keys.reverse()
+    for i, key in enumerate(keys):
+        if key.get_key_id() == key_id:
+            return i
+    raise Exception(f"No such key: {key_id}")
 
 
 def get_latest_block(

@@ -1,5 +1,10 @@
 """Classes for managing Person and Device identities."""
 
+from ipfs_tk_transmission import Conversation
+from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
+from .log import logger_gdm_join, logger_gdm as logger
+from threading import Event
+from walytis_beta_api import Blockchain, join_blockchain_from_zip
 from dataclasses_json import dataclass_json
 from dataclasses import dataclass
 from . import datatransmission
@@ -14,7 +19,6 @@ from random import randint
 from threading import Lock, Thread
 from time import sleep
 from typing import Callable, Type, TypeVar
-
 import ipfs_tk_transmission
 import walytis_beta_tools
 from brenthy_tools_beta.utils import bytes_to_string, string_to_bytes
@@ -43,13 +47,13 @@ from .did_manager import DidManager, blockchain_id_from_did
 from .did_manager_blocks import (
     InfoBlock,
     KeyOwnershipBlock,
-    MemberInvitationBlock,
     MemberJoiningBlock,
     MemberLeavingBlock,
     MemberUpdateBlock,
     get_block_type,
     get_all_control_keys,
     get_latest_control_key,
+    get_control_key_age,
     get_latest_did_doc,
     get_members,
 )
@@ -61,7 +65,7 @@ from .settings import (
     CTRL_KEY_RENEWAL_AGE_HR,
     CTRL_KEY_RENEWAL_RANDOMISER_MAX,
 )
-from .utils import logger, validate_did_doc
+from .utils import validate_did_doc
 
 random.seed(datetime.now().microsecond)
 
@@ -69,8 +73,6 @@ random.seed(datetime.now().microsecond)
 WALYTIS_BLOCK_TOPIC = "GroupDidManager"
 
 CRYPTO_FAMILY = "EC-secp256k1"
-
-
 GroupDidManagerType = TypeVar("GroupDidManagerType", bound="GroupDidManager")
 LISTEN_TIMEOUT = 30
 SEND_TIMEOUT = 10
@@ -127,6 +129,12 @@ class Member:
 
     def _get_member_control_keys(self) -> list[Key]:
         return get_all_control_keys(self.blockchain)
+
+    def _get_control_key_age(self, key_id: str) -> int:
+        return get_control_key_age(self._blockchain, key_id)
+
+    def is_control_key_active(self, key_id: str) -> bool:
+        return self._get_control_key_age(key_id) < NUM_ACTIVE_CONTROL_KEYS
 
     def _get_member_blockchain(self) -> Blockchain:
         # logger.debug("Getting member blockchain...")
@@ -211,6 +219,7 @@ class _GroupDidManager(DidManager):
         )
         self._init_blocks_list_gdm()
         self._members: dict[str, Member] = {}
+        self.member_invitations: list[InvitationManager] = []
         self.get_members(no_cache=True)
         if auto_load_missed_blocks:
             _GroupDidManager.load_missed_blocks(self)
@@ -241,8 +250,6 @@ class _GroupDidManager(DidManager):
                     self.get_members(no_cache=True)
                 case did_manager_blocks.KeyOwnershipBlock:
                     self.check_control_key()
-                case did_manager_blocks.MemberInvitationBlock:
-                    pass
                 case _:
                     logger.warning(
                         "This block is marked as belong to GroupDidManager, "
@@ -297,10 +304,6 @@ class _GroupDidManager(DidManager):
             self._update_members()
         return set(self._members.keys())
 
-    def add_member_invitation(self, member_invitation: dict) -> Block:
-        member_invitation_block = MemberInvitationBlock.new(member_invitation)
-        return self._gdm_add_info_block(member_invitation_block)
-
     def add_member_update(self, member: dict) -> Block:
         block = MemberUpdateBlock.new(member)
         block = self._gdm_add_info_block(block)
@@ -315,48 +318,19 @@ class _GroupDidManager(DidManager):
 
     def invite_member(self) -> dict:
         """Create and register a member invitation on the blockchain."""
-        # generate a key to be used by new member when registering themselves
-        key = Key.create(CRYPTO_FAMILY)
+        invitation = InvitationManager.create(self)
+        self.member_invitations.append(invitation)
+        return invitation.generate_code().serialise_dict()
 
-        group_blockchain_invitation = json.loads(
-            self.blockchain.create_invitation(one_time=False, shared=True)
-        )
-        member_invitation = {
-            "blockchain_invitation": group_blockchain_invitation,
-            "invitation_key": key.get_key_id(),
-        }
-        signature = bytes_to_string(
-            key.sign(str.encode(json.dumps(member_invitation)))
-        )
-        member_invitation.update({"signature": signature})
-
-        invitation_block = self.add_member_invitation(member_invitation)
-        member_invitation.update({"private_key": key.get_private_key()})
-        member_invitation.update(
-            {"invitation_block_id": bytes_to_string(invitation_block.long_id)}
-        )
-
-        return member_invitation
+    def load_invitation(self, key: Key) -> dict:
+        """Create and register a member invitation on the blockchain."""
+        invitation = InvitationManager(self, key)
+        self.member_invitations.append(invitation)
+        return invitation.generate_code().serialise_dict()
 
     def add_member(self, member: GenericDidManager) -> None:
         """Add an existing DID-Manager as a member to this Group-DID."""
         logger.debug("GDM: Adding DidManager as member...")
-
-        invitation_key = Key.create(CRYPTO_FAMILY)
-
-        group_blockchain_invitation = json.loads(
-            self.blockchain.create_invitation(one_time=False, shared=True)
-        )
-        member_invitation = {
-            "blockchain_invitation": group_blockchain_invitation,
-            "invitation_key": invitation_key.get_key_id(),
-        }
-        signature = bytes_to_string(
-            invitation_key.sign(str.encode(json.dumps(member_invitation)))
-        )
-        member_invitation.update({"signature": signature})
-
-        self.add_member_invitation(member_invitation)
 
         joining_block = MemberJoiningBlock.new(
             {
@@ -364,57 +338,15 @@ class _GroupDidManager(DidManager):
                 "invitation": member.blockchain.create_invitation(
                     one_time=False, shared=True
                 ),  # invitation for other's to join our member DID blockchain
-                "invitation_key": invitation_key.get_key_id(),  # Key object
             }
         )
-        joining_block.sign(invitation_key)
+        self.get_control_key().sign(member.did.encode())
         self._gdm_add_info_block(joining_block)
         member.key_store.add_key(self.get_control_key())
 
         if self.get_control_key().private_key:
             self.update_did_doc(self.generate_did_doc())
         logger.debug("GDM: Added DidManager as member!")
-
-    def make_member(self, invitation: dict, member: GenericDidManager) -> None:
-        """Creating a new member DID-Manager joining an existing Group-DID.
-
-        Returns the member's DidManager.
-        """
-        logger.debug("GDM: Member joining...")
-        invitation_key = Key.from_key_id(invitation["invitation_key"])
-        try:
-            invitation_key.unlock(invitation["private_key"])
-        except:
-            raise IdentityJoinError(
-                "Invalid invitation: public-private key mismatch"
-            )
-
-        # make sure the Group-DID-Manager has the invitation block
-        invitation_block = MemberInvitationBlock.load_from_block_content(
-            self.blockchain.get_block(
-                string_to_bytes(invitation["invitation_block_id"])
-            ).content
-        )
-        if (
-            invitation_block.get_member_invitation()["invitation_key"]
-            != invitation["invitation_key"]
-        ):
-            raise IdentityJoinError("Looks like a corrupt invitation")
-
-        joining_block = MemberJoiningBlock.new(
-            {
-                "did": member.did,
-                "invitation": member.blockchain.create_invitation(
-                    one_time=False, shared=True
-                ),  # invitation for other's to join our member DID blockchain
-                "invitation_key": invitation["invitation_key"],  # Key object
-            }
-        )
-        joining_block.sign(invitation_key)
-        self._gdm_add_info_block(joining_block)
-        if self.get_control_key().private_key:
-            self.update_did_doc(self.generate_did_doc())
-        logger.debug("GDM: Member joined!")
 
     def _init_blocks_list_gdm(self):
         # present to other programs all blocks not created by this DidManager
@@ -474,15 +406,6 @@ class _GroupDidManager(DidManager):
             )
             raise error
 
-    def get_member_invitation_blocks(self):
-        # TODO: ensure teh MemberInvitationBlock is in the correct place in the list of block topics
-        # TODO: see if we should/can use get_info_blocks
-        return [
-            b
-            for b in DidManager.get_blocks(self)
-            if MemberInvitationBlock.walytis_block_topic in b.topics
-        ]
-
     def get_member_joining_blocks(self):
         # TODO: ensure teh MemberJoiningBlock is in the correct place in the list of block topics
         # TODO: see if we should/can use get_info_blocks
@@ -520,7 +443,29 @@ class _GroupDidManager(DidManager):
         validate_did_doc(did_doc)
         return did_doc
 
-    def terminate(self):
+    def is_control_key_active(self, key_id: str) -> bool:
+        return self.get_control_key_age(key_id) < NUM_ACTIVE_CONTROL_KEYS
+
+    def get_active_control_keys(self) -> list[Key]:
+        """CAREFUL: RETURNS LOCKED KEYS."""
+        keys = self.get_control_keys()
+
+        # logger.debug(f"TOTAL CONTROL KEYS: {len(keys)}")
+        # get last few
+        keys = keys[-1 * NUM_ACTIVE_CONTROL_KEYS :]
+        # logger.debug(f"ACTIVE CONTROL KEYS: {len(keys)}")
+
+        return keys
+
+    def get_active_unlocked_control_keys(self) -> list[Key]:
+        unlocked_keys = []
+        for key in self.get_active_control_keys():
+            unlocked_key = self.key_store.keys.get(key.get_key_id(), None)
+            if unlocked_key and unlocked_key.is_unlocked():
+                unlocked_keys.append(unlocked_key)
+        return unlocked_keys
+
+    def terminate(self) -> None:
         DidManager.terminate(self)
         for member in self.get_members():
             member.terminate()
@@ -539,6 +484,7 @@ class GroupDidManager(_GroupDidManager):
         member: KeyStore | GenericDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
         auto_load_missed_blocks: bool = True,
+        allow_locked=False,  # only used in auto_load_missed_blocks==True
     ):
         self._terminate = False
 
@@ -584,12 +530,19 @@ class GroupDidManager(_GroupDidManager):
         self.control_key_manager_thr = None
         self.member_keys_manager_thr = None
 
-        self.invitation_manager = list[InvitationManager]
         if auto_load_missed_blocks:
-            GroupDidManager.load_missed_blocks(self)
+            GroupDidManager.load_missed_blocks(self, allow_locked=allow_locked)
 
-    def load_missed_blocks(self):
+    def load_missed_blocks(self, allow_locked: bool = False):
         _GroupDidManager.load_missed_blocks(self)
+        # key = self.get_active_control_keys()[-1]
+        # logger.debug(key)
+        # logger.debug(key.private_key)
+        if not allow_locked:
+            if not self.get_active_unlocked_control_keys():
+                error_message = "This GDM has no unlocked control keys."
+                logger.error(error_message)
+                raise Exception(error_message)
         if not self.control_key_manager_thr:
             self.control_key_manager_thr = Thread(
                 target=self.manage_control_key, name="GDM-control_key_manager"
@@ -633,6 +586,9 @@ class GroupDidManager(_GroupDidManager):
         g_did_manager = _GroupDidManager.create(group_key_store)
         g_did_manager.add_member(member)
 
+        key = g_did_manager.get_active_control_keys()[-1]
+        logger.debug(key)
+        logger.debug(key.private_key)
         member_did_manager.key_store.add_key(g_did_manager.key_store.key)
 
         g_did_manager.terminate()  # group_did_manager will take over
@@ -669,6 +625,34 @@ class GroupDidManager(_GroupDidManager):
                     named after the blockchain ID of the created DidManager.
 
         """
+        join_process = JoinProcess(
+            invitation=invitation,
+            group_key_store=group_key_store,
+            member=member,
+            other_blocks_handler=other_blocks_handler,
+        )
+        join_process.joined.wait()
+        return join_process.group_did_manager
+
+    @classmethod
+    def _join(
+        cls: Type[GroupDidManagerType],
+        blockchain: Blockchain,
+        group_key_store: KeyStore | str,
+        member: KeyStore | GenericDidManager,
+        other_blocks_handler: Callable[[Block], None] | None = None,
+    ) -> GroupDidManagerType:
+        """Join an exisiting Group-DID-Manager.
+
+        Uses the provided DidManager as the member if provided,
+        otherwise creates a new member DID.
+
+        Args:
+            group_key_store: KeyStore for this DidManager to store private keys
+                    If a directory is passed, a KeyStore is created in there
+                    named after the blockchain ID of the created DidManager.
+
+        """
         if isinstance(member, KeyStore):
             member = DidManager(
                 key_store=member,
@@ -681,19 +665,6 @@ class GroupDidManager(_GroupDidManager):
                 f"not {type(member)}"
             )
 
-        if isinstance(invitation, str):
-            _invitation = json.loads(invitation)
-        else:
-            _invitation = invitation
-        blockchain_invitation: dict = _invitation["blockchain_invitation"]
-
-        # join blockchain
-        try:
-            # logger.debug(f"Joining blockchain {blockchain_invitation}")
-            blockchain = Blockchain.join(blockchain_invitation)
-        except BlockchainAlreadyExistsError:
-            blockchain = Blockchain(blockchain_invitation["blockchain_id"])
-
         if isinstance(group_key_store, str):
             if not os.path.isdir(group_key_store):
                 raise ValueError(
@@ -704,7 +675,7 @@ class GroupDidManager(_GroupDidManager):
             # as some filesystems don't support colons
             key_store_path = os.path.join(
                 group_key_store,
-                blockchain_invitation["blockchain_id"] + ".json",
+                f"{blockchain.blockchain_id}.json",
             )
             group_key_store = KeyStore(
                 key_store_path, Key.create(CRYPTO_FAMILY)
@@ -713,7 +684,7 @@ class GroupDidManager(_GroupDidManager):
         blockchain.terminate()
         DidManager.assign_keystore(group_key_store, blockchain.blockchain_id)
         g_did_manager = _GroupDidManager(group_key_store)
-        g_did_manager.make_member(invitation=_invitation, member=member)
+        g_did_manager.add_member(member=member)
 
         member.key_store.add_key(g_did_manager.key_store.key)
         g_did_manager.terminate()  # group_did_manager will take over from here
@@ -768,10 +739,14 @@ class GroupDidManager(_GroupDidManager):
                 # if did == self.member_did_manager.did:
                 #     continue
                 logger.debug(f"Requesting control key from {did}")
+                key = None
                 try:
                     key = self.request_key(control_key.get_key_id(), did)
-                except IncompletePeerInfoError:
+                except IncompletePeerInfoError as e:
+                    logger.debug(e)
                     continue
+                except Exception as e:
+                    logger.error(e)
                 if key:
                     self.key_store.add_key(key)
                     if self.get_control_key().private_key:
@@ -880,21 +855,14 @@ class GroupDidManager(_GroupDidManager):
         block = KeyOwnershipBlock.new(key_ownership)
         self._gdm_add_info_block(block)
 
-    def key_requests_handler(self, conv_name: str, peer_id: str) -> None:
+    def key_requests_handler(self, conv: Conversation) -> None:
         """Respond to key requests from other members."""
-        logger.debug(f"KRH: Getting key request! {conv_name} {peer_id}")
-        logger.debug("Joining conv...")
-        try:
-            conv = ipfs.join_conversation(
-                conv_name, peer_id, conv_name, timeout_sec=SEND_TIMEOUT
-            )
-        except CommunicationTimeout:
-            logger.warning("KRH: failed to join conversation")
-            # conv.close()
-            return
+        logger.debug(f"KRH: Getting key request!")
+        # double-check communications are encrypted
+        assert conv._encryption_callback is not None
+        assert conv._decryption_callback is not None
         if self._terminate:
             conv.close()
-        logger.debug("Joined conv!")
         logger.debug("KRH: Joined conversation.")
         success = conv.say("Hello there!".encode())
         if self._terminate:
@@ -917,9 +885,6 @@ class GroupDidManager(_GroupDidManager):
             logger.debug("KRH: got key request.")
             peer_did = message["did"]  # member DID of peer who is requesting
             key_id = message["key_id"]
-            sig = bytes.fromhex(message["signature"])
-
-            message.pop("signature")
             try:
                 logger.debug("Getting member control key...")
                 peer_key = self.get_member_control_key(peer_did)
@@ -947,27 +912,7 @@ class GroupDidManager(_GroupDidManager):
                 return
             logger.debug("KRH: got peer's key.")
 
-            if not peer_key.verify_signature(
-                sig, json.dumps(message).encode()
-            ):
-                logger.debug("KRH: Sending AuthenitcationFailure")
-
-                success = conv.say(
-                    json.dumps(
-                        {
-                            "error": "authenitcation failed",
-                            "peer_key_id": peer_key.get_key_id(),
-                        }
-                    ).encode()
-                )
-                conv.terminate()
-                logger.warning("KRH: authentication failed.")
-                if not success:
-                    logger.warning(
-                        "KRH: Failed sending response authentication failed."
-                    )
-                return
-            logger.debug("KRH: verified peer's request.")
+            key = None
             private_key = None
             try:
                 key = self.key_store.get_key(key_id)
@@ -976,7 +921,7 @@ class GroupDidManager(_GroupDidManager):
                 logger.debug("KRH: unknown private key!.")
                 private_key = None
 
-            if not private_key:
+            if not key or not private_key:
                 logger.debug("KRH: Sending DontOwnKey")
                 success = conv.say(
                     json.dumps(
@@ -998,9 +943,7 @@ class GroupDidManager(_GroupDidManager):
 
             logger.debug("KRH: Sending key!")
             success = conv.say(
-                json.dumps(
-                    {"private_key": peer_key.encrypt(private_key).hex()}
-                ).encode()
+                json.dumps({"private_key": private_key.hex()}).encode()
             )
             if not success:
                 logger.warning("KRH: Failed sending response with key.")
@@ -1054,13 +997,6 @@ class GroupDidManager(_GroupDidManager):
             "did": self.member_did_manager.did,
             "key_id": key_id,
         }
-        key_request_message.update(
-            {
-                "signature": key.sign(
-                    json.dumps(key_request_message).encode()
-                ).hex()
-            }
-        )
         count = 0
         for peer_id in self.get_member_ipfs_ids(other_member_did):
             if peer_id == ipfs.peer_id:
@@ -1078,6 +1014,9 @@ class GroupDidManager(_GroupDidManager):
                         peer_id=peer_id,
                         others_req_listener=f"{self.did}-KeyRequests",
                     )
+                    # double-check communications are encrypted
+                    assert conv._encryption_callback is not None
+                    assert conv._decryption_callback is not None
                 except CommunicationTimeout:
                     logger.warning(
                         "RK: Failed to initiate key request (timeout): "
@@ -1136,7 +1075,7 @@ class GroupDidManager(_GroupDidManager):
                 conv.close()
 
             except Exception as error:
-                # logger.warning(traceback.format_exc())
+                logger.warning(traceback.format_exc())
                 logger.warning(
                     f"RK: Error in request_key: {type(error)} {error}"
                 )
@@ -1147,7 +1086,7 @@ class GroupDidManager(_GroupDidManager):
             if "error" in response.keys():
                 logger.warning(response)
                 continue
-            private_key = key.decrypt(bytes.fromhex(response["private_key"]))
+            private_key = bytes.fromhex(response["private_key"])
             key = Key.from_key_id(key_id)
             key.unlock(private_key)
             self.key_store.add_key(key)
@@ -1365,49 +1304,152 @@ class InvitationCode:
     ipfs_id: str
     ipfs_addresses: list[str]
 
+    def serialise_dict(self) -> str:
+        return {
+            "key": self.key.get_key_id(),
+            "ipfs_id": self.ipfs_id,
+            "ipfs_addresses": self.ipfs_addresses,
+        }
+
     def serialise(self) -> str:
-        return json.dumps(
-            {
-                "key": self.key.get_key_id(),
-                "ipfs_id": self.ipfs_id,
-                "ipfs_addresses": self.ipfs_addresses,
-            }
-        )
+        return json.dumps(self.serialise_dict())
 
     @classmethod
-    def deserialise(cls, code: str):
-        data = json.loads(code)
+    def deserialise_from_dict(cls, data: dict):
         return cls(
             key=Key.from_key_id(data["key"]),
             ipfs_id=data["ipfs_id"],
             ipfs_addresses=data["ipfs_addresses"],
         )
 
+    @classmethod
+    def deserialise(cls, code: str):
+        data = json.loads(code)
+        return cls.deserialise_from_dict(data)
 
-def join_blockchain2(invitation_code: InvitationCode):
-    one_time_key = Key.create(CRYPTO_FAMILY)
 
-    def encrypt(data):
-        return invitation_code.key.encrypt(data)
+class JoinProcess:
+    def __init__(
+        self,
+        invitation: str | dict | InvitationCode,
+        group_key_store: KeyStore | str,
+        member: KeyStore | GenericDidManager,
+        other_blocks_handler: Callable[[Block], None] | None = None,
+    ):
+        logger_gdm_join.debug("Joining GDM...")
+        if isinstance(invitation, InvitationCode):
+            invitation_code = invitation
+        elif isinstance(invitation, dict):
+            invitation_code = InvitationCode.deserialise_from_dict(invitation)
+        elif isinstance(invitation, str):
+            invitation_code = InvitationCode.deserialise(invitation)
+        else:
+            raise TypeError(f"Wrong type or invitation: {type(invitation)}")
 
-    def decrypt(data):
-        return one_time_key.decrypt(data)
+        self.invitation_code = invitation_code
+        self.peer_found = Event()
+        self.data_received = Event()
+        self.joined = Event()
+        self.group_did_manager: GroupDidManager | None = None
+        self.group_key_store = group_key_store
+        self.member = member
+        self.other_blocks_handler = other_blocks_handler
+        if isinstance(self.group_key_store, str):
+            if not os.path.isdir(self.group_key_store):
+                raise ValueError(
+                    "If a string is passed for the `key_store` parameter, "
+                    "it should be a valid directory"
+                )
 
-    conv = ipfs_tk_transmission.Conversation.start(
-        conv_name=f"WalidJoin-{invitation_code.key.get_public_key()}",
-        peer_id=invitation_code.ipfs_id,
-        others_req_listener=f"WaliInvite-{
-            invitation_code.key.get_public_key()
-        }",
-        encryption_callbacks=(encrypt, decrypt),
-        salutation_message=one_time_key.get_key_id().encode(),
-    )
+        def join():
+            try:
+                self.join_blockchain2()
+            except Exception as e:
+                import traceback
 
-    reply = conv.listen(datatransmission.COMMS_TIMEOUT_S)
-    data = json.loads(str.decode(reply))
+                logger_gdm_join.error(e)
+                traceback.print_exc()
 
-    blockchain_invitation = data["blockchain_invitation"]
-    gdm_key = Key.deserialise(data["group_key"], one_time_key)
+        self.thread = Thread(target=join)
+        self.thread.start()
+
+    def join_blockchain2(self):
+        one_time_key = Key.create(CRYPTO_FAMILY)
+
+        def encrypt(data):
+            return self.invitation_code.key.encrypt(data)
+
+        def decrypt(data):
+            return one_time_key.decrypt(data)
+
+        # find and connect to IPFS peer
+        logger_gdm_join.debug("Finding peer...")
+        ipfs_join_threads: list[Thread] = []
+        for addr in self.invitation_code.ipfs_addresses:
+            logger.debug(f"{addr}/p2p/{self.invitation_code.ipfs_id}")
+            thr = Thread(
+                target=ipfs.peers.connect,
+                args=(f"{addr}/p2p/{self.invitation_code.ipfs_id}",),
+            )
+            thr.start()
+        ipfs_join_threads.append(thr)
+        for thr in ipfs_join_threads:
+            thr.join()
+        self.peer_found.set()
+
+        # talk to peer, get data
+        logger_gdm_join.debug("Contacting peer...")
+        others_req_listener = (
+            f"WaliInvite-{self.invitation_code.key.get_public_key()}"
+        )
+        conv = ipfs.start_conversation(
+            conv_name=f"WalidJoin-{self.invitation_code.key.get_public_key()}",
+            peer_id=self.invitation_code.ipfs_id,
+            others_req_listener=others_req_listener,
+            encryption_callbacks=(encrypt, decrypt),
+            salutation_message=one_time_key.get_key_id().encode(),
+        )
+        logger_gdm_join.debug("Talking to peer...")
+
+        keys_data = conv.listen(datatransmission.COMMS_TIMEOUT_S)
+        blockchain_data = conv.listen_for_file()["filepath"]
+        conv.terminate()
+
+        self.data_received.set()
+
+        # load data received from peer
+        logger_gdm_join.debug("Processing data...")
+        data = json.loads(bytes.decode(keys_data))
+        gdm_keys = [
+            Key.deserialise(key, one_time_key) for key in data["group_keys"]
+        ]
+        blockchain_id = data["blockchain_id"]
+        logger_gdm_join.debug(blockchain_id)
+        logger_gdm_join.debug(blockchain_data)
+        join_blockchain_from_zip(blockchain_id, blockchain_data)
+        blockchain = Blockchain(blockchain_id)
+        if isinstance(self.group_key_store, str):
+            # use blockchain ID instead of DID
+            # as some filesystems don't support colons
+            key_store_path = os.path.join(
+                self.group_key_store,
+                f"{blockchain.blockchain_id}.json",
+            )
+            self.group_key_store = KeyStore(
+                key_store_path, Key.create(CRYPTO_FAMILY)
+            )
+
+        for key in gdm_keys:
+            self.group_key_store.add_key(key)
+        logger_gdm_join.debug("Loading GroupDidManager...")
+        self.group_did_manager = GroupDidManager._join(
+            blockchain=blockchain,
+            group_key_store=self.group_key_store,
+            member=self.member,
+            other_blocks_handler=self.other_blocks_handler,
+        )
+        logger_gdm_join.debug("Joined GroupDidManager!")
+        self.joined.set()
 
 
 class InvitationManager:
@@ -1417,14 +1459,28 @@ class InvitationManager:
         self.listener = ipfs_tk_transmission.ConversationListener(
             ipfs_client=ipfs,
             listener_name=f"WaliInvite-{self.key.get_public_key()}",
-            eventhandler=self.handler,
+            eventhandler=self._handler,
         )
+        logger_gdm_join.debug("Created InvitationManager.")
 
     @classmethod
     def create(cls, gdm: GroupDidManager):
         return cls(gdm=gdm, key=Key.create(CRYPTO_FAMILY))
 
+    def _handler(self, conv_name, peer_id, salutation_start):
+        logger_gdm_join.debug("_Received request.")
+        try:
+            self.handler(
+                conv_name=conv_name,
+                peer_id=peer_id,
+                salutation_start=salutation_start,
+            )
+        except Exception as e:
+            logger_gdm_join.error(e)
+
     def handler(self, conv_name, peer_id, salutation_start):
+        logger_gdm_join.debug("Received request.")
+
         their_key = Key.from_key_id(salutation_start.decode())
 
         def encrypt(data):
@@ -1433,33 +1489,48 @@ class InvitationManager:
         def decrypt(data):
             return self.key.decrypt(data)
 
-        conv = ipfs_tk_transmission.Conversation.join(
+        logger_gdm_join.debug("Joining conversation...")
+        conv = ipfs.join_conversation(
             conv_name=conv_name,
             peer_id=peer_id,
             others_trsm_listener=conv_name,
             encryption_callbacks=(encrypt, decrypt),
         )
+        keys = [
+            key.serialise(their_key)
+            for key in self.gdm.key_store.get_all_keys()
+        ]
+        logger_gdm_join.debug("Sending keys...")
         conv.say(
             str.encode(
                 json.dumps(
                     {
-                        "group_key": self.gdm.get_control_key().serialise(
-                            their_key
-                        ),
-                        "blockchain_invitation": self.gdm.blockchain.create_invitation(
-                            one_time=True, shared=False
-                        ),
+                        "group_keys": keys,
+                        "blockchain_id": self.gdm.blockchain.blockchain_id,
                     }
                 )
             )
         )
+        logger_gdm_join.debug("Getting blockchain data...")
+        blockchain_data = self.gdm.blockchain.get_blockchain_data()
+        logger_gdm_join.debug("Sending blockchain data...")
+        conv.transmit_file(blockchain_data)
+        logger_gdm_join.debug("Terminating...")
         conv.terminate()
+
+        self.listener.terminate()
 
     def generate_code(self) -> InvitationCode:
         return InvitationCode(
             key=self.key.clone_public(),
             ipfs_id=ipfs.peer_id,
-            ipfs_addresses=ipfs.get_addrs(),
+            ipfs_addresses=[
+                addr.split("/p2p/")[0]
+                for addr in ipfs.get_addrs()
+                if not addr.startswith("/dns")
+                and "127.0.0.1" not in addr
+                and "webrtc" not in addr
+            ],
         )
 
     def terminate(self):
@@ -1478,7 +1549,7 @@ class NotMemberError(Exception):
 
 
 class IdentityJoinError(Exception):
-    """When `DidManager.make_member()` fails."""
+    """When `DidManager.add_member()` fails."""
 
     def __init__(self, message: str):
         self.message = message

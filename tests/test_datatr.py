@@ -19,6 +19,9 @@ from walid_docker.walid_docker import (
     delete_containers,
 )
 
+from walytis_identities.log import logger_datatr
+
+logger_datatr.setLevel(logging.DEBUG)
 print(
     coloured(
         "Ensure GroupDidManager tar files were created with the same IPFS node "
@@ -121,29 +124,19 @@ docker_datatr.docker_part()
 
 def test_datatransmission():
     """Test that the previously created block is available in the container."""
-    from time import sleep
 
-    # sleep(20)
     logger.debug("Starting datatransmission...")
-    conv = None
-    for i in range(5):
-        try:
-            conv = start_conversation(
-                shared_data.group_did_manager,
-                CONV_NAME,
-                shared_data.containers[0].ipfs_id,
-                CONV_NAME,
-            )
-            break
-        except CommunicationTimeout:
-            logger.warning("Timeout starting conversation...")
-        sleep(5)
-    if conv:
-        logger.debug("Sending message...")
-        conv.say(HELLO_THERE)
-        logger.debug("Awaiting response...")
-        reply = conv.listen(COMMS_TIMEOUT_S)
-        logger.debug("Got response!")
+    conv = start_conversation(
+        shared_data.group_did_manager,
+        CONV_NAME,
+        shared_data.containers[0].ipfs_id,
+        CONV_NAME,
+    )
+    logger.debug("Sending message...")
+    conv.say(HELLO_THERE)
+    logger.debug("Awaiting response...")
+    reply = conv.listen(COMMS_TIMEOUT_S)
+    logger.debug("Got response!")
 
     assert conv and reply == HI, "Datatransmission failed"
 

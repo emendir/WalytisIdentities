@@ -28,6 +28,7 @@ from .did_manager_blocks import (
     get_block_type,
     get_latest_control_key,
     get_all_control_keys,
+    get_control_key_age,
     get_latest_did_doc,
 )
 from .did_objects import Key
@@ -309,6 +310,9 @@ class DidManager(GenericDidManager):
     def get_control_keys(self) -> list[Key]:
         return get_all_control_keys(self._blockchain)
 
+    def get_control_key_age(self, key_id: str) -> int:
+        return get_control_key_age(self._blockchain, key_id)
+
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""
         did_doc_block = DidDocBlock.new(did_doc)
@@ -356,7 +360,9 @@ class DidManager(GenericDidManager):
             # TODO: raise custom exception
             raise Exception("Don't have control key yet!")
 
-    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
+    def encrypt(
+        self, data: bytes, encryption_options: str | None = None
+    ) -> bytes:
         """Encrypt the provided data using the specified public key.
 
         Args:
@@ -388,7 +394,7 @@ class DidManager(GenericDidManager):
             cipher_package,
         )
 
-    def sign(self, data: bytes, signature_options: str = "") -> bytes:
+    def sign(self, data: bytes, signature_options: str | None = None) -> bytes:
         """Sign the provided data using the specified private key.
 
         Args:

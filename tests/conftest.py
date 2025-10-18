@@ -84,4 +84,11 @@ if True:
 
     if not are_we_in_docker():
         assert_is_loaded_from_source(SRC_DIR, walytis_identities)
-    walytis_identities.log.console_handler.setLevel(logging.DEBUG)
+    from walytis_identities.log import (
+        file_handler,
+        console_handler,
+    )
+    import logging
+
+    file_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.DEBUG)

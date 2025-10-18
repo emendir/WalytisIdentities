@@ -6,7 +6,7 @@ from time import sleep
 import _auto_run_with_pytest  # noqa
 import walytis_beta_api as walytis_api
 from emtest import await_thread_cleanup, env_vars, polite_wait
-from key_sharing_docker import SharedData, wait_dur_s
+from key_sharing_docker import SharedData, JOIN_DUR
 from walid_docker.build_docker import build_docker_image
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
@@ -15,13 +15,20 @@ from walid_docker.walid_docker import (
 
 from walytis_identities.did_manager import DidManager
 from walytis_identities.did_objects import Key
-from walytis_identities.group_did_manager import GroupDidManager
+from walytis_identities.group_did_manager import (
+    GroupDidManager,
+    InvitationCode,
+)
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
-from walytis_identities.log import logger_datatr
+from walytis_identities.log import logger_datatr, logger_gdm_join, file_handler
 import logging
 
 logger_datatr.setLevel(logging.DEBUG)
+logger_gdm_join.setLevel(logging.DEBUG)
+logger_gdm_join.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.DEBUG)
+
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
 
@@ -94,30 +101,32 @@ def test_create_identity_and_invitation():
         ]
     )
     output = None
-    # print(python_code)
+    print(python_code)
+    from walytis_identities.group_did_manager import ipfs
+    import ipfs_tk_transmission
+
+    print(ipfs_tk_transmission.__file__)
+
     # breakpoint()
     output = shared_data.containers[0].run_python_code(
-        python_code, print_output=True, timeout=10
+        python_code, print_output=False, background=True, timeout=JOIN_DUR
     )
-    # print("Got output!")
-    # print(output)
-    try:
-        shared_data.invitation = [
-            json.loads(line)
-            for line in output.split("\n")
-            if line.startswith('{"blockchain_invitation":')
-        ][-1]
-    except:
-        print(f"\n{python_code}\n")
-        pass
-
-    assert shared_data.invitation is not None, (
-        "created identity and invitation on docker"
-    )
+    sleep(5)
 
 
 def test_add_member_identity():
     """Test that a new member can be added to an existing group DID manager."""
+    peer_id = shared_data.containers[0].ipfs_id
+    multi_addrs = shared_data.containers[0].get_multi_addrs()
+
+    multi_addrs = [
+        addr.split("/p2p/")[0]
+        for addr in multi_addrs
+        if not addr.startswith("/dns")
+        and "127.0.0.1" not in addr
+        and "webrtc" not in addr
+    ]
+    invitation = InvitationCode(shared_data.KEY, peer_id, multi_addrs)
     group_keystore = KeyStore(
         os.path.join(shared_data.group_2_config_dir, "group_2.json"),
         shared_data.KEY,
@@ -125,20 +134,15 @@ def test_add_member_identity():
     member = DidManager.create(shared_data.group_2_config_dir)
     try:
         shared_data.group_2 = GroupDidManager.join(
-            shared_data.invitation, group_keystore, member
+            invitation, group_keystore, member
         )
-    except walytis_api.JoinFailureError:
-        try:
-            shared_data.group_2 = GroupDidManager.join(
-                shared_data.invitation, group_keystore, member
-            )
-        except walytis_api.JoinFailureError as error:
-            print(error)
-            breakpoint()
+    except Exception as e:
+        logger.error(e)
+        raise e
     shared_data.group_2_did = shared_data.group_2.member_did_manager.did
 
     # wait a short amount to allow the docker container to learn of the new member
-    polite_wait(2)
+    polite_wait(JOIN_DUR)
 
     print("Adding member on docker...")
     python_code = "\n".join(
@@ -171,7 +175,7 @@ def test_get_control_key():
     )
     # print(bash_code)
     print("Waiting for key sharing...")
-    polite_wait(wait_dur_s)
+    polite_wait(JOIN_DUR)
 
     assert shared_data.group_2.get_control_key().private_key, (
         "Got control key ownership"
@@ -231,7 +235,7 @@ def test_renew_control_key():
         )
 
         print("Waiting for key sharing...")
-        polite_wait(wait_dur_s)
+        polite_wait(JOIN_DUR)
         private_key = shared_data.group_2.get_control_key().private_key
         try:
             new_key.unlock(private_key)
@@ -255,10 +259,6 @@ def run_tests():
 
     # on docker container, create identity
     test_create_identity_and_invitation()
-    if not shared_data.invitation:
-        print("Skipped remaining tests because first test failed.")
-        cleanup()
-        return
 
     # locally join the identity created on docker
     test_add_member_identity()

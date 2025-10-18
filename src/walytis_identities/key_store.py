@@ -9,7 +9,13 @@ from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 
 from .did_objects import Key
-from .utils import bytes_from_string, bytes_to_string
+from .utils import (
+    bytes_from_string,
+    bytes_to_string,
+    time_to_string,
+    string_to_time,
+)
+from datetime import datetime
 
 _CodePackage = TypeVar("_CodePackage", bound="CodePackage")
 
@@ -21,9 +27,9 @@ class CodePackage:
     code: bytes  # cipher or signature
     public_key: bytes
     family: str
-    operation_options: (
-        str  # additional cryptographic signing or encryption options
-    )
+    creation_time: datetime | None = None
+    # additional cryptographic signing or encryption options
+    operation_options: str = None
 
     @classmethod
     def deserialise(cls: Type[_CodePackage], data: str) -> _CodePackage:
@@ -32,6 +38,7 @@ class CodePackage:
             code=bytes_from_string(_data["code"]),
             public_key=bytes_from_string(_data["public_key"]),
             family=_data["family"],
+            creation_time=string_to_time(_data.get("creation_time")),
             operation_options=_data["operation_options"],
         )
 
@@ -48,6 +55,9 @@ class CodePackage:
                 "code": bytes_to_string(self.code),
                 "public_key": bytes_to_string(self.public_key),
                 "family": self.family,
+                "creation_time": time_to_string(self.creation_time)
+                if self.creation_time
+                else None,
                 "operation_options": self.operation_options,
             }
         )
@@ -68,9 +78,21 @@ class CodePackage:
             signature_options=self.operation_options,
         )
 
+    def decrypt(self, private_key: bytes) -> bool:
+        """Assuming self.code is a signature, verify it against the signed data."""
+        key = Crypt(
+            family=self.family,
+            public_key=self.public_key,
+            private_key=private_key,
+        )
+        return key.decrypt(
+            data=self.code,
+            signature_options=self.operation_options,
+        )
+
     @staticmethod
     def encrypt(
-        data: bytes, key: Key, encryption_options: str = ""
+        data: bytes, key: Key, encryption_options: str | None = None
     ) -> _CodePackage:
         """Encrypt the provided data using the specified key.
 
@@ -91,7 +113,43 @@ class CodePackage:
             code=cipher,
             public_key=key.public_key,
             family=key.family,
+            creation_time=key.creation_time,
             operation_options=encryption_options,
+        )
+
+    @staticmethod
+    def sign(
+        data: bytes, key: Key, signature_options: str | None = None
+    ) -> _CodePackage:
+        """Sign the provided data using the specified key.
+
+        Args:
+            data (bytes): the data to encrypt
+            key (Key): the key to use to encrypt the data
+            encryption_options (str): specification code for which
+                            encryption/decryption protocol should be used
+        Returns:
+            CodePackage: an object containing the ciphertext, public-key,
+                            crypto-family and encryption-options
+        """
+        cipher = key.sign(
+            data=data,
+            signature_options=signature_options,
+        )
+        return CodePackage(
+            code=cipher,
+            public_key=key.public_key,
+            family=key.family,
+            creation_time=key.creation_time,
+            operation_options=signature_options,
+        )
+
+    def get_key(self) -> Key:
+        return Key(
+            public_key=self.public_key,
+            private_key=None,
+            family=self.family,
+            creation_time=self.creation_time,
         )
 
 
@@ -137,6 +195,9 @@ class KeyStore:
             keys.update({key.get_key_id(): key})
         self.keys = keys
         self._custom_metadata = data.get("custom_metadata", {})
+
+    def get_all_keys(self) -> list[Key]:
+        return self.keys.values()
 
     def get_custom_metadata(self):
         return self._custom_metadata
@@ -193,7 +254,7 @@ class KeyStore:
 
     @staticmethod
     def encrypt(
-        data: bytes, key: Key, encryption_options: str = ""
+        data: bytes, key: Key, encryption_options: str | None = None
     ) -> CodePackage:
         """Encrypt the provided data using the specified key.
 
@@ -251,6 +312,7 @@ class KeyStore:
             code=signature,
             public_key=key.public_key,
             family=key.family,
+            creation_time=key.creation_time,
             operation_options=signature_options,
         )
 
@@ -288,6 +350,13 @@ class KeyStore:
     def reload(self) -> "KeyStore":
         self._load_appdata()
         return self
+
+    def clone(self, key_store_path: str, key: Key) -> "KeyStore":
+        key_store = KeyStore(key_store_path=key_store_path, key=key)
+        for key in self.get_all_keys():
+            key_store.add_key(key)
+        key_store.set_custom_metadata(self.get_custom_metadata())
+        return key_store
 
     def __del__(self):
         self.terminate()

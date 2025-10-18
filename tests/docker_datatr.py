@@ -21,6 +21,9 @@ from walid_docker.walid_docker import (
     delete_containers,
 )
 
+from walytis_identities.log import logger_datatr
+
+logger_datatr.setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
 
 CONV_NAME = "WalIdDataTransTest"

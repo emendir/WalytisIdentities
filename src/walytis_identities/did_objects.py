@@ -171,6 +171,11 @@ class Key(Crypt):
             "creation_time": time_to_string(self.creation_time),
         }
 
+    def is_unlocked(self) -> bool:
+        if self.private_key:
+            return True
+        return False
+
     @classmethod
     def deserialise(cls: Type[_Key], data: dict, crypt: Crypt) -> _Key:
         """Deserialise data with encrypted private key."""
