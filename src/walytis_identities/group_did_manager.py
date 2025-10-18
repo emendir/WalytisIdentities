@@ -1,5 +1,7 @@
 """Classes for managing Person and Device identities."""
 
+from .utils import string_to_time
+from .key_store import CodePackage
 from ipfs_tk_transmission import Conversation
 from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
 from .log import logger_gdm_join, logger_gdm as logger
@@ -220,6 +222,7 @@ class _GroupDidManager(DidManager):
         self._init_blocks_list_gdm()
         self._members: dict[str, Member] = {}
         self.member_invitations: list[InvitationManager] = []
+        self.load_invitations()
         self.get_members(no_cache=True)
         if auto_load_missed_blocks:
             _GroupDidManager.load_missed_blocks(self)
@@ -320,12 +323,37 @@ class _GroupDidManager(DidManager):
         """Create and register a member invitation on the blockchain."""
         invitation = InvitationManager.create(self)
         self.member_invitations.append(invitation)
+        self.save_invitations()
         return invitation.generate_code().serialise_dict()
+
+    def save_invitations(self) -> None:
+        data = [
+            invitation.serialise() for invitation in self.member_invitations
+        ]
+        with open(self._get_invitations_file(), "w+") as file:
+            file.write(json.dumps(data))
+
+    def load_invitations(self) -> None:
+        if self.member_invitations:
+            raise Exception("MemberInvitations already loaded")
+        if os.path.exists(self._get_invitations_file()):
+            with open(self._get_invitations_file(), "r") as file:
+                data = json.loads(file.read())
+            self.member_invitations = [
+                InvitationManager.deserialise(self, inv) for inv in data
+            ]
+
+    def _get_invitations_file(self) -> str:
+        return os.path.join(
+            os.path.dirname(self.key_store.key_store_path),
+            f"member_invitations-{self.blockchain.blockchain_id}.json",
+        )
 
     def load_invitation(self, key: Key) -> dict:
         """Create and register a member invitation on the blockchain."""
         invitation = InvitationManager(self, key)
         self.member_invitations.append(invitation)
+        self.save_invitations()
         return invitation.generate_code().serialise_dict()
 
     def add_member(self, member: GenericDidManager) -> None:
@@ -861,56 +889,21 @@ class GroupDidManager(_GroupDidManager):
         # double-check communications are encrypted
         assert conv._encryption_callback is not None
         assert conv._decryption_callback is not None
-        if self._terminate:
-            conv.close()
-        logger.debug("KRH: Joined conversation.")
-        success = conv.say("Hello there!".encode())
-        if self._terminate:
-            conv.close()
-        if not success:
-            logger.debug("KRH: failed at salutation.")
-            conv.terminate()
-            return
+
+        logger.start_recording("KEY_REQUESTS_HANDLER")
         try:
-            try:
-                message = json.loads(
-                    conv.listen(timeout=LISTEN_TIMEOUT).decode()
-                )
-            except ConvListenTimeout:
-                logger.warning("Timeout waiting for key request.")
-                conv.close()
-                return None
             if self._terminate:
-                conv.close()
-            logger.debug("KRH: got key request.")
-            peer_did = message["did"]  # member DID of peer who is requesting
-            key_id = message["key_id"]
-            try:
-                logger.debug("Getting member control key...")
-                peer_key = self.get_member_control_key(peer_did)
-                logger.debug("Got member control key!")
-            except NotMemberError as error:
-                # the peer requesting the key
-                # is not known to us to be a member of this GroupDidManager
-                logger.warning(str(error))
-                logger.debug(
-                    "KRH: Sending NotMemberError. "
-                    f"Num Members: {len(self.get_members())}"
-                )
-                success = conv.say(
-                    json.dumps(
-                        {
-                            "error": "NotMemberError",
-                        }
-                    ).encode()
-                )
-                conv.terminate()
-                if not success:
-                    logger.warning(
-                        "KRH: Failed sending response NotMemberError"
-                    )
                 return
-            logger.debug("KRH: got peer's key.")
+            logger.debug("KRH: Joined conversation.")
+            assert conv.say("Hello there!".encode())
+            if self._terminate:
+                return
+
+            message = json.loads(conv.listen(timeout=LISTEN_TIMEOUT).decode())
+            if self._terminate:
+                return
+            logger.debug("KRH: got key request.")
+            key_id = message["key_id"]
 
             key = None
             private_key = None
@@ -920,43 +913,43 @@ class GroupDidManager(_GroupDidManager):
             except UnknownKeyError:
                 logger.debug("KRH: unknown private key!.")
                 private_key = None
+                return
 
             if not key or not private_key:
                 logger.debug("KRH: Sending DontOwnKey")
-                success = conv.say(
+                assert conv.say(
                     json.dumps(
                         {
                             "error": "I don't own this key.",
-                            "peer_key_id": peer_key.get_key_id(),
+                            "key_id": key_id,
                         }
                     ).encode()
                 )
-                conv.terminate()
-                logger.warning(
-                    f"KRH: Don't have requested key: {peer_key.get_key_id()}"
-                )
-                if not success:
-                    logger.warning(
-                        "KRH: Failed sending response I don't own this key"
-                    )
+                logger.warning(f"KRH: Don't have requested key: {key_id}")
                 return
 
             logger.debug("KRH: Sending key!")
-            success = conv.say(
+            assert conv.say(
                 json.dumps({"private_key": private_key.hex()}).encode()
             )
-            if not success:
-                logger.warning("KRH: Failed sending response with key.")
-            else:
-                logger.debug(f"KRH: Shared key!: {key.get_key_id()}")
-            conv.terminate()
+            logger.debug(f"KRH: Shared key!: {key.get_key_id()}")
+
+        except ConvListenTimeout:
+            logger.warning(
+                "KRH: Timeout in key request handler."
+                f"\n{logger.get_recording('KEY_REQUESTS_HANDLER')}"
+            )
 
         except Exception as error:
-            import traceback
-
-            traceback.print_exc()
-            logger.error(f"Error in key_requests_handler: {error}")
-            conv.terminate()
+            logger.error(
+                f"\n{logger.get_recording('KEY_REQUESTS_HANDLER')}"
+                f"\n{traceback.format_exc()}"
+                f"RK: Error in request_key: {type(error)} {error}"
+            )
+        finally:
+            if conv:
+                conv.terminate()
+            logger.stop_recording("KEY_REQUESTS_HANDLER")
 
     def get_member_control_key(self, did: str) -> Key:
         """Get the DID control key of another member."""
@@ -994,7 +987,6 @@ class GroupDidManager(_GroupDidManager):
         """Request a key from another member."""
         key = self.member_did_manager.get_control_key()
         key_request_message = {
-            "did": self.member_did_manager.did,
             "key_id": key_id,
         }
         count = 0
@@ -1005,83 +997,68 @@ class GroupDidManager(_GroupDidManager):
             logger.debug(
                 f"RK: Requesting key from {other_member_did} for {key_id}..."
             )
+
+            # collect debug logs in case we encounter error
+            logger.start_recording("KEY_REQUESTS")
+
+            conv = None
             try:
-                conv = None
-                try:
-                    conv = datatransmission.start_conversation(
-                        self,
-                        conv_name=f"KeyRequest-{key_id}",
-                        peer_id=peer_id,
-                        others_req_listener=f"{self.did}-KeyRequests",
-                    )
-                    # double-check communications are encrypted
-                    assert conv._encryption_callback is not None
-                    assert conv._decryption_callback is not None
-                except CommunicationTimeout:
-                    logger.warning(
-                        "RK: Failed to initiate key request (timeout): "
-                        f"KeyRequest-{key_id}, "
-                        f"{peer_id}, {other_member_did}-KeyRequests"
-                        f"\nRequested key for {other_member_did} "
-                        f"from {peer_id}"
-                    )
-                    # conv.close()
-                    continue
+                conv = datatransmission.start_conversation(
+                    self,
+                    conv_name=f"KeyRequest-{key_id}",
+                    peer_id=peer_id,
+                    others_req_listener=f"{self.did}-KeyRequests",
+                )
+                # double-check communications are encrypted
+                assert conv._encryption_callback is not None
+                assert conv._decryption_callback is not None
+
                 if self._terminate:
-                    conv.close()
+                    return
                 logger.debug("RK: started conversation")
 
-                try:
-                    # receive salutation
-                    _d = conv.listen(timeout=LISTEN_TIMEOUT)
-                except ConvListenTimeout:
-                    logger.warning("RK: Timeout waiting for salutation.")
-                    conv.close()
-                    continue
+                # receive salutation
+                salute = conv.listen(timeout=LISTEN_TIMEOUT)
+                assert salute == "Hello there!".encode()
+
                 if self._terminate:
-                    conv.close()
+                    return
                 logger.debug("RK: requesting key...")
-                sleep(0.15)
-                success = conv.say(
+                assert conv.say(
                     json.dumps(key_request_message).encode(),
                 )
                 if self._terminate:
-                    conv.close()
-                if not success:
-                    logger.warning(
-                        "RK: Timeout communicating when requesting key."
-                    )
-                    conv.close()
-                    continue
+                    return
                 logger.debug("RK: awaiting response...")
-                try:
-                    response = json.loads(
-                        conv.listen(timeout=LISTEN_TIMEOUT).decode()
-                    )
-                except ConvListenTimeout:
-                    logger.warning(
-                        "RK: Timeout waiting for key response."
-                        f"KeyRequest-{key_id}, "
-                        f"{peer_id}, {other_member_did}-KeyRequests"
-                        f"\nRequested key for {other_member_did} "
-                        f"from {peer_id}"
-                    )
-
-                    conv.close()
-                    continue
+                response = json.loads(
+                    conv.listen(timeout=LISTEN_TIMEOUT).decode()
+                )
                 if self._terminate:
-                    conv.close()
+                    return
                 logger.debug("RK: Got Response!")
-                conv.close()
 
-            except Exception as error:
-                logger.warning(traceback.format_exc())
+            except ConvListenTimeout:
                 logger.warning(
+                    "RK: Timeout in key request."
+                    f"KeyRequest-{key_id}, "
+                    f"{peer_id}, {other_member_did}-KeyRequests"
+                    f"\nRequested key for {other_member_did} "
+                    f"from {peer_id}"
+                    f"\n{logger.get_recording('KEY_REQUESTS')}"
+                )
+
+                continue
+            except Exception as error:
+                logger.error(
+                    f"\n{logger.get_recording('KEY_REQUESTS')}"
+                    f"\n{traceback.format_exc()}"
                     f"RK: Error in request_key: {type(error)} {error}"
                 )
-                if conv:
-                    conv.close()
                 continue
+            finally:
+                if conv:
+                    conv.terminate()
+                logger.stop_recording("KEY_REQUESTS")
 
             if "error" in response.keys():
                 logger.warning(response)
@@ -1272,6 +1249,13 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass
             try:
+                logger.debug("GDM: terminating invitation managers...")
+                for e in self.member_invitations:
+                    e.terminate()
+            except Exception as e:
+                logger.warning(f"GDM TERMINATING: {e}")
+                pass
+            try:
                 if terminate_member:
                     logger.debug("GDM: terminating member_did_manager...")
                     self.member_did_manager.terminate()
@@ -1292,9 +1276,6 @@ class GroupDidManager(_GroupDidManager):
     def __del__(self):
         """Stop this Identity object, cleaning up resources."""
         self.terminate()
-
-    def invite_member2(self):
-        pass
 
 
 @dataclass_json
@@ -1421,7 +1402,8 @@ class JoinProcess:
         logger_gdm_join.debug("Processing data...")
         data = json.loads(bytes.decode(keys_data))
         gdm_keys = [
-            Key.deserialise(key, one_time_key) for key in data["group_keys"]
+            Key.deserialise_private_encrypted(key, one_time_key)
+            for key in data["group_keys"]
         ]
         blockchain_id = data["blockchain_id"]
         logger_gdm_join.debug(blockchain_id)
@@ -1467,6 +1449,27 @@ class InvitationManager:
     def create(cls, gdm: GroupDidManager):
         return cls(gdm=gdm, key=Key.create(CRYPTO_FAMILY))
 
+    def serialise(self) -> str:
+        # encrypt self.key with key from self.gdm
+        key = self.gdm.get_active_unlocked_control_keys()[-1]
+
+        return CodePackage(
+            code=key.encrypt(
+                str.encode(json.dumps(self.key.serialise_private()))
+            ),
+            public_key=key.public_key,
+            family=key.family,
+            creation_time=key.creation_time,
+        ).serialise()
+
+    @classmethod
+    def deserialise(cls, gdm: GroupDidManager, data: str):
+        cp = CodePackage.deserialise(data)
+        invitation_key = Key.deserialise_private(
+            json.loads(bytes.decode(gdm.decrypt(cp.serialise_bytes())))
+        )
+        return cls(gdm, invitation_key)
+
     def _handler(self, conv_name, peer_id, salutation_start):
         logger_gdm_join.debug("_Received request.")
         try:
@@ -1497,7 +1500,7 @@ class InvitationManager:
             encryption_callbacks=(encrypt, decrypt),
         )
         keys = [
-            key.serialise(their_key)
+            key.serialise_private_encrypted(their_key)
             for key in self.gdm.key_store.get_all_keys()
         ]
         logger_gdm_join.debug("Sending keys...")
@@ -1519,6 +1522,9 @@ class InvitationManager:
         conv.terminate()
 
         self.listener.terminate()
+        if self in self.gdm.member_invitations:
+            self.gdm.member_invitations.remove(self)
+            self.gdm.save_invitations()
 
     def generate_code(self) -> InvitationCode:
         return InvitationCode(

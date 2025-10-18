@@ -26,8 +26,14 @@ def test_key_serialisation():
     key1 = Key.create(shared_data.CRYPTO_FAMILY)
     key2 = Key.create(shared_data.CRYPTO_FAMILY)
 
-    assert (key2.decrypt(bytes.fromhex(key1.serialise(key2)["private_key"])) == key1.private_key
-            ),        "private key encryption in serialisation"
+    assert (
+        key2.decrypt(
+            bytes.fromhex(
+                key1.serialise_private_encrypted(key2)["private_key"]
+            )
+        )
+        == key1.private_key
+    ), "private key encryption in serialisation"
 
 
 def test_add_get_key():
@@ -35,7 +41,8 @@ def test_add_get_key():
     shared_data.crypt2 = Key.create(shared_data.CRYPTO_FAMILY)
 
     shared_data.keystore = KeyStore(
-        shared_data.key_store_path, shared_data.KEY)
+        shared_data.key_store_path, shared_data.KEY
+    )
 
     shared_data.keystore.add_key(shared_data.crypt1)
     shared_data.keystore.add_key(shared_data.crypt2)
@@ -45,13 +52,14 @@ def test_add_get_key():
 
     shared_data.keystore.terminate()
 
-    assert (c1.public_key == shared_data.crypt1.public_key
-            and c1.private_key == shared_data.crypt1.private_key
-            and c1.family == shared_data.crypt1.family
-            and c2.public_key == shared_data.crypt2.public_key
-            and c2.private_key == shared_data.crypt2.private_key
-            and c2.family == shared_data.crypt2.family
-            ),        "add and get key"
+    assert (
+        c1.public_key == shared_data.crypt1.public_key
+        and c1.private_key == shared_data.crypt1.private_key
+        and c1.family == shared_data.crypt1.family
+        and c2.public_key == shared_data.crypt2.public_key
+        and c2.private_key == shared_data.crypt2.private_key
+        and c2.family == shared_data.crypt2.family
+    ), "add and get key"
 
 
 def test_reopen_keystore():
@@ -60,13 +68,14 @@ def test_reopen_keystore():
     c1 = keystore.get_key(shared_data.crypt1.get_key_id())
     c2 = keystore.get_key(shared_data.crypt2.get_key_id())
 
-    assert (c1.public_key == shared_data.crypt1.public_key
-            and c1.private_key == shared_data.crypt1.private_key
-            and c1.family == shared_data.crypt1.family
-            and c2.public_key == shared_data.crypt2.public_key
-            and c2.private_key == shared_data.crypt2.private_key
-            and c2.family == shared_data.crypt2.family
-            ),        "reopen keystore"
+    assert (
+        c1.public_key == shared_data.crypt1.public_key
+        and c1.private_key == shared_data.crypt1.private_key
+        and c1.family == shared_data.crypt1.family
+        and c2.public_key == shared_data.crypt2.public_key
+        and c2.private_key == shared_data.crypt2.private_key
+        and c2.family == shared_data.crypt2.family
+    ), "reopen keystore"
 
 
 PLAIN_TEXT = "Hello there!".encode()
@@ -87,7 +96,8 @@ def test_signing_package():
 def test_code_package_serialisation():
     code_package = shared_data.keystore.encrypt(PLAIN_TEXT, shared_data.crypt2)
     new_code_package = CodePackage.deserialise_bytes(
-        code_package.serialise_bytes())
+        code_package.serialise_bytes()
+    )
     decrypted = shared_data.keystore.decrypt(new_code_package)
     assert decrypted == PLAIN_TEXT, "CodePackage serialisation"
 

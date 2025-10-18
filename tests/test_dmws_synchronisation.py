@@ -23,7 +23,6 @@ from walid_docker.walid_docker import (
     delete_containers,
 )
 
-from walytis_identities.did_manager import did_from_blockchain_id
 from walytis_identities.utils import logger
 
 REBUILD_DOCKER = True
@@ -33,13 +32,13 @@ CONTAINER_NAME_PREFIX = "walytis_identities_tests_device_"
 
 
 # Boilerplate python code when for running python tests in a docker container
-DOCKER_PYTHON_LOAD_TESTING_CODE = '''
+DOCKER_PYTHON_LOAD_TESTING_CODE = """
 import sys
 import threading
 import json
 from time import sleep
 sys.path.append('/opt/walytis_identities/tests')
-import conftest # configure Walytis API
+import conftest # configure Walytis API & logging
 import dmws_sync_docker
 from dmws_sync_docker import shared_data
 import pytest
@@ -48,9 +47,9 @@ logger.info('DOCKER: Preparing tests...')
 dmws_sync_docker.REBUILD_DOCKER=False
 dmws_sync_docker.DELETE_ALL_BRENTHY_DOCKERS=False
 logger.info('DOCKER: Ready to test!')
-'''
-DOCKER_PYTHON_FINISH_TESTING_CODE = '''
-'''
+"""
+DOCKER_PYTHON_FINISH_TESTING_CODE = """
+"""
 
 N_DOCKER_CONTAINERS = 4
 
@@ -60,8 +59,7 @@ class SharedData:
         self.abort = False
         self.super = None
         self.dm = None
-        self.key_store_path = os.path.join(
-            dm_config_dir, "keystore.json")
+        self.key_store_path = os.path.join(dm_config_dir, "keystore.json")
 
         # the cryptographic family to use for the tests
         self.CRYPTO_FAMILY = CRYPTO_FAMILY
@@ -69,12 +67,14 @@ class SharedData:
         print("Setting up docker containers...")
 
         self.containers: list[WalytisIdentitiesDocker] = [
-            None] * N_DOCKER_CONTAINERS
+            None
+        ] * N_DOCKER_CONTAINERS
 
     def init_dockers(self):
         threads = []
         delete_containers(container_name_substr=CONTAINER_NAME_PREFIX)
         for i in range(N_DOCKER_CONTAINERS):
+
             def task(number):
                 self.containers[number] = WalytisIdentitiesDocker(
                     container_name=f"{CONTAINER_NAME_PREFIX}{number}"
@@ -109,13 +109,11 @@ def setup_and_teardown() -> None:
 
 
 def prepare():
-
     if not os.path.exists(dm_config_dir):
         os.makedirs(dm_config_dir)
     if are_we_in_docker():
         return
     if REBUILD_DOCKER:
-
         build_docker_image(verbose=False)
 
     shared_data.init_dockers()
@@ -140,17 +138,21 @@ def setup_dm(docker_container: WalytisIdentitiesDocker):
     """In a docker container, create an Endra dm."""
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
 
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_create_dm()",
-        "print(f'DOCKER: Created DidManagerWithSupers: {type(shared_data.dm)}')",
-        "shared_data.dm.terminate()",
-        "print('Terminated!')",
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_create_dm()",
+            "print(f'DOCKER: Created DidManagerWithSupers: {type(shared_data.dm)}')",
+            "shared_data.dm.terminate()",
+            "print('Terminated!')",
+        ]
+    )
     try:
         output_lines = docker_container.run_python_code(
-            python_code, print_output=True, timeout=PROFILE_CREATE_TIMEOUT_S,
-            background=False
+            python_code,
+            print_output=True,
+            timeout=PROFILE_CREATE_TIMEOUT_S,
+            background=False,
         ).split("\n")
 
     except DockerShellError as e:
@@ -162,10 +164,14 @@ def setup_dm(docker_container: WalytisIdentitiesDocker):
         output_lines = e.output.split("\n")
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
-        for line in output_lines if line.startswith("DOCKER: ")
+        for line in output_lines
+        if line.startswith("DOCKER: ")
     ]
     last_line = docker_lines[-1] if len(docker_lines) > 0 else None
-    assert last_line == "Created DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>", function_name()
+    assert (
+        last_line
+        == "Created DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>"
+    ), function_name()
 
 
 def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
@@ -179,19 +185,23 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
         dict: an invitation to allow another device to join the dm
     """
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        "invitation=shared_data.dm.did_manager.invite_member()",
-        "print('DOCKER: ', json.dumps(invitation))",
-        "print(f'DOCKER: Loaded DidManagerWithSupers: {type(shared_data.dm)}')",
-        "shared_data.dm.terminate()",
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            "invitation=shared_data.dm.did_manager.invite_member()",
+            "print('DOCKER: ', json.dumps(invitation))",
+            "print(f'DOCKER: Loaded DidManagerWithSupers: {type(shared_data.dm)}')",
+            "shared_data.dm.terminate()",
+        ]
+    )
     # breakpoint()
     try:
         output_lines = docker_container.run_python_code(
-            python_code, print_output=True,
-            timeout=PROFILE_CREATE_TIMEOUT_S, background=False
+            python_code,
+            print_output=True,
+            timeout=PROFILE_CREATE_TIMEOUT_S,
+            background=False,
         ).split("\n")
     except DockerShellError as e:
         print(e)
@@ -203,11 +213,11 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
-        for line in output_lines if line.startswith("DOCKER: ")
+        for line in output_lines
+        if line.startswith("DOCKER: ")
     ]
 
     if len(docker_lines) < 2:
-
         assert False, function_name()
 
         return None
@@ -219,7 +229,10 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
     except json.decoder.JSONDecodeError:
         logger.warning(f"Error getting invitation: {docker_lines[-2]}")
         invitation = None
-    assert last_line == "Loaded DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>", function_name()
+    assert (
+        last_line
+        == "Loaded DidManagerWithSupers: <class 'walytis_identities.did_manager_with_supers.DidManagerWithSupers'>"
+    ), function_name()
 
     return invitation
 
@@ -227,7 +240,7 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
 def add_sub(
     docker_container_new: WalytisIdentitiesDocker,
     docker_container_old: WalytisIdentitiesDocker,
-    invitation: dict
+    invitation: dict,
 ) -> None:
     """Join an existing Endra dm on a new docker container.
 
@@ -241,30 +254,37 @@ def add_sub(
     """
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
 
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        "logger.info('Waiting to allow new device to join...')",
-        f"sleep({PROFILE_JOIN_TIMEOUT_S})",
-        "logger.info('Finished waiting, terminating...')",
-        "shared_data.dm.terminate()",
-        "logger.info('Exiting after waiting.')",
-
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            "logger.info('Waiting to allow new device to join...')",
+            f"sleep({PROFILE_JOIN_TIMEOUT_S})",
+            "logger.info('Finished waiting, terminating...')",
+            "shared_data.dm.terminate()",
+            "logger.info('Exiting after waiting.')",
+        ]
+    )
     docker_container_old.run_python_code(
-        python_code, background=True, print_output=True,
+        python_code,
+        background=True,
+        print_output=True,
     )
     invit_json = json.dumps(invitation)
 
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        f"dmws_sync_docker.docker_join_dm('{invit_json}')",
-        "shared_data.dm.terminate()",
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"dmws_sync_docker.docker_join_dm('{invit_json}')",
+            "shared_data.dm.terminate()",
+        ]
+    )
     try:
         output_lines = docker_container_new.run_python_code(
-            python_code, timeout=PROFILE_JOIN_TIMEOUT_S + 5, print_output=True,
-            background=False
+            python_code,
+            timeout=PROFILE_JOIN_TIMEOUT_S + 5,
+            print_output=True,
+            background=False,
         ).split("\n")
     except DockerShellError as e:
         print(e)
@@ -276,7 +296,8 @@ def add_sub(
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
-        for line in output_lines if line.startswith("DOCKER: ")
+        for line in output_lines
+        if line.startswith("DOCKER: ")
     ]
     last_line = docker_lines[-1] if len(docker_lines) > 0 else None
 
@@ -285,19 +306,24 @@ def add_sub(
 
 def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        "super=dmws_sync_docker.docker_create_super()",
-        "invitation = super.invite_member()",
-        "print('DOCKER: ',json.dumps(invitation))",
-        "print(f'DOCKER: Created super: {type(super)}')",
-        "shared_data.dm.terminate()",
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            "super=dmws_sync_docker.docker_create_super()",
+            "invitation = super.invite_member()",
+            "invitation.update({'did':super.did})",
+            "print('DOCKER: ',json.dumps(invitation))",
+            "print(f'DOCKER: Created super: {type(super)}')",
+            "shared_data.dm.terminate()",
+        ]
+    )
     try:
         output_lines = docker_container.run_python_code(
-            python_code, print_output=True,
-            timeout=PROFILE_CREATE_TIMEOUT_S, background=False
+            python_code,
+            print_output=True,
+            timeout=PROFILE_CREATE_TIMEOUT_S,
+            background=False,
         ).split("\n")
     except DockerShellError as e:
         print(e)
@@ -309,7 +335,8 @@ def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
-        for line in output_lines if line.startswith("DOCKER: ")
+        for line in output_lines
+        if line.startswith("DOCKER: ")
     ]
 
     if len(docker_lines) < 2:
@@ -320,7 +347,10 @@ def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
 
     invitation = json.loads(docker_lines[-2].strip().replace("'", '"'))
 
-    assert last_line == "Created super: <class 'walytis_identities.group_did_manager.GroupDidManager'>", function_name()
+    assert (
+        last_line
+        == "Created super: <class 'walytis_identities.group_did_manager.GroupDidManager'>"
+    ), function_name()
 
     return invitation
 
@@ -328,34 +358,41 @@ def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
 def join_super(
     docker_container_old: WalytisIdentitiesDocker,
     docker_container_new: WalytisIdentitiesDocker,
-    invitation: dict
+    invitation: dict,
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
-    python_code_1 = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        "logger.info('join_super: Waiting to allow conversation join...')",
-        f"sleep({CORRESP_JOIN_TIMEOUT_S})",
-        "logger.info('Finished waiting, terminating...')",
-        "shared_data.dm.terminate()",
-        "logger.info('Exiting after waiting.')",
-
-    ])
+    python_code_1 = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            "logger.info('join_super: Waiting to allow conversation join...')",
+            f"sleep({CORRESP_JOIN_TIMEOUT_S})",
+            "logger.info('Finished waiting, terminating...')",
+            "shared_data.dm.terminate()",
+            "logger.info('Exiting after waiting.')",
+        ]
+    )
     docker_container_old.run_python_code(python_code_1, background=True)
     invit_json = json.dumps(invitation)
 
-    python_code_2 = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        f"super = dmws_sync_docker.docker_join_super('{invit_json}')",
-        "print('DOCKER: ', super.did)",
-        "shared_data.dm.terminate()",
-        "super.terminate()",
-    ])
+    python_code_2 = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            f"super = dmws_sync_docker.docker_join_super('{invit_json}')",
+            "print('DOCKER: ', super.did)",
+            "shared_data.dm.terminate()",
+            "super.terminate()",
+        ]
+    )
 
     try:
         output_lines = docker_container_new.run_python_code(
-            python_code_2, timeout=CORRESP_JOIN_TIMEOUT_S + 5, print_output=True, background=False).split("\n")
+            python_code_2,
+            timeout=CORRESP_JOIN_TIMEOUT_S + 5,
+            print_output=True,
+            background=False,
+        ).split("\n")
     except DockerShellError as e:
         print(e)
         output_lines = []
@@ -366,50 +403,58 @@ def join_super(
 
     docker_lines = [
         line.replace("DOCKER: ", "").strip()
-        for line in output_lines if line.startswith("DOCKER: ")
+        for line in output_lines
+        if line.startswith("DOCKER: ")
     ]
 
     second_last_line = docker_lines[-2] if len(docker_lines) > 1 else None
     super_id = docker_lines[-1].strip() if len(docker_lines) > 0 else None
-    expected_super_id = did_from_blockchain_id(
-        invitation['blockchain_invitation']['blockchain_id'])
+    expected_super_id = invitation["did"]
 
-    assert second_last_line == "Got control key!" and super_id == expected_super_id, function_name()
+    assert (
+        second_last_line == "Got control key!"
+        and super_id == expected_super_id
+    ), function_name()
 
 
 def auto_join_super(
     docker_container_old: WalytisIdentitiesDocker,
     docker_container_new: WalytisIdentitiesDocker,
-    superondence_id: str
+    superondence_id: str,
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        "logger.info('Waiting to allow auto conversation join...')",
-        f"sleep({CORRESP_JOIN_TIMEOUT_S})",
-        "logger.info('Finished waiting, terminating...')",
-        "shared_data.dm.terminate()",
-        "logger.info('Exiting after waiting.')",
-
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            "logger.info('Waiting to allow auto conversation join...')",
+            f"sleep({CORRESP_JOIN_TIMEOUT_S})",
+            "logger.info('Finished waiting, terminating...')",
+            "shared_data.dm.terminate()",
+            "logger.info('Exiting after waiting.')",
+        ]
+    )
 
     docker_container_old.run_python_code(
         python_code, print_output=True, background=True
     )
-    python_code = "\n".join([
-        DOCKER_PYTHON_LOAD_TESTING_CODE,
-        "dmws_sync_docker.docker_load_dm()",
-        f"sleep({CORRESP_JOIN_TIMEOUT_S})",
-        "print('GroupDidManager DIDs:')",
-        "for c in shared_data.dm.get_active_supers():",
-        "    print(c)",
-        "shared_data.dm.terminate()",
-    ])
+    python_code = "\n".join(
+        [
+            DOCKER_PYTHON_LOAD_TESTING_CODE,
+            "dmws_sync_docker.docker_load_dm()",
+            f"sleep({CORRESP_JOIN_TIMEOUT_S})",
+            "print('GroupDidManager DIDs:')",
+            "for c in shared_data.dm.get_active_supers():",
+            "    print(c)",
+            "shared_data.dm.terminate()",
+        ]
+    )
     try:
         output = docker_container_new.run_python_code(
-            python_code, timeout=CORRESP_JOIN_TIMEOUT_S + 15,
-            print_output=True, background=False
+            python_code,
+            timeout=CORRESP_JOIN_TIMEOUT_S + 15,
+            print_output=True,
+            background=False,
         )
     except DockerShellError as e:
         print(e)
@@ -438,13 +483,15 @@ def test_load_dm0():
 
 
 def test_add_sub():
-
     if not shared_data.invitation:
         shared_data.abort = True
     if shared_data.abort:
         pytest.skip("Test aborted due to failures.")
-    add_sub(shared_data.containers[1],
-            shared_data.containers[0], shared_data.invitation)
+    add_sub(
+        shared_data.containers[1],
+        shared_data.containers[0],
+        shared_data.invitation,
+    )
 
 
 def test_load_dm():
@@ -454,7 +501,6 @@ def test_load_dm():
 
 
 def test_setup_dm_2():
-
     if shared_data.abort:
         pytest.skip("Test aborted due to failures.")
     # create second dm with multiple devices
@@ -470,8 +516,11 @@ def test_add_sub2():
         shared_data.abort = True
     if shared_data.abort:
         pytest.skip("Test aborted due to failures.")
-    add_sub(shared_data.containers[3],
-            shared_data.containers[2], shared_data.invitation2)
+    add_sub(
+        shared_data.containers[3],
+        shared_data.containers[2],
+        shared_data.invitation2,
+    )
 
 
 def test_load_dm3():
@@ -490,14 +539,14 @@ def test_auto_join_super_1():
         shared_data.abort = True
     if shared_data.abort:
         pytest.skip("Test aborted due to failures.")
-    shared_data.super_id = did_from_blockchain_id(
-        shared_data.invitation3['blockchain_invitation']['blockchain_id']
-    )
+    shared_data.super_id = shared_data.invitation3["did"]
 
     # test that dm1's second device automatically joins the correspondence
     # after dm1's first device creates it
     auto_join_super(
-        shared_data.containers[0], shared_data.containers[1], shared_data.super_id
+        shared_data.containers[0],
+        shared_data.containers[1],
+        shared_data.super_id,
     )
 
 
@@ -506,7 +555,9 @@ def test_join_super_1():
         pytest.skip("Test aborted due to failures.")
     # test that dm2 can join the superondence given an invitation
     join_super(
-        shared_data.containers[0], shared_data.containers[2], shared_data.invitation3
+        shared_data.containers[0],
+        shared_data.containers[2],
+        shared_data.invitation3,
     )
 
 
@@ -516,7 +567,9 @@ def test_auto_join_super_2():
     # test that dm2's second device automatically joins the correspondence
     # after dm2's first device joins it
     auto_join_super(
-        shared_data.containers[2], shared_data.containers[3], shared_data.super_id
+        shared_data.containers[2],
+        shared_data.containers[3],
+        shared_data.super_id,
     )
     # create second dm with multiple devices
 

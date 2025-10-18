@@ -1,7 +1,6 @@
 import os
 from time import sleep
 
-from loguru import logger
 from testing_utils import (
     CORRESP_JOIN_TIMEOUT_S,
     KEY,
@@ -15,7 +14,16 @@ from walytis_identities.did_manager_with_supers import (
     GroupDidManager,
 )
 from walytis_identities.key_store import KeyStore
-from walytis_identities.utils import logger
+import logging
+from walytis_identities.log import (
+    logger_dmws as logger,
+    file_handler,
+    console_handler,
+)
+
+file_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 if not os.path.exists(dm_config_dir):
     os.makedirs(dm_config_dir)

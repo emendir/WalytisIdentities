@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Type, TypeVar
-
+import json
 from brenthy_tools_beta.utils import string_to_time, time_to_string
 from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
@@ -140,7 +140,33 @@ class Key(Crypt):
             "controller": controller,
         }
 
-    def serialise(
+    def serialise_private(
+        self,
+    ) -> dict:
+        """Serialise this key's data, including the private key encrypted."""
+
+        if not (
+            self.private_key,
+            self.family and self.public_key and self.creation_time,
+        ):
+            error_message = "Not all of this objects' fields are set!\n".join(
+                [
+                    f"family: {type(self.family)}",
+                    f"public_key: {type(self.public_key)}",
+                    f"private_key: {type(self.private_key)}",
+                    f"creation_time: {type(self.creation_time)}",
+                ]
+            )
+            raise ValueError(error_message)
+
+        return {
+            "family": self.family,
+            "public_key": self.public_key.hex(),
+            "private_key": self.private_key.hex(),
+            "creation_time": time_to_string(self.creation_time),
+        }
+
+    def serialise_private_encrypted(
         self, crypt: Crypt, allow_missing_private_key: bool = False
     ) -> dict:
         """Serialise this key's data, including the private key encrypted."""
@@ -177,8 +203,27 @@ class Key(Crypt):
         return False
 
     @classmethod
-    def deserialise(cls: Type[_Key], data: dict, crypt: Crypt) -> _Key:
+    def deserialise_private(
+        cls: Type[_Key],
+        data: dict,
+    ) -> _Key:
         """Deserialise data with encrypted private key."""
+        if isinstance(data, str):
+            data = json.loads(data)
+        return cls(
+            family=data["family"],
+            public_key=bytes.fromhex(data["public_key"]),
+            private_key=bytes.fromhex(data["private_key"]),
+            creation_time=string_to_time(data["creation_time"]),
+        )
+
+    @classmethod
+    def deserialise_private_encrypted(
+        cls: Type[_Key], data: dict, crypt: Crypt
+    ) -> _Key:
+        """Deserialise data with encrypted private key."""
+        if isinstance(data, str):
+            data = json.loads(data)
         private_key = (
             crypt.decrypt(bytes.fromhex(data["private_key"]))
             if data["private_key"]
@@ -200,9 +245,11 @@ class Key(Crypt):
         return self.private_key.hex()
 
     def get_key_id(self) -> str:
-        if not (self.family and self.public_key and self.creation_time):
-            raise ValueError("Not all of this objects' fields are set.")
-        return f"{self.family}:{time_to_string(self.creation_time)}:{self.get_public_key()}"
+        return generate_key_id(
+            family=self.family,
+            creation_time=self.creation_time,
+            public_key=self.public_key,
+        )
 
     def clone_public(self) -> "Key":
         return Key(
@@ -214,6 +261,18 @@ class Key(Crypt):
 
     def __str__(self):
         return self.get_key_id()
+
+
+def generate_key_id(
+    family: str,
+    public_key: bytes | str,
+    creation_time: datetime,
+):
+    if isinstance(public_key, bytes) or isinstance(public_key, bytearray):
+        public_key = public_key.hex()
+    if not (family and public_key and creation_time):
+        raise ValueError("Not all key fields provided.")
+    return f"{family}:{time_to_string(creation_time)}:{public_key}"
 
 
 decorate_all_functions(strictly_typed, __name__)

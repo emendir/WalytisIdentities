@@ -1,29 +1,9 @@
-import json
-import os
-import shutil
-from time import sleep
-
 import _auto_run_with_pytest  # noqa
-import walytis_beta_api as walytis_api
 from emtest import await_thread_cleanup, env_vars, polite_wait
-from key_sharing_docker import SharedData, wait_dur_s
-from walid_docker.build_docker import build_docker_image
-from walid_docker.walid_docker import (
-    WalytisIdentitiesDocker,
-    delete_containers,
-)
-
-from walytis_identities.did_manager import DidManager
-from walytis_identities.did_objects import Key
 from walytis_identities.group_did_manager import (
-    GroupDidManager,
     InvitationCode,
     InvitationManager,
 )
-from walytis_identities.key_store import KeyStore
-from walytis_identities.utils import logger
-from walytis_identities.log import logger_datatr
-import logging
 
 
 def test_invitation_code():

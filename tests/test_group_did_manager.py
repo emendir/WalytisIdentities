@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tempfile
@@ -23,7 +24,8 @@ class SharedData:
         self.person_config_dir = tempfile.mkdtemp()
         self.person_config_dir1 = tempfile.mkdtemp()
         self.key_store_path = os.path.join(
-            self.person_config_dir, "master_keystore.json")
+            self.person_config_dir, "master_keystore.json"
+        )
 
         # the cryptographic family to use for the tests
         self.CRYPTO_FAMILY = CRYPTO_FAMILY
@@ -35,9 +37,11 @@ shared_data = SharedData()
 
 def test_create_person_identity() -> None:
     device_keystore_path = os.path.join(
-        shared_data.person_config_dir, "device_keystore.json")
+        shared_data.person_config_dir, "device_keystore.json"
+    )
     profile_keystore_path = os.path.join(
-        shared_data.person_config_dir, "profile_keystore.json")
+        shared_data.person_config_dir, "profile_keystore.json"
+    )
 
     device_did_keystore = KeyStore(device_keystore_path, shared_data.KEY)
     profile_did_keystore = KeyStore(profile_keystore_path, shared_data.KEY)
@@ -47,11 +51,15 @@ def test_create_person_identity() -> None:
     )
 
     members = shared_data.group_1.get_members()
+    shared_data.invitation_code = json.dumps(
+        shared_data.group_1.invite_member()
+    )
 
-    assert (isinstance(shared_data.group_1, GroupDidManager)
-            and len(members) == 1
-            and shared_data.group_1.member_did_manager.did in members[0].did
-            ),    "Create GroupDidManager"
+    assert (
+        isinstance(shared_data.group_1, GroupDidManager)
+        and len(members) == 1
+        and shared_data.group_1.member_did_manager.did in members[0].did
+    ), "Create GroupDidManager"
 
     shared_data.group_1.terminate()
 
@@ -60,25 +68,29 @@ def test_load_person_identity() -> None:
     if not shared_data.member_1 or not shared_data.group_1:
         pytest.skip("Aborting test due to previous failures")
     device_keystore_path = os.path.join(
-        shared_data.person_config_dir, "device_keystore.json")
+        shared_data.person_config_dir, "device_keystore.json"
+    )
     profile_keystore_path = os.path.join(
-        shared_data.person_config_dir, "profile_keystore.json")
+        shared_data.person_config_dir, "profile_keystore.json"
+    )
 
     device_did_keystore = KeyStore(device_keystore_path, shared_data.KEY)
     profile_did_keystore = KeyStore(profile_keystore_path, shared_data.KEY)
-    group_1 = GroupDidManager(
-        profile_did_keystore,
-        device_did_keystore
-    )
+    group_1 = GroupDidManager(profile_did_keystore, device_did_keystore)
     member_did = shared_data.group_1.member_did_manager.did
     person_did = shared_data.group_1.did
     members = group_1.get_members()
 
-    assert (group_1.member_did_manager.did == member_did
-            and group_1.did == person_did
-            and len(members) == 1
-            and group_1.member_did_manager.did in members[0].did
-            ),    "Load GroupDidManager"
+    invitations = group_1.member_invitations
+    assert (
+        group_1.member_did_manager.did == member_did
+        and group_1.did == person_did
+        and len(members) == 1
+        and group_1.member_did_manager.did in members[0].did
+        and invitations
+        and invitations[0].generate_code().serialise()
+        == shared_data.invitation_code
+    ), "Load GroupDidManager"
 
     # group_1.terminate()
     shared_data.group_1 = group_1
@@ -95,8 +107,8 @@ def test_encryption() -> None:
     cipher_2 = shared_data.group_1.encrypt(PLAIN_TEXT)
 
     assert (
-        CodePackage.deserialise_bytes(cipher_1).public_key !=
-        CodePackage.deserialise_bytes(cipher_2).public_key
+        CodePackage.deserialise_bytes(cipher_1).public_key
+        != CodePackage.deserialise_bytes(cipher_2).public_key
         and shared_data.group_1.decrypt(cipher_1) == PLAIN_TEXT
         and shared_data.group_1.decrypt(cipher_2) == PLAIN_TEXT
     ), "Encryption across key renewal works"
@@ -110,8 +122,8 @@ def test_signing() -> None:
     signature_2 = shared_data.group_1.sign(PLAIN_TEXT)
 
     assert (
-        CodePackage.deserialise_bytes(signature_1).public_key !=
-        CodePackage.deserialise_bytes(signature_2).public_key
+        CodePackage.deserialise_bytes(signature_1).public_key
+        != CodePackage.deserialise_bytes(signature_2).public_key
         and shared_data.group_1.verify_signature(signature_1, PLAIN_TEXT)
         and shared_data.group_1.verify_signature(signature_2, PLAIN_TEXT)
     ), "Signature verification across key renewal works"
@@ -121,15 +133,18 @@ def test_delete_person_identity() -> None:
     if not shared_data.member_1 or not shared_data.group_1:
         pytest.skip("Aborting test due to previous failures")
     group_blockchain = shared_data.group_1.blockchain.blockchain_id
-    member_blockchain = shared_data.group_1.member_did_manager.blockchain.blockchain_id
+    member_blockchain = (
+        shared_data.group_1.member_did_manager.blockchain.blockchain_id
+    )
     shared_data.group_1.delete()
 
     # ensure the blockchains of both the person and the member identities
     # have been deleted
 
-    assert (group_blockchain not in walytis_beta_api.list_blockchain_ids() and
-            member_blockchain not in walytis_beta_api.list_blockchain_ids()
-            ),    "Delete GroupDidManager"
+    assert (
+        group_blockchain not in walytis_beta_api.list_blockchain_ids()
+        and member_blockchain not in walytis_beta_api.list_blockchain_ids()
+    ), "Delete GroupDidManager"
 
 
 def test_create_member_given_path() -> None:
@@ -140,15 +155,17 @@ def test_create_member_given_path() -> None:
     shared_data.member = DidManager.create(conf_dir)
     shared_data.member.terminate()
     key_store_path = os.path.join(
-        conf_dir, shared_data.member.blockchain.blockchain_id + ".json")
+        conf_dir, shared_data.member.blockchain.blockchain_id + ".json"
+    )
     key = shared_data.member.key_store.key
     reloaded = DidManager(KeyStore(key_store_path, key))
     reloaded.terminate()
 
-    assert (os.path.exists(key_store_path)
-            and reloaded.get_control_key().private_key
-            == shared_data.member.get_control_key().private_key
-            ),    "Created member given a directory."
+    assert (
+        os.path.exists(key_store_path)
+        and reloaded.get_control_key().private_key
+        == shared_data.member.get_control_key().private_key
+    ), "Created member given a directory."
 
 
 def test_create_group_given_path() -> None:
@@ -161,17 +178,20 @@ def test_create_group_given_path() -> None:
     shared_data.group = GroupDidManager.create(conf_dir, shared_data.member)
     shared_data.group.terminate()
     key_store_path = os.path.join(
-        conf_dir, shared_data.group.blockchain.blockchain_id + ".json")
+        conf_dir, shared_data.group.blockchain.blockchain_id + ".json"
+    )
     key = shared_data.group.key_store.key
 
     reloaded = GroupDidManager(
-        KeyStore(key_store_path, key), shared_data.member)
+        KeyStore(key_store_path, key), shared_data.member
+    )
     reloaded.terminate()
 
-    assert (os.path.exists(key_store_path)
-            and reloaded.get_control_key().private_key
-            == shared_data.group.get_control_key().private_key
-            ),    "Created group given a directory."
+    assert (
+        os.path.exists(key_store_path)
+        and reloaded.get_control_key().private_key
+        == shared_data.group.get_control_key().private_key
+    ), "Created group given a directory."
 
 
 def cleanup() -> None:

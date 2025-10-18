@@ -8,7 +8,7 @@ import portalocker
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 
-from .did_objects import Key
+from .did_objects import Key, generate_key_id
 from .utils import (
     bytes_from_string,
     bytes_to_string,
@@ -86,8 +86,8 @@ class CodePackage:
             private_key=private_key,
         )
         return key.decrypt(
-            data=self.code,
-            signature_options=self.operation_options,
+            encrypted_data=self.code,
+            encryption_options=self.operation_options,
         )
 
     @staticmethod
@@ -152,6 +152,13 @@ class CodePackage:
             creation_time=self.creation_time,
         )
 
+    def get_key_id(self) -> str:
+        return generate_key_id(
+            family=self.family,
+            creation_time=self.creation_time,
+            public_key=self.public_key,
+        )
+
 
 class KeyStore:
     keys: dict[str, Key]  # key_id: Key object
@@ -191,7 +198,7 @@ class KeyStore:
 
         keys = {}
         for encrypted_key in encrypted_keys:
-            key = Key.deserialise(encrypted_key, self.key)
+            key = Key.deserialise_private_encrypted(encrypted_key, self.key)
             keys.update({key.get_key_id(): key})
         self.keys = keys
         self._custom_metadata = data.get("custom_metadata", {})
@@ -214,7 +221,7 @@ class KeyStore:
     def save_appdata(self):
         encrypted_keys = []
         for key_id, key in list(self.keys.items()):
-            encrypted_serialised_key = key.serialise(
+            encrypted_serialised_key = key.serialise_private_encrypted(
                 self.key, allow_missing_private_key=True
             )
             encrypted_keys.append(encrypted_serialised_key)

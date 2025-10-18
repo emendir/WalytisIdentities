@@ -2,6 +2,9 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
+# extra in-memory recording functionality for logging.Logger objects
+import emtest.log_recording  # noqa
+
 LOG_PATH = ".walytis_identities.log"
 print(f"Logging to {os.path.abspath(LOG_PATH)}")
 
@@ -57,4 +60,6 @@ logger_datatr.addHandler(console_handler)
 logger_dmws = logging.getLogger("WalId.DMWS")
 logger_dmws.setLevel(logging.INFO)
 logger_dmws.addHandler(file_handler)
+
+
 logger_dmws.addHandler(console_handler)
