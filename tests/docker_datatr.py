@@ -21,7 +21,7 @@ from walid_docker.walid_docker import (
     delete_containers,
 )
 
-from walytis_identities.log import logger_datatr
+from walytis_identities.log import logger_datatr, file_handler, console_handler
 
 logger_datatr.setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
@@ -60,6 +60,7 @@ def test_preparations_docker():
 
 HI = "Hi!".encode()
 HELLO_THERE = "Hello there!".encode()
+FILE_METADATA = "File for you.".encode()
 
 
 def docker_part():
@@ -73,6 +74,7 @@ def docker_part():
         if data == HELLO_THERE:
             logger.debug("Sending response...")
             conv.say(HI)
+            conv.transmit_file(__file__, FILE_METADATA)
         else:
             conv.say("TEST FAILED".encode())
             logger.error(f"WRONG MESSAGE: {data}")

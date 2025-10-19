@@ -2,6 +2,7 @@
 
 Doesn't include machinery for managing other members.
 """
+
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Callable
 
@@ -22,14 +23,12 @@ class GenericDidManager(GenericBlockchain, ABC):
     """
 
     @abstractproperty
-    def blockchain(self)->Blockchain:
+    def blockchain(self) -> Blockchain:
         pass
 
     @abstractproperty
-    def key_store(self)-> KeyStore:
+    def key_store(self) -> KeyStore:
         pass
-
-
 
     @abstractproperty
     def did_doc(self):
@@ -39,6 +38,7 @@ class GenericDidManager(GenericBlockchain, ABC):
     def did(self) -> str:
         """Get this DID-Manager's DID."""
         pass
+
     @abstractmethod
     def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
         """Change the control key to an automatically generated new one."""
@@ -58,11 +58,7 @@ class GenericDidManager(GenericBlockchain, ABC):
         pass
 
     @abstractmethod
-    def encrypt(
-        self,
-        data: bytes,
-        encryption_options: str = ""
-    ) -> bytes:
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
         """Encrypt the provided data using the specified public key.
 
         Args:
@@ -87,6 +83,7 @@ class GenericDidManager(GenericBlockchain, ABC):
             bytes: the decrypted data
         """
         pass
+
     @abstractmethod
     def sign(self, data: bytes, signature_options: str = "") -> bytes:
         """Sign the provided data using the specified private key.
@@ -136,4 +133,3 @@ class GenericDidManager(GenericBlockchain, ABC):
     @abstractproperty
     def block_received_handler(self) -> Callable[[Block], None] | None:
         pass
-

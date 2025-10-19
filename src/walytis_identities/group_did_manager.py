@@ -1,5 +1,6 @@
 """Classes for managing Person and Device identities."""
 
+from .datatransmission import COMMS_TIMEOUT_S
 from .utils import string_to_time
 from .key_store import CodePackage
 from ipfs_tk_transmission import Conversation
@@ -76,8 +77,6 @@ WALYTIS_BLOCK_TOPIC = "GroupDidManager"
 
 CRYPTO_FAMILY = "EC-secp256k1"
 GroupDidManagerType = TypeVar("GroupDidManagerType", bound="GroupDidManager")
-LISTEN_TIMEOUT = 30
-SEND_TIMEOUT = 10
 
 
 class Member:
@@ -471,27 +470,12 @@ class _GroupDidManager(DidManager):
         validate_did_doc(did_doc)
         return did_doc
 
-    def is_control_key_active(self, key_id: str) -> bool:
-        return self.get_control_key_age(key_id) < NUM_ACTIVE_CONTROL_KEYS
-
-    def get_active_control_keys(self) -> list[Key]:
-        """CAREFUL: RETURNS LOCKED KEYS."""
-        keys = self.get_control_keys()
-
-        # logger.debug(f"TOTAL CONTROL KEYS: {len(keys)}")
-        # get last few
-        keys = keys[-1 * NUM_ACTIVE_CONTROL_KEYS :]
-        # logger.debug(f"ACTIVE CONTROL KEYS: {len(keys)}")
-
-        return keys
-
-    def get_active_unlocked_control_keys(self) -> list[Key]:
-        unlocked_keys = []
-        for key in self.get_active_control_keys():
-            unlocked_key = self.key_store.keys.get(key.get_key_id(), None)
-            if unlocked_key and unlocked_key.is_unlocked():
-                unlocked_keys.append(unlocked_key)
-        return unlocked_keys
+    def get_peers(self) -> set[str]:
+        peer_ids = []
+        for member_did in self.get_members_dids():
+            for peer_id in self.get_member_ipfs_ids(member_did):
+                peer_ids.append(peer_id)
+        return set(peer_ids)
 
     def terminate(self) -> None:
         DidManager.terminate(self)
@@ -899,7 +883,7 @@ class GroupDidManager(_GroupDidManager):
             if self._terminate:
                 return
 
-            message = json.loads(conv.listen(timeout=LISTEN_TIMEOUT).decode())
+            message = json.loads(conv.listen(timeout=COMMS_TIMEOUT_S).decode())
             if self._terminate:
                 return
             logger.debug("KRH: got key request.")
@@ -1018,7 +1002,7 @@ class GroupDidManager(_GroupDidManager):
                 logger.debug("RK: started conversation")
 
                 # receive salutation
-                salute = conv.listen(timeout=LISTEN_TIMEOUT)
+                salute = conv.listen(timeout=COMMS_TIMEOUT_S)
                 assert salute == "Hello there!".encode()
 
                 if self._terminate:
@@ -1031,7 +1015,7 @@ class GroupDidManager(_GroupDidManager):
                     return
                 logger.debug("RK: awaiting response...")
                 response = json.loads(
-                    conv.listen(timeout=LISTEN_TIMEOUT).decode()
+                    conv.listen(timeout=COMMS_TIMEOUT_S).decode()
                 )
                 if self._terminate:
                     return
@@ -1393,6 +1377,9 @@ class JoinProcess:
         logger_gdm_join.debug("Talking to peer...")
 
         keys_data = conv.listen(datatransmission.COMMS_TIMEOUT_S)
+
+        logger.debug(conv.ipfs_client.tunnels.get_tunnels())
+        logger.debug("Awaiting file...")
         blockchain_data = conv.listen_for_file()["filepath"]
         conv.terminate()
 
@@ -1406,9 +1393,10 @@ class JoinProcess:
             for key in data["group_keys"]
         ]
         blockchain_id = data["blockchain_id"]
-        logger_gdm_join.debug(blockchain_id)
-        logger_gdm_join.debug(blockchain_data)
-        join_blockchain_from_zip(blockchain_id, blockchain_data)
+        try:
+            join_blockchain_from_zip(blockchain_id, blockchain_data)
+        except BlockchainAlreadyExistsError:
+            pass
         blockchain = Blockchain(blockchain_id)
         if isinstance(self.group_key_store, str):
             # use blockchain ID instead of DID

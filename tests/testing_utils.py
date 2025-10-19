@@ -17,5 +17,5 @@ dm_config_dir = "/tmp/wali_test_dmws_synchronisation"
 
 # used for creation, first loading test, and invitation creation
 PROFILE_CREATE_TIMEOUT_S = 20
-PROFILE_JOIN_TIMEOUT_S = 70
-CORRESP_JOIN_TIMEOUT_S = 70
+PROFILE_JOIN_TIMEOUT_S = 40
+CORRESP_JOIN_TIMEOUT_S = 40

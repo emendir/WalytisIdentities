@@ -1,11 +1,27 @@
+from walytis_beta_api import (
+    Block,
+    BlockchainAlreadyExistsError,
+    JoinFailureError,
+    join_blockchain,
+)
+from walytis_beta_api.exceptions import BlockNotFoundError
+from .key_store import KeyStore, UnknownKeyError
+import traceback
+from walytis_beta_embedded import ipfs
+from ipfs_tk_transmission import Conversation
+import ipfs_tk_transmission
+from ipfs_tk_transmission.errors import CommunicationTimeout, ConvListenTimeout
 import json
+from . import datatransmission
 import os
+from .datatransmission import COMMS_TIMEOUT_S
 from collections.abc import Generator
 from threading import Lock, Thread
 from time import sleep
 from typing import Callable, Type
 
 from multi_crypt import Crypt
+from walytis_beta_api import Blockchain, join_blockchain_from_zip
 from walytis_beta_api import (
     Block,
     BlockchainAlreadyExistsError,
@@ -60,6 +76,8 @@ class DidManagerWithSupers(DidManagerWrapper):
         self.super_type = super_type
         self._did_manager = did_manager
         self._org_did_manager = did_manager
+
+        self.super_join_req_listener = None
         self._init_blocks()
 
         did_manager.block_received_handler = self._on_block_received_dmws
@@ -82,6 +100,17 @@ class DidManagerWithSupers(DidManagerWrapper):
         self._correspondences_finder_thr = Thread(
             target=self._join_correspondences
         )
+
+        # If this is also a GroupDidManager,
+        # listen to requests from other members to join an already joined Super
+        if isinstance(self.org_did_manager, GroupDidManager):
+            self.super_join_req_listener = (
+                datatransmission.listen_for_conversations(
+                    self.org_did_manager,
+                    f"{self.did}-SuperJoinRequests",
+                    self.super_join_requests_handler,
+                )
+            )
         if auto_load_missed_blocks:
             self.load_missed_blocks()
 
@@ -261,12 +290,10 @@ class DidManagerWithSupers(DidManagerWrapper):
                 invitation_d = json.loads(invitation)
             else:
                 invitation_d = invitation
-            corresp_id = did_from_blockchain_id(invitation_d["blockchain_id"])
-            if (
-                corresp_id in self.correspondences
-                or corresp_id in self._archived_corresp_ids
-            ):
-                raise SuperExistsError()
+            logger.debug(invitation_d.keys())
+            # corresp_id = did_from_blockchain_id(
+            #     invitation_d["blockchain_invitation"]["blockchain_id"]
+            # )
 
             # the GroupDidManager keystore file is located in self.key_store_dir
             # and named according to the created GroupDidManager's blockchain ID
@@ -277,6 +304,11 @@ class DidManagerWithSupers(DidManagerWrapper):
                 group_key_store=self.key_store_dir,
                 member=self._did_manager,
             )
+            if (
+                correspondence.did in self.correspondences
+                or correspondence.did in self._archived_corresp_ids
+            ):
+                raise SuperExistsError()
 
             blockchain_invitation = json.loads(
                 correspondence.blockchain.create_invitation(
@@ -326,27 +358,14 @@ class DidManagerWithSupers(DidManagerWrapper):
         self, registration: SuperRegistrationBlock
     ) -> GroupDidManager | None:
         """Join a Coresp. which our DidManagerWithSupers has joined but member hasn't."""
+        assert isinstance(self.org_did_manager, GroupDidManager), (
+            "org_did_manager must be GroupDidManager for joining already-joined DID-Mananger"
+        )
         correspondence_id = registration.correspondence_id
+        super_keys = self.request_join_super(correspondence_id)
+        if not super_keys:
+            return None
         blockchain_id = blockchain_id_from_did(correspondence_id)
-        try:
-            logger.info("DMWS: JAJ: Joining blockchain...")
-            # join blockchain, preprocessing existing blocks
-            join_blockchain(
-                registration.invitation,
-            )
-        except JoinFailureError:
-            logger.warning("JAJ: Failed to join blockchain...")
-            try:
-                logger.info("DMWS: JAJ: Joining blockchain, retrying...")
-                # join blockchain, preprocessing existing blocks
-                join_blockchain(
-                    registration.invitation,
-                )
-            except JoinFailureError:
-                logger.warning("JAJ: Failed to join blockchain...")
-                return None
-        except BlockchainAlreadyExistsError:
-            pass
         with self.lock:
             if correspondence_id in self.correspondences:
                 logger.warning("JAJ: correspondeces already has entry")
@@ -362,6 +381,8 @@ class DidManagerWithSupers(DidManagerWrapper):
             key = Key.create(CRYPTO_FAMILY)
             self._did_manager.key_store.add_key(key)
             key_store = KeyStore(key_store_path, key)
+            for key in super_keys:
+                key_store.add_key(key)
 
             DidManager.assign_keystore(key_store, blockchain_id)
 
@@ -552,6 +573,180 @@ class DidManagerWithSupers(DidManagerWrapper):
             if self._dmws_other_blocks_handler:
                 self._dmws_other_blocks_handler(block)
 
+    def super_join_requests_handler(self, conv: Conversation) -> None:
+        """Handle requests from other members to join an already joined Super"""
+        logger.debug(f"SJRH: Getting key request!")
+        # double-check communications are encrypted
+        assert conv._encryption_callback is not None
+        assert conv._decryption_callback is not None
+
+        logger.start_recording("SUPER_JOIN_REQUESTS_HANDLER")
+        try:
+            if self._terminate_dmws:
+                return
+            logger.debug("SJRH: Joined conversation.")
+            assert conv.say("Hello there!".encode())
+            if self._terminate_dmws:
+                return
+
+            message = json.loads(conv.listen(timeout=COMMS_TIMEOUT_S).decode())
+            if self._terminate_dmws:
+                return
+            logger.debug("SJRH: got key request.")
+            did = message["did"]
+
+            if did not in self.get_active_supers():
+                conv.say(
+                    str.encode(
+                        json.dumps(
+                            {"error": "no such active super", "did": did}
+                        )
+                    )
+                )
+                return
+            super = self.get_super(did)
+            keys = [
+                key.serialise_private()
+                for key in super.key_store.get_all_keys()
+            ]
+            logger.debug("SJRH: Transmitting keys...")
+            assert conv.say(str.encode(json.dumps({"keys": keys})))
+            logger.debug("SJRH: Getting blockchain data...")
+            blockchain_data = super.blockchain.get_blockchain_data()
+            # logger.debug(conv.ipfs_client.tunnels.get_tunnels())
+            logger.debug("SJRH: Sending blockchain data...")
+            assert conv.transmit_file(
+                blockchain_data,
+                metadata=super.blockchain.blockchain_id.encode(),
+            )
+            logger.debug("SJRH: Finished sending all data!")
+
+        except ConvListenTimeout:
+            logger.warning(
+                "SJRH: Timeout in key request handler."
+                f"\n{logger.get_recording('SUPER_JOIN_REQUESTS_HANDLER')}"
+            )
+
+        except Exception as error:
+            logger.error(
+                f"\n{logger.get_recording('SUPER_JOIN_REQUESTS_HANDLER')}"
+                f"\n{traceback.format_exc()}"
+                f"SJRH: Error in request_key: {type(error)} {error}"
+            )
+        finally:
+            if conv:
+                conv.terminate()
+            logger.stop_recording("SUPER_JOIN_REQUESTS_HANDLER")
+
+    def request_join_super(
+        self,
+        did: str,
+    ) -> list[Key] | None:
+        """Request another member to help join an already joined Super."""
+        super_join_request_message = str.encode(
+            json.dumps(
+                {
+                    "did": did,
+                }
+            )
+        )
+        count = 0
+        for peer_id in self.get_peers():
+            if peer_id == ipfs.peer_id:
+                continue
+            count += 1
+            logger.debug(
+                f"RJS: Requesting Super join from {peer_id} for {did}..."
+            )
+
+            # collect debug logs in case we encounter error
+            logger.start_recording("JOIN_SUPER_REQUEST")
+
+            conv = None
+            try:
+                conv = datatransmission.start_conversation(
+                    self.org_did_manager,
+                    conv_name=f"SuperJoinRequest-{did}",
+                    peer_id=peer_id,
+                    others_req_listener=f"{self.did}-SuperJoinRequests",
+                )
+                # double-check communications are encrypted
+                assert conv._encryption_callback is not None
+                assert conv._decryption_callback is not None
+
+                if self._terminate_dmws:
+                    return
+                logger.debug("RJS: started conversation")
+
+                # receive salutation
+                salute = conv.listen(timeout=COMMS_TIMEOUT_S)
+                assert salute == "Hello there!".encode()
+                if self._terminate_dmws:
+                    return
+                assert conv.say(super_join_request_message)
+                if self._terminate_dmws:
+                    return
+                logger.debug("RJS: awaiting keys...")
+                keys_response = conv.listen(timeout=COMMS_TIMEOUT_S)
+                keys_data = json.loads(bytes.decode(keys_response))
+                if self._terminate_dmws:
+                    return
+                if "error" in keys_data:
+                    logger.warning(keys_response)
+                    continue
+
+                logger.debug(keys_data.keys())
+                logger.debug("RJS: awaiting blockchain data...")
+                logger.debug(conv.ipfs_client.tunnels.get_tunnels())
+                blockchain_response = conv.listen_for_file()
+                logger.debug("RJS: Got all data!")
+                conv.terminate()
+
+                logger.debug("RJS: Processing data...")
+                blockchain_data = blockchain_response["filepath"]
+                blockchain_id = blockchain_response["metadata"].decode()
+                logger.debug(blockchain_id)
+                logger.debug(blockchain_id_from_did(did))
+                assert blockchain_id == blockchain_id_from_did(did)
+                blockchain_id = blockchain_id_from_did(did)
+                keys = [
+                    Key.deserialise_private(key) for key in keys_data["keys"]
+                ]
+                logger.debug("RJS: Loading blockchain...")
+                try:
+                    join_blockchain_from_zip(blockchain_id, blockchain_data)
+                except BlockchainAlreadyExistsError:
+                    pass
+                logger.debug("RJS: Done!")
+                return keys
+
+            except ConvListenTimeout:
+                logger.warning(
+                    "RJS: Timeout in super join request."
+                    f"SuperJoinRequest-{did}, "
+                    f"{peer_id}, {did}-SuperJoinRequests"
+                    f"\nRequested key for {did} "
+                    f"from {peer_id}"
+                    f"\n{logger.get_recording('JOIN_SUPER_REQUEST')}"
+                )
+
+                continue
+            except Exception as error:
+                logger.error(
+                    f"\n{logger.get_recording('JOIN_SUPER_REQUEST')}"
+                    f"\n{traceback.format_exc()}"
+                    f"RJS: Error in request_key: {type(error)} {error}"
+                )
+                continue
+            finally:
+                if conv:
+                    conv.terminate()
+                logger.stop_recording("JOIN_SUPER_REQUEST")
+        logger.debug(
+            f"RJS: Failed to join super for {did} after asking {count} peers"
+        )
+        return None
+
     def terminate(self):
         if self._terminate_dmws:
             return
@@ -561,6 +756,8 @@ class DidManagerWithSupers(DidManagerWrapper):
         with self.lock:
             for correspondence in self.correspondences.values():
                 correspondence.terminate(terminate_member=False)
+        if self.super_join_req_listener:
+            self.super_join_req_listener.terminate()
         self._did_manager.terminate()
 
     def delete(self):
@@ -678,6 +875,10 @@ class DidManagerWithSupers(DidManagerWrapper):
         return self._did_manager
 
     @property
+    def org_did_manager(self) -> GenericDidManager:
+        return self._org_did_manager
+
+    @property
     def key_store(self) -> KeyStore:
         return self._did_manager.key_store
 
@@ -686,6 +887,3 @@ class DidManagerWithSupers(DidManagerWrapper):
 
     def update_did_doc(self, did_doc: dict) -> None:
         return self.update_did_doc(did_doc)
-
-    def org_did_manager(self) -> GenericDidManager:
-        return self._org_did_manager

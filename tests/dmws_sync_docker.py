@@ -21,6 +21,11 @@ from walytis_identities.log import (
     console_handler,
 )
 
+ipfs_tk_conv_logger = logging.getLogger("IPFS-TK-Conversations")
+ipfs_tk_conv_logger.addHandler(file_handler)
+ipfs_tk_conv_logger.addHandler(console_handler)
+ipfs_tk_conv_logger.setLevel(logging.DEBUG)
+
 file_handler.setLevel(logging.DEBUG)
 console_handler.setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)

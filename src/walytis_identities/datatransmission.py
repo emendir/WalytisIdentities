@@ -85,8 +85,7 @@ def listen_for_conversations(
                 cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
             )
 
-        conv._encryption_callback = _encrypt
-        conv._decryption_callback = _decrypt
+        conv.set_encryption_functions(_encrypt, _decrypt)
         logger.debug("Starting joined converstation.")
         eventhandler(conv)
 
@@ -175,8 +174,7 @@ def start_conversation(
     def _decrypt(cipher: bytearray) -> bytearray:
         return decrypt(cipher=cipher, gdm=gdm, one_time_key=our_one_time_key)
 
-    conv._encryption_callback = _encrypt
-    conv._decryption_callback = _decrypt
+    conv.set_encryption_functions(_encrypt, _decrypt)
     logger.debug("Starting conversation.")
     return conv
 

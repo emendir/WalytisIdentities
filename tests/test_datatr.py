@@ -7,7 +7,7 @@ from walytis_identities.datatransmission import (
 )
 
 
-from docker_datatr import HELLO_THERE, HI, CONV_NAME
+from docker_datatr import HELLO_THERE, HI, CONV_NAME, FILE_METADATA
 from emtest import await_thread_cleanup, env_vars
 from prebuilt_group_did_managers import (
     load_did_manager,
@@ -136,9 +136,13 @@ def test_datatransmission():
     conv.say(HELLO_THERE)
     logger.debug("Awaiting response...")
     reply = conv.listen(COMMS_TIMEOUT_S)
-    logger.debug("Got response!")
-
     assert conv and reply == HI, "Datatransmission failed"
+
+    logger.debug("Got response!")
+    file_transmission = conv.listen_for_file()
+
+    assert file_transmission["metadata"] == FILE_METADATA
+    assert os.path.exists(file_transmission["filepath"])
 
     if conv:
         conv.terminate()
