@@ -155,7 +155,7 @@ class Member:
                 blockchain = Blockchain.join(self.invitation)
             except BlockchainAlreadyExistsError:
                 blockchain = Blockchain(blockchain_id)
-            except ipfs_tk_transmission.errors.CommunicationTimeout:
+            except CommunicationTimeout:
                 try:
                     blockchain = Blockchain.join(self.invitation)
                 except (
@@ -470,12 +470,20 @@ class _GroupDidManager(DidManager):
         validate_did_doc(did_doc)
         return did_doc
 
-    def get_peers(self) -> set[str]:
+    def get_peers(self) -> list[str]:
+        """Get IPFS peer IDs of nodes that are part of or watching this GDM.
+
+        This list may be sorted in the future.
+
+        Returns:
+            A list of IPFS peer IDs.
+        """
         peer_ids = []
         for member_did in self.get_members_dids():
             for peer_id in self.get_member_ipfs_ids(member_did):
-                peer_ids.append(peer_id)
-        return set(peer_ids)
+                if peer_id not in peer_ids:
+                    peer_ids.append(peer_id)
+        return peer_ids
 
     def terminate(self) -> None:
         DidManager.terminate(self)
@@ -1198,6 +1206,20 @@ class GroupDidManager(_GroupDidManager):
             self.candidate_keys = {}
             return True
         return False
+
+    def listen_for_conversations(
+        self, listener_name: str, eventhandler: Callable
+    ):
+        return datatransmission.listen_for_conversations(
+            gdm=self, listener_name=listener_name, eventhandler=eventhandler
+        )
+
+    def start_conversation(
+        self, conv_name: str, peer_id: str, others_req_listener: str
+    ) -> Conversation | None:
+        return datatransmission.start_conversation(
+            self, conv_name, peer_id, others_req_listener
+        )
 
     def delete(self, terminate_member: bool = True) -> None:
         """Delete this Identity."""

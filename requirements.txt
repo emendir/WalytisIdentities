@@ -6,6 +6,6 @@ py_strict_typing
 loguru
 portalocker
 multi_crypt>=0.0.4
-ipfs_tk >=0.1.6
+ipfs_tk >=0.1.7
 dataclasses_json
 emtest >=0.0.5

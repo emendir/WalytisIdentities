@@ -107,7 +107,7 @@ def create_did_managers():
     print("Inviting member...")
     group_did_manager_1.add_member(member_2_did_manager)
     group_did_manager_2 = GroupDidManager(
-        group_2_keystore, member_2_did_manager
+        group_2_keystore, member_2_did_manager, allow_locked=True
     )
     group_did_manager_2.unlock(
         group_did_manager_1.get_control_key().private_key

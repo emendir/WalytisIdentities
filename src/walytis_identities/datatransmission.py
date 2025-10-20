@@ -106,7 +106,10 @@ def listen_for_conversations(
 
 
 def start_conversation(
-    gdm: "GroupDidManager", conv_name, peer_id, others_req_listener
+    gdm: "GroupDidManager",
+    conv_name: str,
+    peer_id: str,
+    others_req_listener: str,
 ) -> Conversation | None:
     logger.debug("Starting conversation...")
     our_one_time_key = Crypt.new(gdm.get_control_key().family)

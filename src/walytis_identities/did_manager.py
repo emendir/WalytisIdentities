@@ -560,7 +560,7 @@ class DidManager(GenericDidManager):
             )
             raise error
 
-    def get_peers(self) -> set[str]:
+    def get_peers(self) -> list[str]:
         return self._blockchain.get_peers()
 
     @property
