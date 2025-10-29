@@ -1,3 +1,5 @@
+import _auto_run_with_pytest  # noqa
+
 from ipfs_tk_transmission.errors import CommunicationTimeout
 import logging
 import os

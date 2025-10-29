@@ -1,11 +1,11 @@
 rfc3987
-walytis_beta_api
-walytis_beta_embedded>=0.0.5
+walytis_beta_api>=2.4.10
+walytis_beta_embedded>=0.0.9
 decorate_all
 py_strict_typing
 loguru
 portalocker
 multi_crypt>=0.0.4
-ipfs_tk >=0.1.7
+ipfs_tk >=0.1.8
 dataclasses_json
 emtest >=0.0.5

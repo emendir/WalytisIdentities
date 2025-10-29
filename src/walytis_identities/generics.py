@@ -7,6 +7,7 @@ from walytis_beta_api import (
 )
 from walytis_beta_api._experimental.generic_blockchain import (
     GenericBlock,
+    GenericBlockchain,
 )
 
 from .did_manager import DidManager
@@ -27,6 +28,14 @@ class DidManagerWrapper(GenericDidManager, ABC):
     @abstractproperty
     def org_did_manager(self) -> GenericDidManager:
         pass
+
+    @abstractproperty
+    def blockchain(self) -> GenericBlockchain:
+        return self.org_did_manager.blockchain
+
+    @abstractproperty
+    def key_store(self) -> KeyStore:
+        return self.org_did_manager.key_store
 
     @classmethod
     def create(
@@ -144,6 +153,14 @@ class GroupDidManagerWrapper(ABC):
     @abstractproperty
     def org_did_manager(self) -> GroupDidManager:
         pass
+
+    @abstractproperty
+    def blockchain(self) -> GenericBlockchain:
+        return self.org_did_manager.blockchain
+
+    @abstractproperty
+    def key_store(self) -> KeyStore:
+        return self.org_did_manager.key_store
 
     @classmethod
     def create(
