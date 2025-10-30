@@ -198,6 +198,10 @@ def docker_renew_control_key():
     )
     old_key = shared_data.group_1.get_control_key()
     num_ck = len(shared_data.group_1.candidate_keys)
+    if num_ck > 0:
+        logger.error(
+            f"Test should start off with 0 candidate keys, not {num_ck}"
+        )
     # shared_data.group_1.initiate_control_key_update()
 
     # make GroupDidManager propose a new control key
@@ -210,6 +214,11 @@ def docker_renew_control_key():
         if len(shared_data.group_1.candidate_keys) > num_ck:
             break
         sleep(1)
+    if len(shared_data.group_1.candidate_keys) != num_ck + 1:
+        logger.error(
+            "Expected to see exactly one new candidate key, see "
+            f"{len(shared_data.group_1.candidate_keys) - num_ck}"
+        )
     logger.info("Initiated Key renewal!")
     for i in range(SHARE_DUR // 10):
         sleep(10)
