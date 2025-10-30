@@ -39,13 +39,13 @@ import json
 from time import sleep
 sys.path.append('/opt/walytis_identities/tests')
 import conftest # configure Walytis API & logging
-import dmws_sync_docker
-from dmws_sync_docker import shared_data
+import docker_dmws_sync
+from docker_dmws_sync import shared_data
 import pytest
-from dmws_sync_docker import logger
+from docker_dmws_sync import logger
 logger.info('DOCKER: Preparing tests...')
-dmws_sync_docker.REBUILD_DOCKER=False
-dmws_sync_docker.DELETE_ALL_BRENTHY_DOCKERS=False
+docker_dmws_sync.REBUILD_DOCKER=False
+docker_dmws_sync.DELETE_ALL_BRENTHY_DOCKERS=False
 logger.info('DOCKER: Ready to test!')
 """
 DOCKER_PYTHON_FINISH_TESTING_CODE = """
@@ -141,7 +141,7 @@ def setup_dm(docker_container: WalytisIdentitiesDocker):
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_create_dm()",
+            "docker_dmws_sync.docker_create_dm()",
             "print(f'DOCKER: Created DidManagerWithSupers: {type(shared_data.dm)}')",
             "shared_data.dm.terminate()",
             "print('Terminated!')",
@@ -188,7 +188,7 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
+            "docker_dmws_sync.docker_load_dm()",
             "invitation=shared_data.dm.did_manager.invite_member()",
             "print('DOCKER: ', json.dumps(invitation))",
             "print(f'DOCKER: Loaded DidManagerWithSupers: {type(shared_data.dm)}')",
@@ -257,7 +257,7 @@ def add_sub(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
+            "docker_dmws_sync.docker_load_dm()",
             "logger.info('Waiting to allow new device to join...')",
             f"sleep({PROFILE_JOIN_TIMEOUT_S})",
             "logger.info('Finished waiting, terminating...')",
@@ -275,7 +275,7 @@ def add_sub(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"dmws_sync_docker.docker_join_dm('{invit_json}')",
+            f"docker_dmws_sync.docker_join_dm('{invit_json}')",
             "shared_data.dm.terminate()",
         ]
     )
@@ -309,8 +309,8 @@ def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
-            "super=dmws_sync_docker.docker_create_super()",
+            "docker_dmws_sync.docker_load_dm()",
+            "super=docker_dmws_sync.docker_create_super()",
             "invitation = super.invite_member()",
             "invitation.update({'did':super.did})",
             "print('DOCKER: ',json.dumps(invitation))",
@@ -364,7 +364,7 @@ def join_super(
     python_code_1 = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
+            "docker_dmws_sync.docker_load_dm()",
             "logger.info('join_super: Waiting to allow conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
             "logger.info('Finished waiting, terminating...')",
@@ -378,8 +378,8 @@ def join_super(
     python_code_2 = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
-            f"super = dmws_sync_docker.docker_join_super('{invit_json}')",
+            "docker_dmws_sync.docker_load_dm()",
+            f"super = docker_dmws_sync.docker_join_super('{invit_json}')",
             "print('DOCKER: ', super.did)",
             "shared_data.dm.terminate()",
             "super.terminate()",
@@ -426,7 +426,7 @@ def auto_join_super(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
+            "docker_dmws_sync.docker_load_dm()",
             "logger.info('Waiting to allow auto conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
             "logger.info('Finished waiting, terminating...')",
@@ -441,7 +441,7 @@ def auto_join_super(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "dmws_sync_docker.docker_load_dm()",
+            "docker_dmws_sync.docker_load_dm()",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
             "print('GroupDidManager DIDs:')",
             "for c in shared_data.dm.get_active_supers():",

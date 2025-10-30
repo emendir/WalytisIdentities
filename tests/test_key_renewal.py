@@ -7,7 +7,7 @@ from time import sleep
 import _auto_run_with_pytest  # noqa
 import walytis_beta_api as walytis_api
 from emtest import await_thread_cleanup, env_vars, polite_wait
-from key_sharing_docker import SharedData, JOIN_DUR, SHARE_DUR
+from docker_key_renewal import SharedData, JOIN_DUR, SHARE_DUR
 from walid_docker.build_docker import build_docker_image
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
@@ -53,9 +53,9 @@ import json
 from time import sleep
 sys.path.append('/opt/walytis_identities/tests')
 import conftest # configure Walytis API
-import key_sharing_docker
-from key_sharing_docker import shared_data
-from key_sharing_docker import logger
+import docker_key_renewal
+from docker_key_renewal import shared_data
+from docker_key_renewal import logger
 """
 
 
@@ -104,7 +104,7 @@ def test_create_identity_and_invitation():
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "key_sharing_docker.docker_create_identity_and_invitation();",
+            "docker_key_renewal.docker_create_identity_and_invitation();",
         ]
     )
     print(python_code)
@@ -154,7 +154,7 @@ def test_add_member_identity():
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"key_sharing_docker.docker_check_new_member('{member.did}');",
+            f"docker_key_renewal.docker_check_new_member('{member.did}');",
         ]
     )
     # print(f"\n{python_code}\n")
@@ -173,7 +173,7 @@ def test_get_control_key():
     # python_code = "\n".join(
     #     [
     #         DOCKER_PYTHON_LOAD_TESTING_CODE,
-    #         "key_sharing_docker.docker_be_online_30s()",
+    #         "docker_key_renewal.docker_be_online_30s()",
     #     ]
     # )
     # shared_data.containers[0].run_python_code(
@@ -197,8 +197,8 @@ def test_renew_control_key():
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
             "logger.info('DOCKER: Testing control key renewal part 1...');",
-            "key_sharing_docker.docker_renew_control_key();",
-            # "key_sharing_docker.docker_be_online_30s();",
+            "docker_key_renewal.docker_renew_control_key();",
+            # "docker_key_renewal.docker_be_online_30s();",
             "logger.info('DOCKER: Finished control key renewal part 1!');",
         ]
     )

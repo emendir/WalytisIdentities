@@ -16,13 +16,13 @@ def run_tests() -> None:
     os.system(f"pytest {WORKDIR} {' '.join(pytest_args)}")
 
 
+os.system("sudo systemctl restart ipfs brenthy")
 if True:
     os.chdir(WORKDIR)
     import conftest  # noqa
     from prebuilt_group_did_managers import create_did_managers
     from walid_docker.build_docker import build_docker_image
 
-os.system("sudo systemctl restart ipfs brenthy")
 create_did_managers()
 build_docker_image(verbose=False)
 
