@@ -17,12 +17,19 @@ from walytis_identities.group_did_manager import (
     InvitationManager,
     InvitationCode,
 )
+import walytis_identities.settings
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
 
-from walytis_identities.log import logger_datatr, logger_gdm_join, file_handler
+from walytis_identities.log import (
+    logger_datatr,
+    logger_gdm_join,
+    file_handler,
+    logger_gdm,
+)
 import logging
 
+logger_gdm.setLevel(logging.DEBUG)
 logger_datatr.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
@@ -33,7 +40,9 @@ logger.setLevel(logging.DEBUG)
 logger_datatr.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 
-JOIN_DUR = 30
+walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0.1
+JOIN_DUR = 10
+SHARE_DUR = 20
 
 
 class SharedData:
@@ -162,7 +171,7 @@ def docker_be_online_30s():
     shared_data.group_1 = GroupDidManager(
         profile_did_keystore, device_did_keystore
     )
-    for i in range(JOIN_DUR // 10):
+    for i in range(SHARE_DUR // 10):
         sleep(10)
         logger.debug("waiting...")
     shared_data.group_1.terminate()
@@ -188,11 +197,23 @@ def docker_renew_control_key():
         profile_did_keystore, device_did_keystore
     )
     old_key = shared_data.group_1.get_control_key()
-    shared_data.group_1.renew_control_key()
-    new_key = shared_data.group_1.get_control_key()
-    logger.info(f"Renewed control key! {new_key.get_key_id()}")
-    logger.info(f"Old key: {old_key.get_key_id()}")
-    logger.info(f"New key: {new_key.get_key_id()}")
+    num_ck = len(shared_data.group_1.candidate_keys)
+    # shared_data.group_1.initiate_control_key_update()
+
+    # make GroupDidManager propose a new control key
+    walytis_identities.settings.CTRL_KEY_RENEWAL_AGE_HR = 0
+    walytis_identities.settings.CTRL_KEY_RENEWAL_RANDOMISER_MAX = 0
+    walytis_identities.group_did_manager.CTRL_KEY_RENEWAL_AGE_HR = 0
+    walytis_identities.group_did_manager.CTRL_KEY_RENEWAL_RANDOMISER_MAX = 0
+    shared_data.group_1.CTRL_KEY_RENEWAL_RANDOMISER = 0
+    for i in range(SHARE_DUR):
+        if len(shared_data.group_1.candidate_keys) > num_ck:
+            break
+        sleep(1)
+    logger.info("Initiated Key renewal!")
+    for i in range(SHARE_DUR // 10):
+        sleep(10)
+        logger.debug("waiting...")
     shared_data.group_1.terminate()
     import threading
     import time
@@ -200,4 +221,5 @@ def docker_renew_control_key():
     while len(threading.enumerate()) > 1:
         print(threading.enumerate())
         time.sleep(1)
+    new_key = shared_data.group_1.get_control_key()
     print(f"{old_key.get_key_id()} {new_key.get_key_id()}")

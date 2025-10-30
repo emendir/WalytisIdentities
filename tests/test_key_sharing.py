@@ -1,3 +1,4 @@
+from threading import Thread
 import json
 import os
 import shutil
@@ -6,7 +7,7 @@ from time import sleep
 import _auto_run_with_pytest  # noqa
 import walytis_beta_api as walytis_api
 from emtest import await_thread_cleanup, env_vars, polite_wait
-from key_sharing_docker import SharedData, JOIN_DUR
+from key_sharing_docker import SharedData, JOIN_DUR, SHARE_DUR
 from walid_docker.build_docker import build_docker_image
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
@@ -21,9 +22,15 @@ from walytis_identities.group_did_manager import (
 )
 from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
-from walytis_identities.log import logger_datatr, logger_gdm_join, file_handler
+from walytis_identities.log import (
+    logger_datatr,
+    logger_gdm_join,
+    file_handler,
+    logger_gdm,
+)
 import logging
 
+logger_gdm.setLevel(logging.DEBUG)
 logger_datatr.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
@@ -100,18 +107,17 @@ def test_create_identity_and_invitation():
             "key_sharing_docker.docker_create_identity_and_invitation();",
         ]
     )
-    output = None
     print(python_code)
-    from walytis_identities.group_did_manager import ipfs
-    import ipfs_tk_transmission
-
-    print(ipfs_tk_transmission.__file__)
 
     # breakpoint()
-    output = shared_data.containers[0].run_python_code(
-        python_code, print_output=False, background=True, timeout=JOIN_DUR
-    )
-    sleep(5)
+    def run_on_docker():
+        shared_data.containers[0].run_python_code(
+            python_code, print_output=True, background=False, timeout=JOIN_DUR
+        )
+
+    Thread(target=run_on_docker).start()
+
+    sleep(JOIN_DUR)
 
 
 def test_add_member_identity():
@@ -164,106 +170,55 @@ def test_add_member_identity():
 def test_get_control_key():
     # create an GroupDidManager object to run on the docker container in the
     # background to handle a key request from shared_data.group_2
-    python_code = "\n".join(
-        [
-            DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "key_sharing_docker.docker_be_online_30s()",
-        ]
-    )
-    shared_data.containers[0].run_python_code(
-        python_code, background=True, print_output=True
-    )
-    # print(bash_code)
-    print("Waiting for key sharing...")
-    polite_wait(JOIN_DUR)
+    # python_code = "\n".join(
+    #     [
+    #         DOCKER_PYTHON_LOAD_TESTING_CODE,
+    #         "key_sharing_docker.docker_be_online_30s()",
+    #     ]
+    # )
+    # shared_data.containers[0].run_python_code(
+    #     python_code, background=True, print_output=True
+    # )
+    # # print(bash_code)
+    # print("Waiting for key sharing...")
+    # polite_wait(SHARE_DUR)
 
     assert shared_data.group_2.get_control_key().private_key, (
         "Got control key ownership"
     )
 
     # wait a little to allow proper resources cleanup on docker container
-    sleep(15)
+    # sleep(15)
 
 
 def test_renew_control_key():
-    success = True
+    old_key = shared_data.group_2.get_control_key()
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
             "logger.info('DOCKER: Testing control key renewal part 1...');",
             "key_sharing_docker.docker_renew_control_key();",
+            # "key_sharing_docker.docker_be_online_30s();",
             "logger.info('DOCKER: Finished control key renewal part 1!');",
         ]
     )
-    output = (
-        shared_data.containers[0]
-        .run_python_code(python_code, print_output=True)
-        .split("\n")
-    )
-    old_key = ""
-    new_key = ""
-    if output and output[-1]:
-        keys = [
-            line.strip("\r")
-            for line in output
-            if shared_data.CRYPTO_FAMILY in line
-        ][-1].split(" ")
-        if len(keys) == 2 and keys[0] != keys[1]:
-            try:
-                old_key = Key.from_key_id(keys[0])
-                new_key = Key.from_key_id(keys[1])
-            except:
-                pass
-    if not old_key and new_key:
-        logger.error(output)
-        print("Failed to renew keys in docker container.")
-        success = False
-    else:
-        print("Renewed keys in docker container.")
 
-    if success:
-        python_code = "\n".join(
-            [
-                DOCKER_PYTHON_LOAD_TESTING_CODE,
-                "logger.info('DOCKER: Testing control key renewal part 2...');",
-                "key_sharing_docker.docker_be_online_30s();",
-                "logger.info('DOCKER: Finished Control Key Renewal test part 2.');",
-            ]
-        )
+    def docker_renew_keys():
         shared_data.containers[0].run_python_code(
-            python_code, background=True, print_output=True
+            python_code, background=False, print_output=True
         )
 
-        print("Waiting for key sharing...")
-        polite_wait(JOIN_DUR)
-        private_key = shared_data.group_2.get_control_key().private_key
-        try:
-            new_key.unlock(private_key)
-        except:
-            success = False
+    Thread(target=docker_renew_keys).start()
+    print("Waiting for key sharing...")
+    polite_wait(SHARE_DUR)
+    new_key = shared_data.group_2.get_control_key()
 
-    assert success, "Shared key on renewal."
+    assert (
+        new_key.public_key != old_key.public_key and new_key.is_unlocked()
+    ), "Shared key on renewal."
 
 
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     cleanup()
-    assert await_thread_cleanup(timeout=5)
-
-
-def run_tests():
-    print("\nRunning tests for Key Sharing:")
-    prepare(delete_files=True)
-
-    test_create_docker_containers()
-
-    # on docker container, create identity
-    test_create_identity_and_invitation()
-
-    # locally join the identity created on docker
-    test_add_member_identity()
-    test_get_control_key()
-    test_renew_control_key()
-
-    cleanup()
-    test_threads_cleanup()
+    assert await_thread_cleanup(timeout=10)

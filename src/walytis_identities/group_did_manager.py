@@ -1,5 +1,6 @@
 """Classes for managing Person and Device identities."""
 
+from . import settings
 from .datatransmission import COMMS_TIMEOUT_S
 from .utils import string_to_time
 from .key_store import CodePackage
@@ -67,6 +68,7 @@ from .settings import (
     CTRL_KEY_MAX_RENEWAL_DUR_HR,
     CTRL_KEY_RENEWAL_AGE_HR,
     CTRL_KEY_RENEWAL_RANDOMISER_MAX,
+    CTRL_KEY_MGMT_PERIOD,
 )
 from .utils import validate_did_doc
 
@@ -787,14 +789,14 @@ class GroupDidManager(_GroupDidManager):
             try:
                 self.assert_ownership()
                 time.sleep(1)
+                # refresh our list of published candidate_keys
+                self.get_published_candidate_keys()
                 self.check_prepare_control_key_update()
                 self.check_apply_control_key_update()
             except Exception as e:
-                traceback.format_exc()
-                logger.warning(
-                    f"Recovered from bug in manage_control_key:\n{e}"
-                )
-            sleep(5)
+                logger.error(traceback.format_exc())
+                logger.error(f"Recovered from bug in manage_control_key:\n{e}")
+            sleep(CTRL_KEY_MGMT_PERIOD)
 
     def manage_member_keys(self):
         while not self._terminate:
@@ -807,10 +809,8 @@ class GroupDidManager(_GroupDidManager):
                     except JoinFailureError:
                         pass
             except Exception as e:
-                traceback.format_exc()
-                logger.warning(
-                    f"Recovered from bug in manage_member_keys\n{e}"
-                )
+                logger.error(traceback.format_exc())
+                logger.error(f"Recovered from bug in manage_member_keys\n{e}")
             if self._terminate:
                 return
             sleep(5)
@@ -1070,19 +1070,25 @@ class GroupDidManager(_GroupDidManager):
 
     def get_published_candidate_keys(self) -> dict["str", list[str]]:
         """Update our list of candidate control keys and their owners."""
+        # logger.debug("Updating candidate keys...")
         candidate_keys: dict[str, list[str]] = {}
         for block in self.blockchain.get_blocks(reverse=True):
             if KeyOwnershipBlock.walytis_block_topic not in block.topics:
                 continue
-            key_expiry = self.get_control_key().creation_time + timedelta(
-                hours=CTRL_KEY_RENEWAL_AGE_HR
-            )
-            if block.creation_time < key_expiry:
+            if (
+                block.creation_time - self.get_control_key().creation_time
+            ).total_seconds() > 0:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
                     block.content
                 ).get_key_ownership()
                 key_id = key_ownership["key_id"]
                 owner = key_ownership["owner"]
+
+                # filter out keys that have already been used as control keys
+                if key_id in [
+                    key.get_key_id() for key in self.get_control_keys()
+                ]:
+                    continue
 
                 key = Key.from_key_id(key_id)
                 proof = string_to_bytes(key_ownership["proof"])
@@ -1099,7 +1105,7 @@ class GroupDidManager(_GroupDidManager):
                 if key_id in candidate_keys.keys():
                     candidate_keys[key_id] += owner
                 else:
-                    candidate_keys.update({owner: owner})
+                    candidate_keys.update({key_id: [owner]})
         self.candidate_keys = candidate_keys
         return candidate_keys
 
@@ -1112,23 +1118,14 @@ class GroupDidManager(_GroupDidManager):
         Returns:
             Whether or not we are now prepared to renew control keys
         """
-        # logger.debug("Checking control key update preparation...")
+        # logger.debug(
+        #     "Checking control key update preparation "
+        #     f"{len(self.candidate_keys)}"
+        # )
         ctrl_key_timestamp = self.get_control_key().creation_time
         ctrl_key_age_hr = (
             (datetime.utcnow() - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
-
-        # if control key isn't too old yet
-        if ctrl_key_age_hr < CTRL_KEY_RENEWAL_AGE_HR:
-            self.candidate_keys = {}
-
-            self.CTRL_KEY_RENEWAL_RANDOMISER = randint(
-                0, CTRL_KEY_RENEWAL_RANDOMISER_MAX
-            )
-            return False
-
-        # refresh our list of published candidate_keys
-        self.get_published_candidate_keys()
 
         # if we already have a control key candidate
         if self.candidate_keys:
@@ -1150,23 +1147,45 @@ class GroupDidManager(_GroupDidManager):
 
         # we don't have any candidate keys from other memebers
 
+        self.CTRL_KEY_RENEWAL_RANDOMISER = randint(
+            0, CTRL_KEY_RENEWAL_RANDOMISER_MAX
+        )
         if (
             ctrl_key_age_hr
-            < CTRL_KEY_RENEWAL_AGE_HR + self.CTRL_KEY_RENEWAL_RANDOMISER
+            > CTRL_KEY_RENEWAL_AGE_HR + self.CTRL_KEY_RENEWAL_RANDOMISER
         ):
-            key = Key.create(CRYPTO_FAMILY)
-            self.key_store.add_key(key)
-            self.candidate_keys.update(
-                {key.get_key_id(): [self.member_did_manager.did]}
-            )
-
-            self.publish_key_ownership(key)
+            self.initiate_control_key_update()
             return True
         return False
 
+    def initiate_control_key_update(self):
+        """Initiate a control key update process.
+
+        Generates new control key and shares it with other members,
+        doesn't update the DID-Manager though
+
+        Returns:
+            Whether or not we are now prepared to renew control keys
+        """
+        logger.debug("Initiating control key update...")
+        key = Key.create(CRYPTO_FAMILY)
+        self.key_store.add_key(key)
+        self.candidate_keys.update(
+            {key.get_key_id(): [self.member_did_manager.did]}
+        )
+
+        self.publish_key_ownership(key)
+
     def check_apply_control_key_update(self) -> bool:
-        """Check if we should renew our DID-manager's control key."""
-        # logger.debug("Checking control key update application...")
+        """Check if we should renew our DID-manager's control key.
+
+        Renews our DidManager's control key if the new key has already been shared
+        with all peers or the current keys have reached a critical age.
+        """
+        # logger.debug(
+        #     "Checking control key update application: "
+        #     f"{len(self.candidate_keys)}"
+        # )
         if not self.candidate_keys:
             return False
 
@@ -1175,33 +1194,48 @@ class GroupDidManager(_GroupDidManager):
             (datetime.utcnow() - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
 
-        new_control_key = ""
+        new_control_key = None
         num_key_owners = 1
         # if control key isn't too old yet
+        # look for key with the most key owners
+        for key_id, owners in list(self.candidate_keys.items()):
+            # exclude keys which we don't own
+            key = self.key_store.keys.get(key_id, None)
+            if not key:
+                continue
+
+            nko = len(self.candidate_keys[key_id])
+            if nko > num_key_owners:
+                num_key_owners = nko
+                new_control_key = key
+
+                if num_key_owners >= len(self.get_members()):
+                    break
+        if not new_control_key:
+            return False
+
+        # control key is critically old, renew now
         if (
             ctrl_key_age_hr
-            < CTRL_KEY_RENEWAL_AGE_HR + CTRL_KEY_MAX_RENEWAL_DUR_HR
-        ):
-            for key_id, owners in list(self.candidate_keys.items()):
-                nko = len(self.candidate_keys[key_id])
-                if nko > num_key_owners:
-                    num_key_owners = nko
-                    new_control_key = key_id
-
-                    if num_key_owners >= len(self.get_members()):
-                        break
-            # if not all members have the same candidate key yet,
-            # we'll wait a little longer
-            if num_key_owners < len(self.get_members()):
-                return False
-
-        # all members have the candidate control key
-        if (
-            ctrl_key_age_hr
-            < CTRL_KEY_RENEWAL_AGE_HR
+            > CTRL_KEY_RENEWAL_AGE_HR
             + CTRL_KEY_MAX_RENEWAL_DUR_HR
             + self.CTRL_KEY_RENEWAL_RANDOMISER
         ):
+            logger.debug("Renewing control keys...")
+            self.renew_control_key(new_control_key)
+            self.candidate_keys = {}
+            return True
+
+        # if not all members have the same candidate key yet,
+        # we'll wait a little longer
+        if num_key_owners < len(self.get_members()):
+            return False
+        # all members have the candidate control key
+        if (
+            ctrl_key_age_hr
+            < CTRL_KEY_RENEWAL_AGE_HR + self.CTRL_KEY_RENEWAL_RANDOMISER
+        ):
+            logger.debug("Renewing control keys...")
             self.renew_control_key(new_control_key)
             self.candidate_keys = {}
             return True

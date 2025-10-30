@@ -9,7 +9,7 @@ from brenthy_tools_beta.utils import time_to_string, string_to_time  # noqa
 
 # GroupDidManager Settings
 NUM_NEW_CONTROL_KEYS = 1
-NUM_ACTIVE_CONTROL_KEYS = NUM_NEW_CONTROL_KEYS * 2
+NUM_ACTIVE_CONTROL_KEYS = NUM_NEW_CONTROL_KEYS * 1
 
 
 def is_valid_uri(uri):
