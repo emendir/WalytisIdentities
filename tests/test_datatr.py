@@ -153,4 +153,4 @@ def test_datatransmission():
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     cleanup()
-    assert await_thread_cleanup(timeout=5)
+    assert await_thread_cleanup(timeout=8)

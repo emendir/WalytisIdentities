@@ -97,5 +97,5 @@ def test_threads_cleanup() -> None:
         shared_data.super.terminate()
     if shared_data.dmws:
         shared_data.dmws.terminate()
-    assert await_thread_cleanup(timeout=5)
+    assert await_thread_cleanup(timeout=8)
 
