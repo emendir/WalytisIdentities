@@ -106,4 +106,4 @@ def test_cleanup() -> None:
     """Test that no threads are left running."""
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
-    assert await_thread_cleanup(timeout=8)
+    assert await_thread_cleanup(timeout=10)

@@ -29,11 +29,11 @@ class DidManagerWrapper(GenericDidManager, ABC):
     def org_did_manager(self) -> GenericDidManager:
         pass
 
-    @abstractproperty
+    @property
     def blockchain(self) -> GenericBlockchain:
         return self.org_did_manager.blockchain
 
-    @abstractproperty
+    @property
     def key_store(self) -> KeyStore:
         return self.org_did_manager.key_store
 
@@ -154,11 +154,11 @@ class GroupDidManagerWrapper(ABC):
     def org_did_manager(self) -> GroupDidManager:
         pass
 
-    @abstractproperty
+    @property
     def blockchain(self) -> GenericBlockchain:
         return self.org_did_manager.blockchain
 
-    @abstractproperty
+    @property
     def key_store(self) -> KeyStore:
         return self.org_did_manager.key_store
 
