@@ -5,7 +5,7 @@ import os
 import shutil
 import tarfile
 import tempfile
-from datetime import datetime
+from datetime import datetime, UTC
 
 import walytis_beta_api as waly
 from walytis_identities.did_manager import (
@@ -37,7 +37,7 @@ key = Key(
     CRYPTO_FAMILY,
     public_key=public_key,
     private_key=private_key,
-    creation_time=datetime(2024, 11, 9, 8, 30, 58, 719382),
+    creation_time=datetime(2024, 11, 9, 8, 30, 58, 719382,tzinfo=UTC),
 )
 
 

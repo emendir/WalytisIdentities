@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Type, TypeVar
 import json
 from brenthy_tools_beta.utils import string_to_time, time_to_string
@@ -85,7 +85,7 @@ class Key(Crypt):
             family=crypt.family,
             public_key=crypt.public_key,
             private_key=crypt.private_key,
-            creation_time=datetime.utcnow(),
+            creation_time=datetime.now(UTC),
         )
 
     @classmethod

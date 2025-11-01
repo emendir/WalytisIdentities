@@ -18,7 +18,7 @@ import random
 import time
 import traceback
 from collections.abc import Generator
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from random import randint
 from threading import Lock, Thread
 from time import sleep
@@ -72,7 +72,7 @@ from .settings import (
 )
 from .utils import validate_did_doc
 
-random.seed(datetime.now().microsecond)
+random.seed(datetime.now(UTC).microsecond)
 
 
 WALYTIS_BLOCK_TOPIC = "GroupDidManager"
@@ -1124,7 +1124,7 @@ class GroupDidManager(_GroupDidManager):
         # )
         ctrl_key_timestamp = self.get_control_key().creation_time
         ctrl_key_age_hr = (
-            (datetime.utcnow() - ctrl_key_timestamp).total_seconds() / 60 / 60
+            (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
 
         # if we already have a control key candidate
@@ -1191,7 +1191,7 @@ class GroupDidManager(_GroupDidManager):
 
         ctrl_key_timestamp = self.get_control_key().creation_time
         ctrl_key_age_hr = (
-            (datetime.utcnow() - ctrl_key_timestamp).total_seconds() / 60 / 60
+            (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
 
         new_control_key = None
