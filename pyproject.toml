@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 dynamic = ["dependencies"]
 name = "walytis_identities"
 authors = [{ name = "emendir" }]
-version = "0.2.0"
+version = "0.2.1"
 description = "A system for managing identities, contacts and their cryptographic keys based on the Walytis blockchain."
 readme = {file = "ReadMe.md", content-type = "text/markdown"}
 
