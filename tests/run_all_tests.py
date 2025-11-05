@@ -2,6 +2,7 @@
 
 import os
 import sys
+from time import sleep
 
 from emtest import set_env_var
 
@@ -16,7 +17,9 @@ def run_tests() -> None:
     os.system(f"pytest {WORKDIR} {' '.join(pytest_args)}")
 
 
+print("Restarting Brenthy...")
 os.system("sudo systemctl restart ipfs brenthy")
+sleep(30)
 if True:
     os.chdir(WORKDIR)
     import conftest  # noqa
@@ -28,12 +31,13 @@ build_docker_image(verbose=False)
 
 set_env_var("TESTS_REBUILD_DOCKER", False)
 
-set_env_var("WALYTIS_TEST_MODE", "RUN_BRENTHY")
 print("Running tests with Brenthy...")
-os.system("sudo systemctl restart ipfs brenthy")
+set_env_var("WALYTIS_BETA_API_TYPE", "WALYTIS_BETA_BRENTHY_API")
+set_env_var("IPFS_TK_MODE", "HTTP")
 run_tests()
 
-# set_env_var("WALYTIS_TEST_MODE", "EMBEDDED")
-# print("Running tests with Walytis Embedded...")
-# os.system("sudo systemctl stop ipfs brenthy")
-# run_tests()
+print("Running tests with Walytis Embedded...")
+os.system("sudo systemctl stop ipfs brenthy")
+set_env_var("WALYTIS_BETA_API_TYPE", "WALYTIS_BETA_DIRECT_API")
+set_env_var("IPFS_TK_MODE", "EMBEDDED")
+run_tests()

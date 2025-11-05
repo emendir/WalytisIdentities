@@ -50,6 +50,7 @@ if True:
         os.path.join(os.getcwd(), "Walytis.log"),
         override=True,
     )
+    print("IPFS_TK_MODE", os.environ.get("IPFS_TK_MODE"))
     import walytis_beta_api
     import walytis_beta_embedded
     from brenthy_tools_beta import BrenthyNotRunningError, brenthy_api
