@@ -657,14 +657,14 @@ class GroupDidManager(_GroupDidManager):
         return join_process.group_did_manager
 
     @classmethod
-    def _join(
+    def _join_from_blockchain(
         cls: Type[GroupDidManagerType],
         blockchain: Blockchain,
         group_key_store: KeyStore | str,
         member: KeyStore | GenericDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
     ) -> GroupDidManagerType:
-        """Join an exisiting Group-DID-Manager.
+        """Join an exisiting Group-DID-Manager given its blockchain.
 
         Uses the provided DidManager as the member if provided,
         otherwise creates a new member DID.
@@ -1384,7 +1384,7 @@ class JoinProcess:
 
         def join():
             try:
-                self.join_blockchain2()
+                self.join_blockchain()
             except Exception as e:
                 import traceback
 
@@ -1394,7 +1394,7 @@ class JoinProcess:
         self.thread = Thread(target=join)
         self.thread.start()
 
-    def join_blockchain2(self):
+    def join_blockchain(self):
         one_time_key = Key.create(CRYPTO_FAMILY)
 
         def encrypt(data):
@@ -1468,7 +1468,7 @@ class JoinProcess:
         for key in gdm_keys:
             self.group_key_store.add_key(key)
         logger_gdm_join.debug("Loading GroupDidManager...")
-        self.group_did_manager = GroupDidManager._join(
+        self.group_did_manager = GroupDidManager._join_from_blockchain(
             blockchain=blockchain,
             group_key_store=self.group_key_store,
             member=self.member,
