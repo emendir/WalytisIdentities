@@ -173,18 +173,6 @@ class DidDocBlock(InfoBlock):
 
 
 @strictly_typed
-class MemberInvitationBlock(InfoBlock):
-    """A block containing a DID document."""
-
-    walytis_block_topic = "member_invitation"
-    info_content: dict
-
-    def get_member_invitation(self) -> dict:
-        """Get the DID-Document which this block publishes."""
-        return self.info_content
-
-
-@strictly_typed
 class MemberJoiningBlock(InfoBlock):
     """A block containing a DID document."""
 
@@ -504,7 +492,6 @@ def get_members(blockchain: Blockchain) -> dict[str, dict]:
 
 INFO_BLOCK_TYPES: set[InfoBlockType] = {
     DidDocBlock,
-    MemberInvitationBlock,
     MemberJoiningBlock,
     MemberLeavingBlock,
     MemberUpdateBlock,
