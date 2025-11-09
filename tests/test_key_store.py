@@ -47,8 +47,8 @@ def test_add_get_key():
     shared_data.keystore.add_key(shared_data.crypt1)
     shared_data.keystore.add_key(shared_data.crypt2)
 
-    c1 = shared_data.keystore.get_key(shared_data.crypt1.get_key_id())
-    c2 = shared_data.keystore.get_key(shared_data.crypt2.get_key_id())
+    c1 = shared_data.keystore.get_key(shared_data.crypt1.get_id())
+    c2 = shared_data.keystore.get_key(shared_data.crypt2.get_id())
 
     shared_data.keystore.terminate()
 
@@ -65,8 +65,8 @@ def test_add_get_key():
 def test_reopen_keystore():
     keystore = KeyStore(shared_data.key_store_path, shared_data.KEY)
 
-    c1 = keystore.get_key(shared_data.crypt1.get_key_id())
-    c2 = keystore.get_key(shared_data.crypt2.get_key_id())
+    c1 = keystore.get_key(shared_data.crypt1.get_id())
+    c2 = keystore.get_key(shared_data.crypt2.get_id())
 
     assert (
         c1.public_key == shared_data.crypt1.public_key

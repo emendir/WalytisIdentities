@@ -250,7 +250,7 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
 
     group_key = group_key_proof.get_key()
     member_key = member_key_proof.get_key()
-    if not gdm.is_control_key_active(group_key.get_key_id()):
+    if not gdm.is_control_key_active(group_key.get_id()):
         logger.debug("Group key not validated.")
         return False
     logger.debug("Group key validated.")
@@ -266,9 +266,9 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
     logger.debug(
         [key.get_public_key_str() for key in member._get_member_control_keys()]
     )
-    logger.debug(member._get_control_key_age(member_key.get_key_id()))
-    logger.debug(member.is_control_key_active(member_key.get_key_id()))
-    if not member.is_control_key_active(member_key.get_key_id()):
+    logger.debug(member._get_control_key_age(member_key.get_id()))
+    logger.debug(member.is_control_key_active(member_key.get_id()))
+    if not member.is_control_key_active(member_key.get_id()):
         logger.debug("Member key not validated.")
         return False
 

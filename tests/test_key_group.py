@@ -27,14 +27,14 @@ def test_create_keygroup():
         assert shared_data.key_group.get_keys()[i].family == family
 
 
-def test_keygroup_id():
-    print(shared_data.key_group.get_keygroup_id())
-    shared_data.locked_kg = KeyGroup.from_keygroup_id(
-        shared_data.key_group.get_keygroup_id()
+def test_id():
+    print(shared_data.key_group.get_id())
+    shared_data.locked_kg = KeyGroup.from_id(
+        shared_data.key_group.get_id()
     )
 
     for i, key in enumerate(shared_data.key_group.keys):
-        assert key.get_key_id() == shared_data.locked_kg.keys[i].get_key_id()
+        assert key.get_id() == shared_data.locked_kg.keys[i].get_id()
 
 
 def test_signing():

@@ -86,11 +86,11 @@ class ControlKeyBlock:
 
     def get_old_keys_id(self) -> str:
         """Get this control-key-update's old key."""
-        return self.old_keys.get_keygroup_id()
+        return self.old_keys.get_id()
 
     def get_new_keys_id(self) -> str:
         """Get this control-key-update's new key."""
-        return self.new_keys.get_keygroup_id()
+        return self.new_keys.get_id()
 
 
 _InfoBlock = TypeVar("_InfoBlock", bound="InfoBlock")
@@ -408,7 +408,7 @@ def get_control_key_age(blockchain: Blockchain, key_id: str):
     keys = get_all_control_keys(blockchain)
     keys.reverse()
     for i, key in enumerate(keys):
-        if key.get_key_id() == key_id:
+        if key.get_id() == key_id:
             return i
     raise Exception(f"No such key: {key_id}")
 

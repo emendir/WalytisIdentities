@@ -741,7 +741,7 @@ class GroupDidManager(_GroupDidManager):
         control_key = self.get_control_key()
         # logger.debug(self.get_control_key())
         # logger.debug(
-        #     get_latest_control_key(self.blockchain).get_key_id()
+        #     get_latest_control_key(self.blockchain).get_id()
         # )
         # logger.debug(self.blockchain._terminate)
         if control_key.private_key:
@@ -763,7 +763,7 @@ class GroupDidManager(_GroupDidManager):
                 logger.debug(f"Requesting control key from {did}")
                 key = None
                 try:
-                    key = self.request_key(control_key.get_key_id(), did)
+                    key = self.request_key(control_key.get_id(), did)
                 except IncompletePeerInfoError as e:
                     logger.debug(e)
                     continue
@@ -868,7 +868,7 @@ class GroupDidManager(_GroupDidManager):
         """Publish a public key and proof that we have it's private key."""
         key_ownership = {
             "owner": self.member_did_manager.did,
-            "key_id": key.get_key_id(),
+            "key_id": key.get_id(),
         }
         sig = bytes_to_string(key.sign(json.dumps(key_ownership).encode()))
         key_ownership.update({"proof": sig})
@@ -924,7 +924,7 @@ class GroupDidManager(_GroupDidManager):
             assert conv.say(
                 json.dumps({"private_key": private_key.hex()}).encode()
             )
-            logger.debug(f"KRH: Shared key!: {key.get_key_id()}")
+            logger.debug(f"KRH: Shared key!: {key.get_id()}")
 
         except ConvListenTimeout:
             logger.warning(
@@ -1056,11 +1056,11 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning(response)
                 continue
             private_key = bytes.fromhex(response["private_key"])
-            key = Key.from_key_id(key_id)
+            key = Key.from_id(key_id)
             key.unlock(private_key)
             self.key_store.add_key(key)
             self.publish_key_ownership(key)
-            logger.debug(f"RK: Got key!: {key.get_key_id()}")
+            logger.debug(f"RK: Got key!: {key.get_id()}")
             return key
         logger.debug(
             f"RK: Failed to get key for {other_member_did} "
@@ -1086,11 +1086,11 @@ class GroupDidManager(_GroupDidManager):
 
                 # filter out keys that have already been used as control keys
                 if key_id in [
-                    key.get_key_id() for key in self.get_control_keys()
+                    key.get_id() for key in self.get_control_keys()
                 ]:
                     continue
 
-                key = Key.from_key_id(key_id)
+                key = Key.from_id(key_id)
                 proof = string_to_bytes(key_ownership["proof"])
                 key_ownership.pop("proof")
 
@@ -1171,7 +1171,7 @@ class GroupDidManager(_GroupDidManager):
         key = Key.create(CRYPTO_FAMILY)
         self.key_store.add_key(key)
         self.candidate_keys.update(
-            {key.get_key_id(): [self.member_did_manager.did]}
+            {key.get_id(): [self.member_did_manager.did]}
         )
 
         self.publish_key_ownership(key)
@@ -1327,7 +1327,7 @@ class InvitationCode:
 
     def serialise_dict(self) -> str:
         return {
-            "key": self.key.get_key_id(),
+            "key": self.key.get_id(),
             "ipfs_id": self.ipfs_id,
             "ipfs_addresses": self.ipfs_addresses,
         }
@@ -1338,7 +1338,7 @@ class InvitationCode:
     @classmethod
     def deserialise_from_dict(cls, data: dict):
         return cls(
-            key=Key.from_key_id(data["key"]),
+            key=Key.from_id(data["key"]),
             ipfs_id=data["ipfs_id"],
             ipfs_addresses=data["ipfs_addresses"],
         )
@@ -1428,7 +1428,7 @@ class JoinProcess:
             peer_id=self.invitation_code.ipfs_id,
             others_req_listener=others_req_listener,
             encryption_callbacks=(encrypt, decrypt),
-            salutation_message=one_time_key.get_key_id().encode(),
+            salutation_message=one_time_key.get_id().encode(),
         )
         logger_gdm_join.debug("Talking to peer...")
 
@@ -1528,7 +1528,7 @@ class InvitationManager:
     def handler(self, conv_name, peer_id, salutation_start):
         logger_gdm_join.debug("Received request.")
 
-        their_key = Key.from_key_id(salutation_start.decode())
+        their_key = Key.from_id(salutation_start.decode())
 
         def encrypt(data):
             return their_key.encrypt(data)

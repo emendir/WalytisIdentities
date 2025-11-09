@@ -16,17 +16,17 @@ sig_data = bytes.decode(ckb.get_signature_data())
 
 def test_key_ids():
     for key in old_keys:
-        assert key.get_key_id() in sig_data
+        assert key.get_id() in sig_data
     for key in new_keys:
-        assert key.get_key_id() in sig_data
+        assert key.get_id() in sig_data
 
 
 def test_keys():
-    assert [key.get_key_id() for key in ckb.get_old_keys()] == [
-        key.get_key_id() for key in old_keys
+    assert [key.get_id() for key in ckb.get_old_keys()] == [
+        key.get_id() for key in old_keys
     ]
-    assert [key.get_key_id() for key in ckb.get_new_keys()] == [
-        key.get_key_id() for key in new_keys
+    assert [key.get_id() for key in ckb.get_new_keys()] == [
+        key.get_id() for key in new_keys
     ]
 
 

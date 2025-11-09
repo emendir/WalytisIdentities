@@ -231,4 +231,4 @@ def docker_renew_control_key():
         print(threading.enumerate())
         time.sleep(1)
     new_key = shared_data.group_1.get_control_key()
-    print(f"{old_key.get_key_id()} {new_key.get_key_id()}")
+    print(f"{old_key.get_id()} {new_key.get_id()}")

@@ -270,11 +270,11 @@ class DidManager(GenericDidManager):
             topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic],
         )
 
-        self._control_key_id = new_ctrl_key.get_key_id()
+        self._control_key_id = new_ctrl_key.get_id()
         # logger.info(
         #     "Renewed control key:\n"
-        #     f"    old: {old_ctrl_key.get_key_id()}\n"
-        #     f"    new: {new_ctrl_key.get_key_id()}"
+        #     f"    old: {old_ctrl_key.get_id()}\n"
+        #     f"    new: {new_ctrl_key.get_id()}"
         # )
 
     def _dm_add_info_block(self, block: InfoBlock) -> Block:
@@ -293,7 +293,7 @@ class DidManager(GenericDidManager):
         The returned Key NEVER has the private key.
         """
         control_key = get_latest_control_key(self._blockchain)
-        self._control_key_id = control_key.get_key_id()
+        self._control_key_id = control_key.get_id()
         if self._control_key_id not in self._key_store.keys.keys():
             # add key to key store
             self._key_store.add_key(control_key)
@@ -331,7 +331,7 @@ class DidManager(GenericDidManager):
     def get_active_unlocked_control_keys(self) -> list[Key]:
         unlocked_keys = []
         for key in self.get_active_control_keys():
-            unlocked_key = self.key_store.keys.get(key.get_key_id(), None)
+            unlocked_key = self.key_store.keys.get(key.get_id(), None)
             if unlocked_key and unlocked_key.is_unlocked():
                 unlocked_keys.append(unlocked_key)
         return unlocked_keys

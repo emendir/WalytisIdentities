@@ -152,7 +152,7 @@ class CodePackage:
             creation_time=self.creation_time,
         )
 
-    def get_key_id(self) -> str:
+    def get_id(self) -> str:
         return generate_key_id(
             family=self.family,
             creation_time=self.creation_time,
@@ -189,7 +189,7 @@ class KeyStore:
         appdata_encryption_public_key = data["appdata_encryption_public_key"]
         encrypted_keys = data["keys"]
 
-        if appdata_encryption_public_key != self.key.get_key_id():
+        if appdata_encryption_public_key != self.key.get_id():
             raise ValueError(
                 "Wrong cryptographic key for unlocking keystore.\n"
                 f"{appdata_encryption_public_key}\n"
@@ -199,7 +199,7 @@ class KeyStore:
         keys = {}
         for encrypted_key in encrypted_keys:
             key = Key.deserialise_private_encrypted(encrypted_key, self.key)
-            keys.update({key.get_key_id(): key})
+            keys.update({key.get_id(): key})
         self.keys = keys
         self._custom_metadata = data.get("custom_metadata", {})
 
@@ -226,7 +226,7 @@ class KeyStore:
             )
             encrypted_keys.append(encrypted_serialised_key)
         data = {
-            "appdata_encryption_public_key": self.key.get_key_id(),
+            "appdata_encryption_public_key": self.key.get_id(),
             "keys": encrypted_keys,
             "custom_metadata": self._custom_metadata,
         }
@@ -235,7 +235,7 @@ class KeyStore:
             file.write(json.dumps(data))
 
     def add_key(self, key: Key):
-        key_id = key.get_key_id()
+        key_id = key.get_id()
         if key_id not in self.keys:
             self.keys.update({key_id: key})
             self.save_appdata()
