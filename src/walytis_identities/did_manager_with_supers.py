@@ -44,7 +44,7 @@ from walytis_identities.did_manager_blocks import (
     SuperRegistrationBlock,
     get_info_blocks,
 )
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 

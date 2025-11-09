@@ -7,40 +7,6 @@ from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
 from strict_typing import strictly_typed
 
-_Service = TypeVar("_Service", bound="Service")
-
-
-@dataclass
-class Service:
-    """Represents a DID service.
-
-    DID services are applications/operations registered in a DID document that
-    use specific cryptographic keys also published in the DID document.
-    """
-
-    service_id: str
-    family: str
-    # example: 'messenger://user_id/chatroom'
-    service_endpoint: str | list | dict
-
-    @classmethod
-    def from_service_spec(cls: Type[_Service], service_spec: dict) -> _Service:
-        """Initialise a Service from a DID service spec from a DID document."""
-        return cls(
-            service_id=service_spec["id"].strip("#"),
-            family=service_spec["family"],
-            service_endpoint=["serviceEndpoint"],
-        )
-
-    def generate_service_spec(self) -> dict:
-        """Generate a service spec for a DID document."""
-        return {
-            "id": f"#{self.service_id}",
-            "family": self.family,
-            "serviceEndpoint": self.service_endpoint,
-        }
-
-
 _Key = TypeVar("_Key", bound="Key")
 
 
@@ -273,6 +239,3 @@ def generate_key_id(
     if not (family and public_key and creation_time):
         raise ValueError("Not all key fields provided.")
     return f"{family}:{time_to_string(creation_time)}:{public_key}"
-
-
-decorate_all_functions(strictly_typed, __name__)

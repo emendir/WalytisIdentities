@@ -5,7 +5,7 @@ import tempfile
 import _auto_run_with_pytest  # noqa
 from emtest import await_thread_cleanup
 
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 from walytis_identities.key_store import CodePackage, KeyStore
 
 

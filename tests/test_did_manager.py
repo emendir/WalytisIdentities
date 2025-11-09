@@ -6,7 +6,7 @@ import tempfile
 import pytest
 import walytis_beta_api as walytis_api
 from walytis_identities.did_manager import DidManager
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 from walytis_identities.key_store import CodePackage, KeyStore
 
 

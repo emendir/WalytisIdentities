@@ -7,7 +7,7 @@ from emtest import await_thread_cleanup
 from walytis_beta_api._experimental import generic_blockchain_testing
 
 from walytis_identities.did_manager import DidManager
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 

@@ -1,4 +1,4 @@
-from .did_objects import Key
+from .key_objects import Key
 from ipfs_tk_transmission import Conversation
 from walytis_identities.key_store import CodePackage
 from .utils import generate_random_string

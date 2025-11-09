@@ -10,7 +10,7 @@ from multi_crypt import Crypt
 from walytis_beta_api import Block, Blockchain
 from walytis_beta_api._experimental.generic_blockchain import GenericBlockchain
 
-from .did_objects import Key
+from .key_objects import Key
 from .key_store import KeyStore
 
 

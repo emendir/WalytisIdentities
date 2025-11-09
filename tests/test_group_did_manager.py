@@ -10,7 +10,7 @@ from emtest import await_thread_cleanup
 from testing_utils import CRYPTO_FAMILY
 
 from walytis_identities.did_manager import DidManager
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import CodePackage, KeyStore
 

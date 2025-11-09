@@ -8,7 +8,7 @@ import portalocker
 from decorate_all import decorate_all_functions
 from strict_typing import strictly_typed
 
-from .did_objects import Key, generate_key_id
+from .key_objects import Key, generate_key_id
 from .utils import (
     bytes_from_string,
     bytes_to_string,

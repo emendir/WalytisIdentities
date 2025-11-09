@@ -61,7 +61,7 @@ from .did_manager_blocks import (
     get_latest_did_doc,
     get_members,
 )
-from .did_objects import Key
+from .key_objects import Key
 from .generic_did_manager import GenericDidManager
 from .key_store import KeyStore, UnknownKeyError
 from .settings import (

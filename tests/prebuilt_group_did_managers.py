@@ -14,7 +14,7 @@ from walytis_identities.did_manager import (
     blockchain_id_from_did,
 )
 from walytis_identities.did_manager_blocks import get_all_control_keys
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager, logger
 from walytis_identities.key_store import KeyStore
 

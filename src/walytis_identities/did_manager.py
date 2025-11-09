@@ -32,7 +32,7 @@ from .did_manager_blocks import (
     get_control_key_age,
     get_latest_did_doc,
 )
-from .did_objects import Key
+from .key_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .generic_did_manager import GenericDidManager
 from .key_store import CodePackage, KeyStore

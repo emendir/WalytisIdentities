@@ -10,7 +10,7 @@ from multi_crypt import Crypt, verify_signature
 from strict_typing import strictly_typed
 from walytis_beta_api import Blockchain
 
-from .did_objects import Key
+from .key_objects import Key
 from .exceptions import NotValidDidBlockchainError
 from .utils import bytes_from_string, bytes_to_string, logger
 

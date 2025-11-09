@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 from walytis_identities.log import console_handler
-from walytis_identities.did_objects import Key
+from walytis_identities.key_objects import Key
 import logging
 
 console_handler.setLevel(logging.DEBUG)
