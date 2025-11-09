@@ -6,6 +6,7 @@ from brenthy_tools_beta.utils import string_to_time, time_to_string
 from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
 from strict_typing import strictly_typed
+from .log import logger_keys as logger
 
 _Key = TypeVar("_Key", bound="Key")
 
@@ -244,12 +245,62 @@ def generate_key_id(
 class KeyGroup:
     def __init__(self, keys: list[Key]):
         self.keys = keys
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
+
+    @classmethod
+    def create(cls, key_families: list[str]):
+        keys = [Key.create(family=family) for family in key_families]
+        return cls(keys)
+
+    @classmethod
+    def from_keygroup_id(cls, group_key_id: str):
+        key_ids = group_key_id.split("|")
+        keys = [Key.from_key_id(key_id) for key_id in key_ids]
+        return cls(keys)
 
     def get_keygroup_id(self) -> str:
-        return "-".join(self.get_key_ids())
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
+        return "|".join(self.get_key_ids())
 
     def get_keys(self) -> list[Key]:
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         return self.keys
 
     def get_key_ids(self) -> list[str]:
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         return [key.get_key_id() for key in self.get_keys()]
+
+    def verify_signature(self, signature: bytes, signed_data: bytes) -> bool:
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
+        signatures = [
+            bytes.fromhex(sig) for sig in bytes.decode(signature).split("-")
+        ]
+        if not len(signatures) == len(self.keys):
+            logger.warning("Wrong number of signatures")
+            return False
+        for i, key in enumerate(self.keys):
+            if not key.verify_signature(signatures[i], signed_data):
+                return False
+
+        return True
+
+    def sign(self, data: bytes) -> bytes:
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
+        signatures = []
+        for key in self.keys:
+            signatures.append(key.sign(data))
+        return str.encode(
+            "-".join([bytes.hex(signature) for signature in signatures])
+        )
+
+    def encrypt(self, data: bytes) -> bytes:
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
+        for key in self.keys:
+            data = key.encrypt(data)
+        return data
+
+    def decrypt(self, data: bytes) -> bytes:
+        assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
+        for key in self.keys[::-1]:  # iterate through keys backwards
+            data = key.decrypt(data)
+        return data

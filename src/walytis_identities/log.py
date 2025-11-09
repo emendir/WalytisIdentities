@@ -60,6 +60,9 @@ logger_datatr.addHandler(console_handler)
 logger_dmws = logging.getLogger("WalId.DMWS")
 logger_dmws.setLevel(logging.INFO)
 logger_dmws.addHandler(file_handler)
-
-
 logger_dmws.addHandler(console_handler)
+
+logger_keys = logging.getLogger("WalId.KEYS")
+logger_keys.setLevel(logging.INFO)
+logger_keys.addHandler(file_handler)
+logger_keys.addHandler(console_handler)
