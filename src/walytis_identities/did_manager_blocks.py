@@ -20,17 +20,13 @@ PRIBLOCKS_VERSION = (0, 0, 1)  # TODO: What's this exactly?
 _ControlKeyBlock = TypeVar("_ControlKeyBlock", bound="ControlKeyBlock")
 
 
-@strictly_typed
+# @strictly_typed
 @dataclass
 class ControlKeyBlock:
     """Representation of a block that publishes a control key update."""
 
-    old_key: str
-    old_key_type: str
-    old_key_timestamp: str
-    new_key: str
-    new_key_type: str
-    new_key_timestamp: str
+    old_key_ids: list[str]
+    new_key_ids: list[str]
     signature: str
 
     priblocks_version: tuple | list
@@ -39,27 +35,20 @@ class ControlKeyBlock:
     @classmethod
     def new(
         cls: Type[_ControlKeyBlock],
-        old_key: Key,
-        new_key: Key,
+        old_keys: list[Key],
+        new_keys: list[Key],
     ) -> _ControlKeyBlock:
         """Prepare a control-key-update block (not yet signed)."""
         return cls(
-            old_key=bytes_to_string(old_key.public_key),
-            old_key_type=old_key.family,
-            old_key_timestamp=time_to_string(old_key.creation_time),
-            new_key=bytes_to_string(new_key.public_key),
-            new_key_type=new_key.family,
-            new_key_timestamp=time_to_string(new_key.creation_time),
+            old_key_ids=[key.get_key_id() for key in old_keys],
+            new_key_ids=[key.get_key_id() for key in new_keys],
             priblocks_version=PRIBLOCKS_VERSION,
             signature="",
         )
 
     def get_signature_data(self) -> bytes:
         """Get the portion of this block's content that will be signed."""
-        return (
-            f"{self.old_key_type}: {self.old_key}"
-            f"{self.new_key_type}: {self.new_key}"
-        ).encode()
+        return (str((self.old_key_ids, self.new_key_ids))).encode()
 
     def sign(self, crypt: Crypt) -> None:
         """Sign key update with old key."""
@@ -76,23 +65,13 @@ class ControlKeyBlock:
         """Generate raw block content for a Walytis block."""
         return json.dumps(asdict(self)).encode()
 
-    def get_old_key(self) -> Key:
+    def get_old_keys(self) -> Key:
         """Get this control-key-update's old key."""
-        return Key(
-            family=self.old_key_type,
-            public_key=bytes_from_string(self.old_key),
-            private_key=None,
-            creation_time=string_to_time(self.old_key_timestamp),
-        )
+        return [Key.from_key_id(key_id) for key_id in self.old_key_ids]
 
-    def get_new_key(self) -> Key:
+    def get_new_keys(self) -> Key:
         """Get this control-key-update's new key."""
-        return Key(
-            family=self.new_key_type,
-            public_key=bytes_from_string(self.new_key),
-            private_key=None,
-            creation_time=string_to_time(self.new_key_timestamp),
-        )
+        return [Key.from_key_id(key_id) for key_id in self.new_key_ids]
 
 
 _InfoBlock = TypeVar("_InfoBlock", bound="InfoBlock")
@@ -263,10 +242,7 @@ def verify_control_key_update(
     key_block_1.
     """
     # assert that the new block refers to the old block's key
-    if not (
-        key_block_1.new_key == key_block_2.old_key
-        and key_block_1.new_key_type == key_block_2.old_key_type
-    ):
+    if key_block_1.new_key_ids != key_block_2.old_key_ids:
         return False
 
     # verify the new block's signature against the current key
@@ -294,10 +270,7 @@ def get_all_control_keys(blockchain: Blockchain) -> list[Key]:
             f"Blockchain has no control keys! {blockchain.blockchain_id}"
         )
     # ensure the first ControlKeyBlock has identical current and new keys
-    if not (
-        ctrl_key_blocks[0].old_key == ctrl_key_blocks[0].new_key
-        and ctrl_key_blocks[0].old_key_type == ctrl_key_blocks[0].new_key_type
-    ):
+    if ctrl_key_blocks[0].old_key_ids != ctrl_key_blocks[0].new_key_ids:
         raise Exception("First key block doesn't have identical keys!")
 
     # iterate through key updates, verifying them
@@ -367,11 +340,7 @@ def get_info_blocks(
             if not last_key_block:
                 # ensure the first ControlKeyBlock
                 # has identical current and new keys
-                if not (
-                    ctrl_key_block.old_key == ctrl_key_block.new_key
-                    and ctrl_key_block.old_key_type
-                    == ctrl_key_block.new_key_type
-                ):
+                if ctrl_key_block.old_keys_ids != ctrl_key_block.new_key_ids:
                     raise Exception(
                         "First key block doesn't have identical keys!"
                     )
