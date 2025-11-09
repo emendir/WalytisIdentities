@@ -171,7 +171,7 @@ class DidManager(GenericDidManager):
             old_key=ctrl_key,
             new_key=ctrl_key,
         )
-        keyblock.sign(ctrl_key)
+        keyblock.sign()
         blockchain.add_block(
             keyblock.generate_block_content(),
             topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic],
@@ -263,7 +263,7 @@ class DidManager(GenericDidManager):
             old_key=old_ctrl_key,
             new_key=new_ctrl_key,
         )
-        keyblock.sign(old_ctrl_key)
+        keyblock.sign()
 
         self._blockchain.add_block(
             keyblock.generate_block_content(),

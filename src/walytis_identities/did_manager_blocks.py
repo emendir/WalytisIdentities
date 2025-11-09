@@ -52,9 +52,18 @@ class ControlKeyBlock:
             self.get_old_keys_id() + "--" + self.get_new_keys_id()
         ).encode()
 
-    def sign(self, crypt: Crypt) -> None:
+    def sign(self) -> None:
         """Sign key update with old key."""
-        self.signature = bytes_to_string(crypt.sign(self.get_signature_data()))
+        self.signature = bytes_to_string(
+            self.old_keys.sign(self.get_signature_data())
+        )
+
+    def verify_signature(self) -> bool:
+        """Verify this block's signature."""
+        return self.old_keys.verify_signature(
+            bytes_from_string(self.signature),
+            self.get_signature_data(),
+        )
 
     @classmethod
     def load_from_block_content(
@@ -77,11 +86,11 @@ class ControlKeyBlock:
 
     def get_old_keys_id(self) -> str:
         """Get this control-key-update's old key."""
-        return self.get_old_keys_id()
+        return self.old_keys.get_keygroup_id()
 
     def get_new_keys_id(self) -> str:
         """Get this control-key-update's new key."""
-        return self.get_new_keys_id()
+        return self.new_keys.get_keygroup_id()
 
 
 _InfoBlock = TypeVar("_InfoBlock", bound="InfoBlock")

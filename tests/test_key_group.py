@@ -1,12 +1,10 @@
 import os
-import shutil
 import tempfile
 
 import _auto_run_with_pytest  # noqa
 from emtest import await_thread_cleanup
 
 from walytis_identities.key_objects import Key, KeyGroup
-from walytis_identities.key_store import CodePackage, KeyStore
 from walytis_identities.utils import generate_random_string
 
 KEY_FAMILIES = [
@@ -16,14 +14,8 @@ KEY_FAMILIES = [
 
 
 class SharedData:
-    def __init__(self):
-        self.tempdir = tempfile.mkdtemp()
-        self.key_store_path = os.path.join(self.tempdir, "keystore.json")
-
-        # the cryptographic family to use for the tests
-        self.CRYPTO_FAMILY = "EC-secp256k1"
-        self.KEY = Key.create(self.CRYPTO_FAMILY)
-        self.key_group = None
+    key_group: KeyGroup
+    locked_kg: KeyGroup
 
 
 shared_data = SharedData()
