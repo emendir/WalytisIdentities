@@ -5,10 +5,8 @@ from dataclasses import dataclass
 from typing import Type, TypeVar
 
 import portalocker
-from decorate_all import decorate_all_functions
-from strict_typing import strictly_typed
 
-from .key_objects import Key, generate_key_id
+from .key_objects import Key, KeyGroup, generate_key_id, decode_keygroup_id
 from .utils import (
     bytes_from_string,
     bytes_to_string,
@@ -249,6 +247,13 @@ class KeyStore:
             raise UnknownKeyError
         return key
 
+    def get_keygroup(self, keygroup_id: str):
+        keys = [
+            self.get_key(key_id) for key_id in decode_keygroup_id(keygroup_id)
+        ]
+
+        return KeyGroup(keys)
+
     def get_key_from_public(
         self, public_key: str | bytes | bytearray, family: str
     ) -> Key:
@@ -371,6 +376,3 @@ class KeyStore:
 
 class UnknownKeyError(Exception):
     """When looking up a key we don't have."""
-
-
-decorate_all_functions(strictly_typed, __name__)

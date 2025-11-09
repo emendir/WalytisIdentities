@@ -4,9 +4,7 @@ from datetime import datetime, UTC
 from typing import Type, TypeVar
 import json
 from brenthy_tools_beta.utils import string_to_time, time_to_string
-from decorate_all import decorate_all_functions
 from multi_crypt import Crypt
-from strict_typing import strictly_typed
 from .log import logger_keys as logger
 
 _Key = TypeVar("_Key", bound="Key")
@@ -281,7 +279,7 @@ class KeyGroup(GenericKey):
 
     @classmethod
     def from_id(cls, group_key_id: str):
-        key_ids = group_key_id.split("|")
+        key_ids = decode_keygroup_id(group_key_id)
         keys = [Key.from_id(key_id) for key_id in key_ids]
         return cls(keys)
 
@@ -331,3 +329,7 @@ class KeyGroup(GenericKey):
         for key in self.keys[::-1]:  # iterate through keys backwards
             data = key.decrypt(data)
         return data
+
+
+def decode_keygroup_id(group_key_id: str) -> list[str]:
+    return group_key_id.split("|")

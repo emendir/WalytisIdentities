@@ -14,7 +14,7 @@ KEY_FAMILIES = [
 
 
 class SharedData:
-    key_group: KeyGroup
+    keygroup: KeyGroup
     locked_kg: KeyGroup
 
 
@@ -22,24 +22,22 @@ shared_data = SharedData()
 
 
 def test_create_keygroup():
-    shared_data.key_group = KeyGroup.create(KEY_FAMILIES)
+    shared_data.keygroup = KeyGroup.create(KEY_FAMILIES)
     for i, family in enumerate(KEY_FAMILIES):
-        assert shared_data.key_group.get_keys()[i].family == family
+        assert shared_data.keygroup.get_keys()[i].family == family
 
 
 def test_id():
-    print(shared_data.key_group.get_id())
-    shared_data.locked_kg = KeyGroup.from_id(
-        shared_data.key_group.get_id()
-    )
+    print(shared_data.keygroup.get_id())
+    shared_data.locked_kg = KeyGroup.from_id(shared_data.keygroup.get_id())
 
-    for i, key in enumerate(shared_data.key_group.keys):
+    for i, key in enumerate(shared_data.keygroup.keys):
         assert key.get_id() == shared_data.locked_kg.keys[i].get_id()
 
 
 def test_signing():
     data = generate_random_string(20).encode()
-    signature = shared_data.key_group.sign(data)
+    signature = shared_data.keygroup.sign(data)
     print(signature)
     assert shared_data.locked_kg.verify_signature(signature, data)
 
@@ -47,4 +45,4 @@ def test_signing():
 def test_encryption():
     data = generate_random_string(20).encode()
     cipher = shared_data.locked_kg.encrypt(data)
-    assert shared_data.key_group.decrypt(cipher) == data
+    assert shared_data.keygroup.decrypt(cipher) == data

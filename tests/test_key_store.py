@@ -5,7 +5,7 @@ import tempfile
 import _auto_run_with_pytest  # noqa
 from emtest import await_thread_cleanup
 
-from walytis_identities.key_objects import Key
+from walytis_identities.key_objects import Key, KeyGroup
 from walytis_identities.key_store import CodePackage, KeyStore
 
 
@@ -100,6 +100,20 @@ def test_code_package_serialisation():
     )
     decrypted = shared_data.keystore.decrypt(new_code_package)
     assert decrypted == PLAIN_TEXT, "CodePackage serialisation"
+
+
+def test_keygroup():
+    keygroup = KeyGroup.create(
+        [shared_data.CRYPTO_FAMILY, shared_data.CRYPTO_FAMILY]
+    )
+    for key in keygroup.keys:
+        shared_data.keystore.add_key(key)
+
+    print(keygroup.get_id())
+    reloaded_kg = shared_data.keystore.get_keygroup(keygroup.get_id())
+    for i, key in enumerate(keygroup.keys):
+        assert reloaded_kg.keys[i].get_id() == key.get_id()
+        assert reloaded_kg.keys[i].private_key == key.private_key
 
 
 def test_cleanup() -> None:
