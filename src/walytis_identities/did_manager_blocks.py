@@ -10,7 +10,7 @@ from multi_crypt import Crypt, verify_signature
 from strict_typing import strictly_typed
 from walytis_beta_api import Blockchain
 
-from .key_objects import Key
+from .key_objects import Key, KeyGroup
 from .exceptions import NotValidDidBlockchainError
 from .utils import bytes_from_string, bytes_to_string, logger
 
@@ -25,8 +25,8 @@ _ControlKeyBlock = TypeVar("_ControlKeyBlock", bound="ControlKeyBlock")
 class ControlKeyBlock:
     """Representation of a block that publishes a control key update."""
 
-    old_key_ids: list[str]
-    new_key_ids: list[str]
+    old_keys: KeyGroup
+    new_keys: KeyGroup
     signature: str
 
     priblocks_version: tuple | list
@@ -40,15 +40,17 @@ class ControlKeyBlock:
     ) -> _ControlKeyBlock:
         """Prepare a control-key-update block (not yet signed)."""
         return cls(
-            old_key_ids=[key.get_key_id() for key in old_keys],
-            new_key_ids=[key.get_key_id() for key in new_keys],
+            old_keys=KeyGroup(old_keys),
+            new_keys=KeyGroup(new_keys),
             priblocks_version=PRIBLOCKS_VERSION,
             signature="",
         )
 
     def get_signature_data(self) -> bytes:
         """Get the portion of this block's content that will be signed."""
-        return (str((self.old_key_ids, self.new_key_ids))).encode()
+        return (
+            self.get_old_keys_id() + "--" + self.get_new_keys_id()
+        ).encode()
 
     def sign(self, crypt: Crypt) -> None:
         """Sign key update with old key."""
@@ -65,13 +67,21 @@ class ControlKeyBlock:
         """Generate raw block content for a Walytis block."""
         return json.dumps(asdict(self)).encode()
 
-    def get_old_keys(self) -> Key:
+    def get_old_keys(self) -> list[Key]:
         """Get this control-key-update's old key."""
-        return [Key.from_key_id(key_id) for key_id in self.old_key_ids]
+        return self.old_keys.get_keys()
 
-    def get_new_keys(self) -> Key:
+    def get_new_keys(self) -> list[Key]:
         """Get this control-key-update's new key."""
-        return [Key.from_key_id(key_id) for key_id in self.new_key_ids]
+        return self.new_keys.get_keys()
+
+    def get_old_keys_id(self) -> str:
+        """Get this control-key-update's old key."""
+        return self.get_old_keys_id()
+
+    def get_new_keys_id(self) -> str:
+        """Get this control-key-update's new key."""
+        return self.get_new_keys_id()
 
 
 _InfoBlock = TypeVar("_InfoBlock", bound="InfoBlock")
@@ -242,7 +252,7 @@ def verify_control_key_update(
     key_block_1.
     """
     # assert that the new block refers to the old block's key
-    if key_block_1.new_key_ids != key_block_2.old_key_ids:
+    if key_block_1.get_new_keys_id() != key_block_2.get_old_keys_id():
         return False
 
     # verify the new block's signature against the current key
@@ -270,7 +280,10 @@ def get_all_control_keys(blockchain: Blockchain) -> list[Key]:
             f"Blockchain has no control keys! {blockchain.blockchain_id}"
         )
     # ensure the first ControlKeyBlock has identical current and new keys
-    if ctrl_key_blocks[0].old_key_ids != ctrl_key_blocks[0].new_key_ids:
+    if (
+        ctrl_key_blocks[0].get_old_keys_id()
+        != ctrl_key_blocks[0].get_new_keys_id()
+    ):
         raise Exception("First key block doesn't have identical keys!")
 
     # iterate through key updates, verifying them
@@ -340,7 +353,10 @@ def get_info_blocks(
             if not last_key_block:
                 # ensure the first ControlKeyBlock
                 # has identical current and new keys
-                if ctrl_key_block.old_keys_ids != ctrl_key_block.new_key_ids:
+                if (
+                    ctrl_key_block.get_old_keys_id()
+                    != ctrl_key_block.get_new_keys_id()
+                ):
                     raise Exception(
                         "First key block doesn't have identical keys!"
                     )

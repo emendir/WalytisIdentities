@@ -239,3 +239,17 @@ def generate_key_id(
     if not (family and public_key and creation_time):
         raise ValueError("Not all key fields provided.")
     return f"{family}:{time_to_string(creation_time)}:{public_key}"
+
+
+class KeyGroup:
+    def __init__(self, keys: list[Key]):
+        self.keys = keys
+
+    def get_keygroup_id(self) -> str:
+        return "-".join(self.get_key_ids())
+
+    def get_keys(self) -> list[Key]:
+        return self.keys
+
+    def get_key_ids(self) -> list[str]:
+        return [key.get_key_id() for key in self.get_keys()]
