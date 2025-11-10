@@ -28,11 +28,27 @@ class GenericKey(ABC):
         pass
 
     @abstractmethod
-    def encrypt(self, data: bytes) -> bytes:
+    def encrypt(self, data_to_encrypt: bytes) -> bytes:
         pass
 
     @abstractmethod
-    def decrypt(self, data: bytes) -> bytes:
+    def decrypt(self, data_to_decrypt: bytes) -> bytes:
+        pass
+
+    @abstractmethod
+    def is_unlocked(self) -> bool:
+        pass
+
+    @abstractmethod
+    def serialise_private(
+        self,
+    ) -> dict:
+        pass
+
+    @abstractmethod
+    def serialise_private_encrypted(
+        self, crypt: Crypt, allow_missing_private_key: bool = False
+    ) -> dict:
         pass
 
 
@@ -318,17 +334,57 @@ class KeyGroup(GenericKey):
             "-".join([bytes.hex(signature) for signature in signatures])
         )
 
-    def encrypt(self, data: bytes) -> bytes:
+    def encrypt(
+        self,
+        data_to_encrypt: bytes,
+        encryption_options: list[str] | None = None,
+    ) -> bytes:
+        data = data_to_encrypt
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         for key in self.keys:
-            data = key.encrypt(data)
+            data = key.encrypt(data, encryption_options=encryption_options)
         return data
 
-    def decrypt(self, data: bytes) -> bytes:
+    def decrypt(
+        self,
+        data_to_decrypt: bytes,
+        decryption_options: list[str] | None = None,
+    ) -> bytes:
+        data = data_to_decrypt
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         for key in self.keys[::-1]:  # iterate through keys backwards
-            data = key.decrypt(data)
+            data = key.decrypt(data, decryption_options=decryption_options)
         return data
+
+    def is_unlocked(self) -> bool:
+        for key in self.keys:
+            if not key.is_unlocked():
+                return False
+        return True
+
+    def serialise_private(
+        self,
+    ) -> dict:
+        return [key.serialise_private() for key in self.keys]
+
+    def serialise_private_encrypted(
+        self, crypt: Crypt, allow_missing_private_key: bool = False
+    ) -> dict:
+        return [
+            key.serialise_private_encrypted(
+                crypt=crypt,
+                allow_missing_private_key=allow_missing_private_key,
+            )
+            for key in self.keys
+        ]
+
+    def generate_key_specs(self, controller: str) -> list[dict]:
+        """Generate a key spec for a DID document."""
+        return [key.generate_key_spec(controller) for key in self.keys]
+
+    @classmethod
+    def from_key_specs(cls: Type[_Key], key_spec: list[dict]) -> _Key:
+        return cls([Key.from_key_spec(key_spec) for key_spec in key_spec])
 
 
 def decode_keygroup_id(group_key_id: str) -> list[str]:

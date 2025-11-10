@@ -457,11 +457,9 @@ class _GroupDidManager(DidManager):
         """Generate a DID-document."""
         did_doc = {
             "id": self.did,
-            "verificationMethod": [
-                self.get_control_keys().generate_key_spec(self.did)
-                # key.generate_key_spec(self.did)
-                # for key in self.keys
-            ],
+            "verificationMethod": self.get_control_keys().generate_key_specs(
+                self.did
+            ),
             # "service": [
             #     service.generate_service_spec() for service in self.services
             # ],
@@ -826,13 +824,9 @@ class GroupDidManager(_GroupDidManager):
         """Generate a DID-document."""
         did_doc = {
             "id": self.member_did_manager.did,
-            "verificationMethod": [
-                self.member_did_manager.get_control_keys().generate_key_spec(
-                    self.member_did_manager.did
-                )
-                # key.generate_key_spec(self.did)
-                # for key in self.keys
-            ],
+            "verificationMethod": self.member_did_manager.get_control_keys().generate_key_specs(
+                self.member_did_manager.did
+            ),
             # "service": [
             #     service.generate_service_spec() for service in self.services
             # ],

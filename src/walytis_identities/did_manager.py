@@ -155,7 +155,7 @@ class DidManager(GenericDidManager):
         # logger.debug("DM: Creating Blockchain...")
 
         blockchain_id = create_blockchain(
-            blockchain_name=f"WalID-{ctrl_keys.get_id()}",
+            blockchain_name=f"WalID-{ctrl_keys.keys[0].get_public_key()}",
         )
 
         key_store = cls.assign_keystore(key_store, blockchain_id)
@@ -171,8 +171,8 @@ class DidManager(GenericDidManager):
         # publish first key on blockchain
         # logger.debug("DM: Adding ControlKey block...")
         keyblock = ControlKeyBlock.new(
-            old_key=ctrl_keys,
-            new_key=ctrl_keys,
+            old_keys=ctrl_keys,
+            new_keys=ctrl_keys,
         )
         keyblock.sign()
         blockchain.add_block(
@@ -252,23 +252,23 @@ class DidManager(GenericDidManager):
 
     def renew_control_key(self, new_ctrl_keys: KeyGroup | None = None) -> None:
         """Change the control key to an automatically generated new one."""
-        if not self.get_control_keys().private_key:
+        if not self.get_control_keys().is_unlocked():
             raise DidNotOwnedError()
         # create new control key if the user hasn't provided one
-        if not isinstance(new_ctrl_keys, KeyGroup):
-            raise TypeError("`new_ctrl_keys` should be of type `KeyGroup`")
         if not new_ctrl_keys:
             new_ctrl_keys = KeyGroup(
                 [Key.create(family) for family in CTRL_KEY_FAMILIES]
             )
+        if not isinstance(new_ctrl_keys, KeyGroup):
+            raise TypeError("`new_ctrl_keys` should be of type `KeyGroup`")
 
-        old_ctrl_keys = self.get_control_keys()
+        old_ctrl_key = self.get_control_keys()
         self._key_store.add_keygroup(new_ctrl_keys)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
         keyblock = ControlKeyBlock.new(
-            old_key=old_ctrl_keys,
-            new_key=new_ctrl_keys,
+            old_keys=old_ctrl_key,
+            new_keys=new_ctrl_keys,
         )
         keyblock.sign()
 
@@ -280,8 +280,8 @@ class DidManager(GenericDidManager):
         self._control_key_id = new_ctrl_keys.get_id()
         # logger.info(
         #     "Renewed control key:\n"
-        #     f"    old: {old_ctrl_keys.get_id()}\n"
-        #     f"    new: {new_ctrl_keys.get_id()}"
+        #     f"    old: {old_ctrl_key.get_id()}\n"
+        #     f"    new: {new_ctrl_key.get_id()}"
         # )
 
     def _dm_add_info_block(self, block: InfoBlock) -> Block:
@@ -301,9 +301,8 @@ class DidManager(GenericDidManager):
         """
         control_key = get_latest_control_key(self._blockchain)
         self._control_key_id = control_key.get_id()
-        if self._control_key_id not in self._key_store.keys.keys():
-            # add key to key store
-            self._key_store.add_key(control_key)
+
+        self._key_store.add_keygroup(control_key)
         return control_key
 
     def get_control_keys(self) -> Key:
@@ -326,7 +325,7 @@ class DidManager(GenericDidManager):
 
     def get_active_control_keys(self) -> list[Key]:
         """CAREFUL: RETURNS LOCKED KEYS."""
-        keys = self.get_control_keys_history()
+        keys = self.get_control_keys()
 
         # logger.debug(f"TOTAL CONTROL KEYS: {len(keys)}")
         # get last few

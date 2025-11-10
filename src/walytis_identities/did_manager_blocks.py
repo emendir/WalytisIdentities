@@ -28,20 +28,19 @@ class ControlKeyBlock:
     old_keys: KeyGroup
     new_keys: KeyGroup
     signature: str
-
     priblocks_version: tuple | list
     walytis_block_topic = "control_key"
 
     @classmethod
     def new(
         cls: Type[_ControlKeyBlock],
-        old_keys: list[Key],
-        new_keys: list[Key],
+        old_keys: KeyGroup,
+        new_keys: KeyGroup,
     ) -> _ControlKeyBlock:
         """Prepare a control-key-update block (not yet signed)."""
         return cls(
-            old_keys=KeyGroup(old_keys),
-            new_keys=KeyGroup(new_keys),
+            old_keys=old_keys,
+            new_keys=new_keys,
             priblocks_version=PRIBLOCKS_VERSION,
             signature="",
         )
@@ -70,19 +69,32 @@ class ControlKeyBlock:
         cls: Type[_ControlKeyBlock], block_content: bytearray
     ) -> _ControlKeyBlock:
         """Create a ControlKeyBlock object given raw block content."""
-        return cls(**json.loads(block_content.decode()))
+        data = json.loads(block_content.decode())
+        return cls(
+            old_keys=KeyGroup.from_id(data["old_keys"]),
+            new_keys=KeyGroup.from_id(data["new_keys"]),
+            signature=data["signature"],
+            priblocks_version=data["priblocks_version"],
+        )
 
     def generate_block_content(self) -> bytes:
         """Generate raw block content for a Walytis block."""
-        return json.dumps(asdict(self)).encode()
+        return json.dumps(
+            {
+                "old_keys": self.old_keys.get_id(),
+                "new_keys": self.new_keys.get_id(),
+                "signature": self.signature,
+                "priblocks_version": self.priblocks_version,
+            }
+        ).encode()
 
-    def get_old_keys(self) -> list[Key]:
+    def get_old_keys(self) -> KeyGroup:
         """Get this control-key-update's old key."""
-        return self.old_keys.get_keys()
+        return self.old_keys
 
-    def get_new_keys(self) -> list[Key]:
+    def get_new_keys(self) -> KeyGroup:
         """Get this control-key-update's new key."""
-        return self.new_keys.get_keys()
+        return self.new_keys
 
     def get_old_keys_id(self) -> str:
         """Get this control-key-update's old key."""
@@ -150,11 +162,9 @@ class InfoBlock(ABC):
 
     def verify_signature(self, key: GenericKey) -> bool:
         """Verify this block's signature."""
-        return verify_signature(
-            key.family,
+        return key.verify_signature(
             bytes_from_string(self.signature),
             self.get_signature_data(),
-            key.public_key,
         )
 
 
@@ -265,11 +275,9 @@ def verify_control_key_update(
         return False
 
     # verify the new block's signature against the current key
-    return verify_signature(
-        key_block_1.old_key_type,
+    return key_block_1.get_new_keys().verify_signature(
         bytes_from_string(key_block_2.signature),
         key_block_2.get_signature_data(),
-        bytes_from_string(key_block_1.new_key),
     )
 
 
@@ -299,15 +307,15 @@ def get_control_keys_history(blockchain: Blockchain) -> list[Key]:
     # to determine the currently valid ControlKeyBlock
     i = 1
     last_key_block = ctrl_key_blocks[0]
-    verified_keys = [last_key_block.get_new_key()]
+    verified_keygroups = [last_key_block.get_new_keys()]
     while i < len(ctrl_key_blocks):
         if verify_control_key_update(last_key_block, ctrl_key_blocks[i]):
-            verified_keys.append(ctrl_key_blocks[i].get_new_key())
+            verified_keygroups.append(ctrl_key_blocks[i].get_new_keys())
             last_key_block = ctrl_key_blocks[i]
         i += 1
 
-    control_key = last_key_block.get_new_key()
-    return verified_keys
+    control_key = last_key_block.get_new_keys()
+    return verified_keygroups
 
 
 def get_latest_control_key(blockchain: Blockchain) -> Key:
@@ -395,7 +403,7 @@ def get_info_blocks(
             # logger.debug("WAB: Processing block...")
             # if its signature is validated by the last ctrl key
             if last_key_block and info_block.verify_signature(
-                last_key_block.get_new_key()
+                last_key_block.get_new_keys()
             ):
                 # set this to the latest info-block
                 valid_blocks.append(info_block)
