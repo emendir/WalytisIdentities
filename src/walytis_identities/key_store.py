@@ -6,7 +6,13 @@ from typing import Type, TypeVar
 
 import portalocker
 
-from .key_objects import Key, KeyGroup, generate_key_id, decode_keygroup_id
+from .key_objects import (
+    Key,
+    KeyGroup,
+    CodePacakge,
+    generate_key_id,
+    decode_keygroup_id,
+)
 from .utils import (
     bytes_from_string,
     bytes_to_string,
@@ -14,148 +20,6 @@ from .utils import (
     string_to_time,
 )
 from datetime import datetime
-
-_CodePackage = TypeVar("_CodePackage", bound="CodePackage")
-
-
-@dataclass
-class CodePackage:
-    """Package of encrypted data or a signature with crypto-key-metadata."""
-
-    code: bytes  # cipher or signature
-    public_key: bytes
-    family: str
-    creation_time: datetime | None = None
-    # additional cryptographic signing or encryption options
-    operation_options: str = None
-
-    @classmethod
-    def deserialise(cls: Type[_CodePackage], data: str) -> _CodePackage:
-        _data = json.loads(data)
-        return cls(
-            code=bytes_from_string(_data["code"]),
-            public_key=bytes_from_string(_data["public_key"]),
-            family=_data["family"],
-            creation_time=string_to_time(_data.get("creation_time")),
-            operation_options=_data["operation_options"],
-        )
-
-    @classmethod
-    def deserialise_bytes(
-        cls: Type[_CodePackage], data: bytes
-    ) -> _CodePackage:
-        _data = data.decode()
-        return cls.deserialise(_data)
-
-    def serialise(self) -> str:
-        return json.dumps(
-            {
-                "code": bytes_to_string(self.code),
-                "public_key": bytes_to_string(self.public_key),
-                "family": self.family,
-                "creation_time": time_to_string(self.creation_time)
-                if self.creation_time
-                else None,
-                "operation_options": self.operation_options,
-            }
-        )
-
-    def serialise_bytes(self) -> bytes:
-        return self.serialise().encode()
-
-    def verify_signature(self, signed_data: bytes) -> bool:
-        """Assuming self.code is a signature, verify it against the signed data."""
-        key = Crypt(
-            family=self.family,
-            public_key=self.public_key,
-        )
-        signature = self.code
-        return key.verify_signature(
-            signature=signature,
-            data=signed_data,
-            signature_options=self.operation_options,
-        )
-
-    def decrypt(self, private_key: bytes) -> bool:
-        """Assuming self.code is a signature, verify it against the signed data."""
-        key = Crypt(
-            family=self.family,
-            public_key=self.public_key,
-            private_key=private_key,
-        )
-        return key.decrypt(
-            encrypted_data=self.code,
-            encryption_options=self.operation_options,
-        )
-
-    @staticmethod
-    def encrypt(
-        data: bytes, key: Key, encryption_options: str | None = None
-    ) -> _CodePackage:
-        """Encrypt the provided data using the specified key.
-
-        Args:
-            data (bytes): the data to encrypt
-            key (Key): the key to use to encrypt the data
-            encryption_options (str): specification code for which
-                            encryption/decryption protocol should be used
-        Returns:
-            CodePackage: an object containing the ciphertext, public-key,
-                            crypto-family and encryption-options
-        """
-        cipher = key.encrypt(
-            data_to_encrypt=data,
-            encryption_options=encryption_options,
-        )
-        return CodePackage(
-            code=cipher,
-            public_key=key.public_key,
-            family=key.family,
-            creation_time=key.creation_time,
-            operation_options=encryption_options,
-        )
-
-    @staticmethod
-    def sign(
-        data: bytes, key: Key, signature_options: str | None = None
-    ) -> _CodePackage:
-        """Sign the provided data using the specified key.
-
-        Args:
-            data (bytes): the data to encrypt
-            key (Key): the key to use to encrypt the data
-            encryption_options (str): specification code for which
-                            encryption/decryption protocol should be used
-        Returns:
-            CodePackage: an object containing the ciphertext, public-key,
-                            crypto-family and encryption-options
-        """
-        cipher = key.sign(
-            data=data,
-            signature_options=signature_options,
-        )
-        return CodePackage(
-            code=cipher,
-            public_key=key.public_key,
-            family=key.family,
-            creation_time=key.creation_time,
-            operation_options=signature_options,
-        )
-
-    def get_key(self) -> Key:
-        return Key(
-            public_key=self.public_key,
-            private_key=None,
-            family=self.family,
-            creation_time=self.creation_time,
-        )
-
-    def get_id(self) -> str:
-        return generate_key_id(
-            family=self.family,
-            creation_time=self.creation_time,
-            public_key=self.public_key,
-        )
 
 
 class KeyStore:
