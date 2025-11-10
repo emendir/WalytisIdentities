@@ -61,7 +61,7 @@ from .did_manager_blocks import (
     get_latest_did_doc,
     get_members,
 )
-from .key_objects import Key
+from .key_objects import Key, KeyGroup
 from .generic_did_manager import GenericDidManager
 from .key_store import KeyStore, UnknownKeyError
 from .settings import (
@@ -373,7 +373,7 @@ class _GroupDidManager(DidManager):
         self._gdm_add_info_block(joining_block)
         member.key_store.add_key(self.get_control_keys())
 
-        if self.get_control_keys().private_key:
+        if self.get_control_keys().is_unlocked():
             self.update_did_doc(self.generate_did_doc())
         logger.debug("GDM: Added DidManager as member!")
 
@@ -555,11 +555,8 @@ class GroupDidManager(_GroupDidManager):
 
     def load_missed_blocks(self, allow_locked: bool = False):
         _GroupDidManager.load_missed_blocks(self)
-        # key = self.get_active_control_keys()[-1]
-        # logger.debug(key)
-        # logger.debug(key.private_key)
         if not allow_locked:
-            if not self.get_active_unlocked_control_keys():
+            if not self.get_control_keys().is_unlocked():
                 error_message = "This GDM has no unlocked control keys."
                 logger.error(error_message)
                 raise Exception(error_message)
@@ -606,9 +603,8 @@ class GroupDidManager(_GroupDidManager):
         g_did_manager = _GroupDidManager.create(group_key_store)
         g_did_manager.add_member(member)
 
-        key = g_did_manager.get_active_control_keys()[-1]
+        key = g_did_manager.get_control_keys()
         logger.debug(key)
-        logger.debug(key.private_key)
         member_did_manager.key_store.add_key(g_did_manager.key_store.key)
 
         g_did_manager.terminate()  # group_did_manager will take over
@@ -769,7 +765,7 @@ class GroupDidManager(_GroupDidManager):
                     logger.error(e)
                 if key:
                     self.key_store.add_key(key)
-                    if self.get_control_keys().private_key:
+                    if self.get_control_keys().is_unlocked():
                         self.update_did_doc(self.generate_did_doc())
                         return
                     else:
@@ -1439,7 +1435,7 @@ class JoinProcess:
         logger_gdm_join.debug("Processing data...")
         data = json.loads(bytes.decode(keys_data))
         gdm_keys = [
-            Key.deserialise_private_encrypted(key, one_time_key)
+            KeyGroup.deserialise_private_encrypted(key, one_time_key)
             for key in data["group_keys"]
         ]
         blockchain_id = data["blockchain_id"]
@@ -1489,7 +1485,7 @@ class InvitationManager:
 
     def serialise(self) -> str:
         # encrypt self.key with key from self.gdm
-        key = self.gdm.get_active_unlocked_control_keys()[-1]
+        key = self.gdm.get_control_keys()
 
         return CodePackage(
             code=key.encrypt(

@@ -229,7 +229,7 @@ def decrypt(
 
 def handle_challenge(gdm: "GroupDidManager", _their_challenge: str):
     their_challenge = _their_challenge.encode()
-    group_key = gdm.get_active_unlocked_control_keys()[-1]
+    group_key = gdm.get_control_keys()
     signature_group = CodePackage.sign(their_challenge, group_key).serialise()
     signature_member = CodePackage.deserialise_bytes(
         gdm.member_did_manager.sign(their_challenge)

@@ -107,8 +107,8 @@ def test_encryption() -> None:
     cipher_2 = shared_data.group_1.encrypt(PLAIN_TEXT)
 
     assert (
-        CodePackage.deserialise_bytes(cipher_1).public_key
-        != CodePackage.deserialise_bytes(cipher_2).public_key
+        CodePackage.deserialise_bytes(cipher_1).key.get_id()
+        != CodePackage.deserialise_bytes(cipher_2).key.get_id()
         and shared_data.group_1.decrypt(cipher_1) == PLAIN_TEXT
         and shared_data.group_1.decrypt(cipher_2) == PLAIN_TEXT
     ), "Encryption across key renewal works"
@@ -122,8 +122,8 @@ def test_signing() -> None:
     signature_2 = shared_data.group_1.sign(PLAIN_TEXT)
 
     assert (
-        CodePackage.deserialise_bytes(signature_1).public_key
-        != CodePackage.deserialise_bytes(signature_2).public_key
+        CodePackage.deserialise_bytes(signature_1).key.get_id()
+        != CodePackage.deserialise_bytes(signature_2).key.get_id()
         and shared_data.group_1.verify_signature(signature_1, PLAIN_TEXT)
         and shared_data.group_1.verify_signature(signature_2, PLAIN_TEXT)
     ), "Signature verification across key renewal works"
@@ -163,8 +163,8 @@ def test_create_member_given_path() -> None:
 
     assert (
         os.path.exists(key_store_path)
-        and reloaded.get_control_keys().private_key
-        == shared_data.member.get_control_keys().private_key
+        and reloaded.get_control_keys().is_unlocked()
+        == shared_data.member.get_control_keys().is_unlocked()
     ), "Created member given a directory."
 
 
@@ -189,8 +189,8 @@ def test_create_group_given_path() -> None:
 
     assert (
         os.path.exists(key_store_path)
-        and reloaded.get_control_keys().private_key
-        == shared_data.group.get_control_keys().private_key
+        and reloaded.get_control_keys().is_unlocked()
+        == shared_data.group.get_control_keys().is_unlocked()
     ), "Created group given a directory."
 
 

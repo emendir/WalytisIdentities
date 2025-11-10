@@ -41,7 +41,7 @@ from .log import logger_dm as logger
 DID_METHOD_NAME = "walytisidentities"
 
 CRYPTO_FAMILY = "EC-secp256k1"
-CTRL_KEY_FAMILIES = ["EC-secp256k1", "RSA"]
+CTRL_KEY_FAMILIES = ["EC-secp256k1", "EC-secp256k1"]
 
 _DidManager = TypeVar("_DidManager", bound="DidManager")
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
@@ -314,7 +314,7 @@ class DidManager(GenericDidManager):
         control_key = self._key_store.get_keygroup(self._control_key_id)
         return control_key
 
-    def get_control_keys_history(self) -> list[Key]:
+    def get_control_keys_history(self) -> list[KeyGroup]:
         return get_control_keys_history(self._blockchain)
 
     def get_control_key_age(self, key_id: str) -> int:
@@ -322,25 +322,6 @@ class DidManager(GenericDidManager):
 
     def is_control_key_active(self, key_id: str) -> bool:
         return self.get_control_key_age(key_id) < NUM_ACTIVE_CONTROL_KEYS
-
-    def get_active_control_keys(self) -> list[Key]:
-        """CAREFUL: RETURNS LOCKED KEYS."""
-        keys = self.get_control_keys()
-
-        # logger.debug(f"TOTAL CONTROL KEYS: {len(keys)}")
-        # get last few
-        keys = keys[-1 * NUM_ACTIVE_CONTROL_KEYS :]
-        # logger.debug(f"ACTIVE CONTROL KEYS: {len(keys)}")
-
-        return keys
-
-    def get_active_unlocked_control_keys(self) -> list[Key]:
-        unlocked_keys = []
-        for key in self.get_active_control_keys():
-            unlocked_key = self.key_store.keys.get(key.get_id(), None)
-            if unlocked_key and unlocked_key.is_unlocked():
-                unlocked_keys.append(unlocked_key)
-        return unlocked_keys
 
     def update_did_doc(self, did_doc: dict) -> None:
         """Publish a new DID-document to replace the current one."""

@@ -37,7 +37,7 @@ key = Key(
     CRYPTO_FAMILY,
     public_key=public_key,
     private_key=private_key,
-    creation_time=datetime(2024, 11, 9, 8, 30, 58, 719382,tzinfo=UTC),
+    creation_time=datetime(2024, 11, 9, 8, 30, 58, 719382, tzinfo=UTC),
 )
 
 
@@ -98,7 +98,6 @@ def create_did_managers():
         group_1_keystore, member_1_did_manager
     )
     logger.debug(group_did_manager_1.blockchain.blockchain_id)
-    logger.debug(group_did_manager_1.get_active_control_keys())
     logger.debug(get_control_keys_history(group_did_manager_1.blockchain))
     assert isinstance(group_did_manager_1.get_control_keys_history(), list)
 
@@ -110,7 +109,7 @@ def create_did_managers():
         group_2_keystore, member_2_did_manager, allow_locked=True
     )
     group_did_manager_2.unlock(
-        group_did_manager_1.get_control_keys().private_key
+        group_did_manager_1.get_control_keys().is_unlocked()
     )
     assert isinstance(group_did_manager_2.get_control_keys_history(), list)
 

@@ -97,6 +97,9 @@ class KeyStore:
             file.write(json.dumps(data))
 
     def add_key(self, key: Key):
+        if isinstance(key, KeyGroup):
+            self.add_keygroup(key)
+            return
         key_id = key.get_id()
         if key_id not in self.keys:
             self.keys.update({key_id: key})

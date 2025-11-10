@@ -183,7 +183,7 @@ def test_get_control_key():
     # print("Waiting for key sharing...")
     # polite_wait(SHARE_DUR)
 
-    assert shared_data.group_2.get_control_keys().private_key, (
+    assert shared_data.group_2.get_control_keys().is_unlocked(), (
         "Got control key ownership"
     )
 

@@ -240,7 +240,7 @@ class Key(Crypt, GenericKey):
             data = json.loads(data)
         private_key = (
             crypt.decrypt(bytes.fromhex(data["private_key"]))
-            if data["private_key"]
+            if data.get("private_key")
             else None
         )
         return cls(
@@ -390,6 +390,12 @@ class KeyGroup(GenericKey):
             )
             for key in self.keys
         ]
+
+    @classmethod
+    def deserialise_private_encrypted(
+        cls: Type[_Key], data: list[dict], crypt: Crypt
+    ) -> _Key:
+        return cls([Key.deserialise_private_encrypted(s, crypt) for s in data])
 
     def generate_key_specs(self, controller: str) -> list[dict]:
         """Generate a key spec for a DID document."""
