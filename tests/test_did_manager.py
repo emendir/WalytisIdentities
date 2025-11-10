@@ -111,8 +111,8 @@ def test_encryption():
     cipher_2 = shared_data.did_manager.encrypt(PLAIN_TEXT)
 
     assert (
-        CodePackage.deserialise_bytes(cipher_1).public_key
-        != CodePackage.deserialise_bytes(cipher_2).public_key
+        CodePackage.deserialise_bytes(cipher_1).get_id()
+        != CodePackage.deserialise_bytes(cipher_2).get_id()
         and shared_data.did_manager.decrypt(cipher_1) == PLAIN_TEXT
         and shared_data.did_manager.decrypt(cipher_2) == PLAIN_TEXT
     ), "Encryption across key renewal works"
@@ -124,8 +124,8 @@ def test_signing():
     signature_2 = shared_data.did_manager.sign(PLAIN_TEXT)
 
     assert (
-        CodePackage.deserialise_bytes(signature_1).public_key
-        != CodePackage.deserialise_bytes(signature_2).public_key
+        CodePackage.deserialise_bytes(signature_1).get_id()
+        != CodePackage.deserialise_bytes(signature_2).get_id()
         and shared_data.did_manager.verify_signature(signature_1, PLAIN_TEXT)
         and shared_data.did_manager.verify_signature(signature_2, PLAIN_TEXT)
     ), "Signature verification across key renewal works"
@@ -133,14 +133,15 @@ def test_signing():
 
 def test_delete_did_manager():
     blockchain_id = shared_data.did_manager.blockchain.blockchain_id
+
     shared_data.did_manager.delete()
 
     assert blockchain_id not in walytis_api.list_blockchain_ids(), (
         "Delete DidManager"
     )
 
+    def test_threads_cleanup() -> None:
+        """Test that no threads are left running."""
 
-def test_threads_cleanup() -> None:
-    """Test that no threads are left running."""
     cleanup()
     assert await_thread_cleanup(timeout=10)

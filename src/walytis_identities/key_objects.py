@@ -7,7 +7,7 @@ from brenthy_tools_beta.utils import (
     string_to_time,
     time_to_string,
     bytes_to_string,
-    bytes_from_string,
+    string_to_bytes,
 )
 from multi_crypt import Crypt
 from .log import logger_keys as logger
@@ -26,7 +26,7 @@ class GenericKey(ABC):
         pass
 
     @abstractmethod
-    def verify_signature(self, signature: bytes, signed_data: bytes) -> bool:
+    def verify_signature(self, signature: bytes, data: bytes) -> bool:
         pass
 
     @abstractmethod
@@ -317,7 +317,12 @@ class KeyGroup(GenericKey):
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         return [key.get_id() for key in self.get_keys()]
 
-    def verify_signature(self, signature: bytes, signed_data: bytes) -> bool:
+    def verify_signature(
+        self,
+        signature: bytes,
+        data: bytes,
+        signature_options: str | None = None,
+    ) -> bool:
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         signatures = [
             bytes.fromhex(sig) for sig in bytes.decode(signature).split("-")
@@ -326,16 +331,18 @@ class KeyGroup(GenericKey):
             logger.warning("Wrong number of signatures")
             return False
         for i, key in enumerate(self.keys):
-            if not key.verify_signature(signatures[i], signed_data):
+            if not key.verify_signature(
+                signatures[i], data, signature_options
+            ):
                 return False
 
         return True
 
-    def sign(self, data: bytes) -> bytes:
+    def sign(self, data: bytes, signature_options: str | None = None) -> bytes:
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         signatures = []
         for key in self.keys:
-            signatures.append(key.sign(data))
+            signatures.append(key.sign(data, signature_options))
         return str.encode(
             "-".join([bytes.hex(signature) for signature in signatures])
         )
@@ -354,12 +361,12 @@ class KeyGroup(GenericKey):
     def decrypt(
         self,
         data_to_decrypt: bytes,
-        decryption_options: list[str] | None = None,
+        encryption_options: list[str] | None = None,
     ) -> bytes:
         data = data_to_decrypt
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         for key in self.keys[::-1]:  # iterate through keys backwards
-            data = key.decrypt(data, decryption_options=decryption_options)
+            data = key.decrypt(data, encryption_options=encryption_options)
         return data
 
     def is_unlocked(self) -> bool:
@@ -404,21 +411,22 @@ _CodePackage = TypeVar("_CodePackage", bound="CodePackage")
 class CodePackage:
     """Package of encrypted data or a signature with crypto-key-metadata."""
 
-    code: bytes  # cipher or signature
-    public_key: bytes
-    family: str
-    creation_time: datetime | None = None
-    # additional cryptographic signing or encryption options
-    operation_options: str = None
+    def __init__(
+        self,
+        key: GenericKey,
+        code: bytes,
+        operation_options: str | None = None,
+    ):
+        self.key = key
+        self.code = bytes(code)
+        self.operation_options = operation_options
 
     @classmethod
     def deserialise(cls: Type[_CodePackage], data: str) -> _CodePackage:
         _data = json.loads(data)
         return cls(
-            code=bytes_from_string(_data["code"]),
-            public_key=bytes_from_string(_data["public_key"]),
-            family=_data["family"],
-            creation_time=string_to_time(_data.get("creation_time")),
+            code=string_to_bytes(_data["code"]),
+            key=generic_key_from_id(_data["key_id"]),
             operation_options=_data["operation_options"],
         )
 
@@ -433,11 +441,7 @@ class CodePackage:
         return json.dumps(
             {
                 "code": bytes_to_string(self.code),
-                "public_key": bytes_to_string(self.public_key),
-                "family": self.family,
-                "creation_time": time_to_string(self.creation_time)
-                if self.creation_time
-                else None,
+                "key_id": self.key.get_id(),
                 "operation_options": self.operation_options,
             }
         )
@@ -445,30 +449,32 @@ class CodePackage:
     def serialise_bytes(self) -> bytes:
         return self.serialise().encode()
 
-    def verify_signature(self, signed_data: bytes) -> bool:
+    def verify_signature(self, data: bytes) -> bool:
         """Assuming self.code is a signature, verify it against the signed data."""
-        key = Crypt(
-            family=self.family,
-            public_key=self.public_key,
-        )
         signature = self.code
-        return key.verify_signature(
+        return self.key.verify_signature(
             signature=signature,
-            data=signed_data,
+            data=data,
             signature_options=self.operation_options,
         )
 
-    def decrypt(self, private_key: bytes) -> bool:
+    def decrypt(
+        self,
+    ) -> bool:
         """Assuming self.code is a signature, verify it against the signed data."""
-        key = Crypt(
-            family=self.family,
-            public_key=self.public_key,
-            private_key=private_key,
-        )
-        return key.decrypt(
+        return self.key.decrypt(
             encrypted_data=self.code,
             encryption_options=self.operation_options,
         )
+
+    def unlock_key(self, key: GenericKey) -> bool:
+        if not self.key.get_id() == key.get_id():
+            raise ValueError(
+                "Replacement key object doesn't have the same key ID"
+            )
+        if not key.is_unlocked():
+            raise ValueError("Replacement key is locked.")
+        self.key = key
 
     @staticmethod
     def encrypt(
@@ -491,9 +497,7 @@ class CodePackage:
         )
         return CodePackage(
             code=cipher,
-            public_key=key.public_key,
-            family=key.family,
-            creation_time=key.creation_time,
+            key=key,
             operation_options=encryption_options,
         )
 
@@ -518,23 +522,19 @@ class CodePackage:
         )
         return CodePackage(
             code=cipher,
-            public_key=key.public_key,
-            family=key.family,
-            creation_time=key.creation_time,
+            key=key,
             operation_options=signature_options,
         )
 
     def get_key(self) -> Key:
-        return Key(
-            public_key=self.public_key,
-            private_key=None,
-            family=self.family,
-            creation_time=self.creation_time,
-        )
+        return self.key
 
     def get_id(self) -> str:
-        return generate_key_id(
-            family=self.family,
-            creation_time=self.creation_time,
-            public_key=self.public_key,
-        )
+        return self.key.get_id()
+
+
+def generic_key_from_id(key_id: str) -> Key | KeyGroup:
+    if "|" in key_id:
+        return KeyGroup.from_id(key_id)
+    else:
+        return Key.from_id(key_id)

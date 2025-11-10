@@ -1495,9 +1495,7 @@ class InvitationManager:
             code=key.encrypt(
                 str.encode(json.dumps(self.key.serialise_private()))
             ),
-            public_key=key.public_key,
-            family=key.family,
-            creation_time=key.creation_time,
+            key=key,
         ).serialise()
 
     @classmethod

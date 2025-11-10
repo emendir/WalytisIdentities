@@ -9,7 +9,7 @@ import portalocker
 from .key_objects import (
     Key,
     KeyGroup,
-    CodePacakge,
+    CodePackage,
     generate_key_id,
     decode_keygroup_id,
 )
@@ -122,6 +122,12 @@ class KeyStore:
 
         return KeyGroup(keys)
 
+    def get_generic_key(self, key_id: str) -> Key | KeyGroup:
+        if "|" in key_id:
+            return self.get_keygroup(key_id)
+        else:
+            return self.get_key(key_id)
+
     def get_key_from_public(
         self, public_key: str | bytes | bytearray, family: str
     ) -> Key:
@@ -160,12 +166,12 @@ class KeyStore:
         Returns:
             bytes: the decrypted data
         """
-        key = self.get_key_from_public(
-            code_package.public_key, code_package.family
-        )
-        encrypted_data = code_package.code
+        if code_package.key.is_unlocked():
+            key = code_package.key
+        else:
+            key = self.get_generic_key(code_package.key.get_id())
         return key.decrypt(
-            encrypted_data=encrypted_data,
+            data_to_decrypt=code_package.code,
             encryption_options=code_package.operation_options,
         )
 
@@ -190,9 +196,7 @@ class KeyStore:
         )
         return CodePackage(
             code=signature,
-            public_key=key.public_key,
-            family=key.family,
-            creation_time=key.creation_time,
+            key=key,
             operation_options=signature_options,
         )
 
@@ -206,12 +210,8 @@ class KeyStore:
         Returns:
             bytes: the decrypted data
         """
-        key = self.get_key_from_public(
-            code_package.public_key, code_package.family
-        )
-        signature = code_package.code
-        return key.verify_signature(
-            signature=signature,
+        return code_package.key.verify_signature(
+            signature=code_package.code,
             data=data,
             signature_options=code_package.operation_options,
         )
