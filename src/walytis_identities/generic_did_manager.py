@@ -45,7 +45,7 @@ class GenericDidManager(GenericBlockchain, ABC):
         pass
 
     @abstractmethod
-    def get_control_key(self) -> Key:
+    def get_control_keys(self) -> Key:
         """Get the current control key, with private key if possible."""
         pass
 

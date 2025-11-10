@@ -109,7 +109,7 @@ def docker_join_dm(invitation: str):
     logger.info("DOCKER: Joined Endra dm, waiting to get control key...")
 
     sleep(PROFILE_JOIN_TIMEOUT_S)
-    ctrl_key = shared_data.dm.get_control_key()
+    ctrl_key = shared_data.dm.get_control_keys()
     if ctrl_key.private_key:
         print("DOCKER: Got control key!")
     else:
@@ -132,7 +132,7 @@ def docker_join_super(invitation: str | dict):
     )
 
     sleep(CORRESP_JOIN_TIMEOUT_S)
-    ctrl_key = super.get_control_key()
+    ctrl_key = super.get_control_keys()
     logger.info(f"DOCKER: Joined: {type(ctrl_key)}")
     if ctrl_key.private_key:
         print("DOCKER: Got control key!")

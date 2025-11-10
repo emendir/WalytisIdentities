@@ -241,6 +241,10 @@ class KeyStore:
             self.keys[key_id].unlock(key.private_key)
             self.save_appdata()
 
+    def add_keygroup(self, keygroup: KeyGroup) -> None:
+        for key in keygroup.keys:
+            self.add_key(key)
+
     def get_key(self, key_id: str) -> Key:
         key = self.keys.get(key_id, None)
         if not key:

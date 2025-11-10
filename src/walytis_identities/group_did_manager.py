@@ -55,7 +55,7 @@ from .did_manager_blocks import (
     MemberLeavingBlock,
     MemberUpdateBlock,
     get_block_type,
-    get_all_control_keys,
+    get_control_keys_history,
     get_latest_control_key,
     get_control_key_age,
     get_latest_did_doc,
@@ -131,7 +131,7 @@ class Member:
         return get_latest_control_key(self.blockchain)
 
     def _get_member_control_keys(self) -> list[Key]:
-        return get_all_control_keys(self.blockchain)
+        return get_control_keys_history(self.blockchain)
 
     def _get_control_key_age(self, key_id: str) -> int:
         return get_control_key_age(self._blockchain, key_id)
@@ -234,7 +234,7 @@ class _GroupDidManager(DidManager):
     def _gdm_add_info_block(self, block: InfoBlock) -> Block:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
         if not block.signature:
-            block.sign(self.get_control_key())
+            block.sign(self.get_control_keys())
         return self.blockchain.add_block(
             block.generate_block_content(),
             [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic],
@@ -369,11 +369,11 @@ class _GroupDidManager(DidManager):
                 ),  # invitation for other's to join our member DID blockchain
             }
         )
-        self.get_control_key().sign(member.did.encode())
+        self.get_control_keys().sign(member.did.encode())
         self._gdm_add_info_block(joining_block)
-        member.key_store.add_key(self.get_control_key())
+        member.key_store.add_key(self.get_control_keys())
 
-        if self.get_control_key().private_key:
+        if self.get_control_keys().private_key:
             self.update_did_doc(self.generate_did_doc())
         logger.debug("GDM: Added DidManager as member!")
 
@@ -458,7 +458,7 @@ class _GroupDidManager(DidManager):
         did_doc = {
             "id": self.did,
             "verificationMethod": [
-                self.get_control_key().generate_key_spec(self.did)
+                self.get_control_keys().generate_key_spec(self.did)
                 # key.generate_key_spec(self.did)
                 # for key in self.keys
             ],
@@ -738,8 +738,8 @@ class GroupDidManager(_GroupDidManager):
 
     def assert_ownership(self) -> None:
         """If we don't yet own the control key, get it."""
-        control_key = self.get_control_key()
-        # logger.debug(self.get_control_key())
+        control_key = self.get_control_keys()
+        # logger.debug(self.get_control_keys())
         # logger.debug(
         #     get_latest_control_key(self.blockchain).get_id()
         # )
@@ -771,7 +771,7 @@ class GroupDidManager(_GroupDidManager):
                     logger.error(e)
                 if key:
                     self.key_store.add_key(key)
-                    if self.get_control_key().private_key:
+                    if self.get_control_keys().private_key:
                         self.update_did_doc(self.generate_did_doc())
                         return
                     else:
@@ -827,7 +827,7 @@ class GroupDidManager(_GroupDidManager):
         did_doc = {
             "id": self.member_did_manager.did,
             "verificationMethod": [
-                self.member_did_manager.get_control_key().generate_key_spec(
+                self.member_did_manager.get_control_keys().generate_key_spec(
                     self.member_did_manager.did
                 )
                 # key.generate_key_spec(self.did)
@@ -977,7 +977,7 @@ class GroupDidManager(_GroupDidManager):
 
     def request_key(self, key_id: str, other_member_did: str) -> Key | None:
         """Request a key from another member."""
-        key = self.member_did_manager.get_control_key()
+        key = self.member_did_manager.get_control_keys()
         key_request_message = {
             "key_id": key_id,
         }
@@ -1076,7 +1076,7 @@ class GroupDidManager(_GroupDidManager):
             if KeyOwnershipBlock.walytis_block_topic not in block.topics:
                 continue
             if (
-                block.creation_time - self.get_control_key().creation_time
+                block.creation_time - self.get_control_keys().creation_time
             ).total_seconds() > 0:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
                     block.content
@@ -1086,7 +1086,7 @@ class GroupDidManager(_GroupDidManager):
 
                 # filter out keys that have already been used as control keys
                 if key_id in [
-                    key.get_id() for key in self.get_control_keys()
+                    key.get_id() for key in self.get_control_keys_history()
                 ]:
                     continue
 
@@ -1122,7 +1122,7 @@ class GroupDidManager(_GroupDidManager):
         #     "Checking control key update preparation "
         #     f"{len(self.candidate_keys)}"
         # )
-        ctrl_key_timestamp = self.get_control_key().creation_time
+        ctrl_key_timestamp = self.get_control_keys().creation_time
         ctrl_key_age_hr = (
             (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
@@ -1189,7 +1189,7 @@ class GroupDidManager(_GroupDidManager):
         if not self.candidate_keys:
             return False
 
-        ctrl_key_timestamp = self.get_control_key().creation_time
+        ctrl_key_timestamp = self.get_control_keys().creation_time
         ctrl_key_age_hr = (
             (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )

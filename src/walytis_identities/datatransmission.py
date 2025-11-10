@@ -28,7 +28,7 @@ def listen_for_conversations(
         logger.debug("Received join request")
         salutation = json.loads(salutation_start.decode())
         their_one_time_key = Crypt.deserialise(salutation["one_time_key"])
-        our_one_time_key = Crypt.new(gdm.get_control_key().family)
+        our_one_time_key = Crypt.new(gdm.get_control_keys().family)
         their_challenge = salutation["challenge_data"]
         data = handle_challenge(gdm, their_challenge)
         our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
@@ -112,7 +112,7 @@ def start_conversation(
     others_req_listener: str,
 ) -> Conversation | None:
     logger.debug("Starting conversation...")
-    our_one_time_key = Crypt.new(gdm.get_control_key().family)
+    our_one_time_key = Crypt.new(gdm.get_control_keys().family)
     our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
     salutation = json.dumps(
         {

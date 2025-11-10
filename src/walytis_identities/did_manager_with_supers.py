@@ -417,7 +417,7 @@ class DidManagerWithSupers(DidManagerWrapper):
         correspondence_registration = SuperRegistrationBlock.create(
             correspondence_id, active, invitation
         )
-        correspondence_registration.sign(self._did_manager.get_control_key())
+        correspondence_registration.sign(self._did_manager.get_control_keys())
         self._did_manager.add_block(
             correspondence_registration.generate_block_content(),
             topics=[
@@ -838,8 +838,8 @@ class DidManagerWithSupers(DidManagerWrapper):
             data=data,
         )
 
-    def get_control_key(self) -> Key:
-        return self._did_manager.get_control_key()
+    def get_control_keys(self) -> Key:
+        return self._did_manager.get_control_keys()
 
     def get_peers(self) -> list[str]:
         return self._did_manager.get_peers()

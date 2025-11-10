@@ -183,7 +183,7 @@ def test_get_control_key():
     # print("Waiting for key sharing...")
     # polite_wait(SHARE_DUR)
 
-    assert shared_data.group_2.get_control_key().private_key, (
+    assert shared_data.group_2.get_control_keys().private_key, (
         "Got control key ownership"
     )
 
@@ -192,7 +192,7 @@ def test_get_control_key():
 
 
 def test_renew_control_key():
-    old_key = shared_data.group_2.get_control_key()
+    old_key = shared_data.group_2.get_control_keys()
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
@@ -211,7 +211,7 @@ def test_renew_control_key():
     Thread(target=docker_renew_keys).start()
     print("Waiting for key sharing...")
     polite_wait(SHARE_DUR)
-    new_key = shared_data.group_2.get_control_key()
+    new_key = shared_data.group_2.get_control_keys()
 
     assert (
         new_key.public_key != old_key.public_key and new_key.is_unlocked()

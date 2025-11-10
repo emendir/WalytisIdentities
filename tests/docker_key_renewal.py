@@ -196,7 +196,7 @@ def docker_renew_control_key():
     shared_data.group_1 = GroupDidManager(
         profile_did_keystore, device_did_keystore
     )
-    old_key = shared_data.group_1.get_control_key()
+    old_key = shared_data.group_1.get_control_keys()
     num_ck = len(shared_data.group_1.candidate_keys)
     if num_ck > 0:
         logger.error(
@@ -230,5 +230,5 @@ def docker_renew_control_key():
     while len(threading.enumerate()) > 1:
         print(threading.enumerate())
         time.sleep(1)
-    new_key = shared_data.group_1.get_control_key()
+    new_key = shared_data.group_1.get_control_keys()
     print(f"{old_key.get_id()} {new_key.get_id()}")

@@ -28,11 +28,11 @@ from .did_manager_blocks import (
     InfoBlock,
     get_block_type,
     get_latest_control_key,
-    get_all_control_keys,
+    get_control_keys_history,
     get_control_key_age,
     get_latest_did_doc,
 )
-from .key_objects import Key
+from .key_objects import Key, KeyGroup
 from .exceptions import NotValidDidBlockchainError
 from .generic_did_manager import GenericDidManager
 from .key_store import CodePackage, KeyStore
@@ -41,6 +41,7 @@ from .log import logger_dm as logger
 DID_METHOD_NAME = "walytisidentities"
 
 CRYPTO_FAMILY = "EC-secp256k1"
+CTRL_KEY_FAMILIES = ["EC-secp256k1", "RSA"]
 
 _DidManager = TypeVar("_DidManager", bound="DidManager")
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
@@ -146,13 +147,15 @@ class DidManager(GenericDidManager):
         """
         # logger.debug("DM: Creating DID-Manager...")
         # create crypto keys
-        ctrl_key = Key.create(CRYPTO_FAMILY)
+        ctrl_keys = KeyGroup(
+            [Key.create(family) for family in CTRL_KEY_FAMILIES]
+        )
         # logger.debug("DM: Createing DID-Manager's blockchain...")
         # create blockchain
         # logger.debug("DM: Creating Blockchain...")
 
         blockchain_id = create_blockchain(
-            blockchain_name=f"waco-{bytes_to_string(ctrl_key.public_key)}",
+            blockchain_name=f"WalID-{ctrl_keys.get_id()}",
         )
 
         key_store = cls.assign_keystore(key_store, blockchain_id)
@@ -161,15 +164,15 @@ class DidManager(GenericDidManager):
             appdata_dir=DidManager.get_blockchain_appdata_path(key_store),
         )
 
-        key_store.add_key(ctrl_key)
+        key_store.add_keygroup(ctrl_keys)
 
         # logger.debug("DM: Initialising cryptography...")
 
         # publish first key on blockchain
         # logger.debug("DM: Adding ControlKey block...")
         keyblock = ControlKeyBlock.new(
-            old_key=ctrl_key,
-            new_key=ctrl_key,
+            old_key=ctrl_keys,
+            new_key=ctrl_keys,
         )
         keyblock.sign()
         blockchain.add_block(
@@ -181,7 +184,7 @@ class DidManager(GenericDidManager):
         did = did_from_blockchain_id(blockchain.blockchain_id)
         did_doc = {"id": did}
         did_doc_block = DidDocBlock.new(did_doc)
-        did_doc_block.sign(ctrl_key)
+        did_doc_block.sign(ctrl_keys)
         blockchain.add_block(
             did_doc_block.generate_block_content(),
             [WALYTIS_BLOCK_TOPIC, did_doc_block.walytis_block_topic],
@@ -247,21 +250,25 @@ class DidManager(GenericDidManager):
         """Get this DID-Manager's DID."""
         return did_from_blockchain_id(self._blockchain.blockchain_id)
 
-    def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
+    def renew_control_key(self, new_ctrl_keys: KeyGroup | None = None) -> None:
         """Change the control key to an automatically generated new one."""
-        if not self.get_control_key().private_key:
+        if not self.get_control_keys().private_key:
             raise DidNotOwnedError()
         # create new control key if the user hasn't provided one
-        if not new_ctrl_key:
-            new_ctrl_key = Key.create(CRYPTO_FAMILY)
+        if not isinstance(new_ctrl_keys, KeyGroup):
+            raise TypeError("`new_ctrl_keys` should be of type `KeyGroup`")
+        if not new_ctrl_keys:
+            new_ctrl_keys = KeyGroup(
+                [Key.create(family) for family in CTRL_KEY_FAMILIES]
+            )
 
-        old_ctrl_key = self.get_control_key()
-        self._key_store.add_key(new_ctrl_key)
+        old_ctrl_keys = self.get_control_keys()
+        self._key_store.add_keygroup(new_ctrl_keys)
 
         # create ControlKeyBlock (becomes the Walytis-Block's content)
         keyblock = ControlKeyBlock.new(
-            old_key=old_ctrl_key,
-            new_key=new_ctrl_key,
+            old_key=old_ctrl_keys,
+            new_key=new_ctrl_keys,
         )
         keyblock.sign()
 
@@ -270,17 +277,17 @@ class DidManager(GenericDidManager):
             topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic],
         )
 
-        self._control_key_id = new_ctrl_key.get_id()
+        self._control_key_id = new_ctrl_keys.get_id()
         # logger.info(
         #     "Renewed control key:\n"
-        #     f"    old: {old_ctrl_key.get_id()}\n"
-        #     f"    new: {new_ctrl_key.get_id()}"
+        #     f"    old: {old_ctrl_keys.get_id()}\n"
+        #     f"    new: {new_ctrl_keys.get_id()}"
         # )
 
     def _dm_add_info_block(self, block: InfoBlock) -> Block:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
         if not block.signature:
-            block.sign(self.get_control_key())
+            block.sign(self.get_control_keys())
         return self._blockchain.add_block(
             block.generate_block_content(),
             [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic],
@@ -299,17 +306,17 @@ class DidManager(GenericDidManager):
             self._key_store.add_key(control_key)
         return control_key
 
-    def get_control_key(self) -> Key:
+    def get_control_keys(self) -> Key:
         """Get the current control key, with private key if possible."""
         if not self._control_key_id:
             # update self._control_key_id from the blockchain
             self.check_control_key()
         # load key from key store to get potential private key
-        control_key = self._key_store.get_key(self._control_key_id)
+        control_key = self._key_store.get_keygroup(self._control_key_id)
         return control_key
 
-    def get_control_keys(self) -> list[Key]:
-        return get_all_control_keys(self._blockchain)
+    def get_control_keys_history(self) -> list[Key]:
+        return get_control_keys_history(self._blockchain)
 
     def get_control_key_age(self, key_id: str) -> int:
         return get_control_key_age(self._blockchain, key_id)
@@ -319,7 +326,7 @@ class DidManager(GenericDidManager):
 
     def get_active_control_keys(self) -> list[Key]:
         """CAREFUL: RETURNS LOCKED KEYS."""
-        keys = self.get_control_keys()
+        keys = self.get_control_keys_history()
 
         # logger.debug(f"TOTAL CONTROL KEYS: {len(keys)}")
         # get last few
@@ -375,7 +382,7 @@ class DidManager(GenericDidManager):
         # logger.debug("DM: processed block")
 
     def unlock(self, private_key: bytes | bytearray | str) -> None:
-        control_key = self.get_control_key()
+        control_key = self.get_control_keys()
         if control_key:
             control_key.unlock(private_key)
             self._key_store.save_appdata()
@@ -397,7 +404,7 @@ class DidManager(GenericDidManager):
         """
         return self._key_store.encrypt(
             data=data,
-            key=self.get_control_key(),
+            key=self.get_control_keys(),
             encryption_options=encryption_options,
         ).serialise_bytes()
 
@@ -430,7 +437,7 @@ class DidManager(GenericDidManager):
         """
         return self._key_store.sign(
             data=data,
-            key=self.get_control_key(),
+            key=self.get_control_keys(),
             signature_options=signature_options,
         ).serialise_bytes()
 

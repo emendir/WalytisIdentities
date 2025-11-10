@@ -163,8 +163,8 @@ def test_create_member_given_path() -> None:
 
     assert (
         os.path.exists(key_store_path)
-        and reloaded.get_control_key().private_key
-        == shared_data.member.get_control_key().private_key
+        and reloaded.get_control_keys().private_key
+        == shared_data.member.get_control_keys().private_key
     ), "Created member given a directory."
 
 
@@ -189,8 +189,8 @@ def test_create_group_given_path() -> None:
 
     assert (
         os.path.exists(key_store_path)
-        and reloaded.get_control_key().private_key
-        == shared_data.group.get_control_key().private_key
+        and reloaded.get_control_keys().private_key
+        == shared_data.group.get_control_keys().private_key
     ), "Created group given a directory."
 
 

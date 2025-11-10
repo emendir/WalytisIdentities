@@ -59,11 +59,11 @@ def test_create_did_manager():
 
 
 def test_renew_control_key():
-    old_control_key = shared_data.did_manager.get_control_key()
+    old_control_key = shared_data.did_manager.get_control_keys()
 
     shared_data.did_manager.renew_control_key()
 
-    shared_data.new_control_key = shared_data.did_manager.get_control_key()
+    shared_data.new_control_key = shared_data.did_manager.get_control_keys()
 
     assert (
             isinstance(old_control_key, Key)
@@ -91,7 +91,7 @@ def test_reload_did_manager():
     )
 
     assert (
-        did_manager_copy.get_control_key().public_key == shared_data.new_control_key.public_key
+        did_manager_copy.get_control_keys().public_key == shared_data.new_control_key.public_key
         and did_manager_copy.did_doc == shared_data.did_doc
     ),    "Reload DID Manager"
     did_manager_copy.terminate()

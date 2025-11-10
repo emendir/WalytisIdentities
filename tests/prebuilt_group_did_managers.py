@@ -13,7 +13,7 @@ from walytis_identities.did_manager import (
     DidManager,
     blockchain_id_from_did,
 )
-from walytis_identities.did_manager_blocks import get_all_control_keys
+from walytis_identities.did_manager_blocks import get_control_keys_history
 from walytis_identities.key_objects import Key
 from walytis_identities.group_did_manager import GroupDidManager, logger
 from walytis_identities.key_store import KeyStore
@@ -99,8 +99,8 @@ def create_did_managers():
     )
     logger.debug(group_did_manager_1.blockchain.blockchain_id)
     logger.debug(group_did_manager_1.get_active_control_keys())
-    logger.debug(get_all_control_keys(group_did_manager_1.blockchain))
-    assert isinstance(group_did_manager_1.get_control_keys(), list)
+    logger.debug(get_control_keys_history(group_did_manager_1.blockchain))
+    assert isinstance(group_did_manager_1.get_control_keys_history(), list)
 
     from time import sleep
 
@@ -110,9 +110,9 @@ def create_did_managers():
         group_2_keystore, member_2_did_manager, allow_locked=True
     )
     group_did_manager_2.unlock(
-        group_did_manager_1.get_control_key().private_key
+        group_did_manager_1.get_control_keys().private_key
     )
-    assert isinstance(group_did_manager_2.get_control_keys(), list)
+    assert isinstance(group_did_manager_2.get_control_keys_history(), list)
 
     print("Copying blockchain data...")
     shutil.copy(
@@ -244,11 +244,11 @@ def load_did_manager(tarfile: str):
 
     group_did_manager = GroupDidManager(group_keystore, member_keystore)
 
-    assert isinstance(group_did_manager.get_control_keys(), list), (
+    assert isinstance(group_did_manager.get_control_keys_history(), list), (
         "control keys available"
     )
     assert isinstance(
-        get_all_control_keys(group_did_manager.blockchain), list
+        get_control_keys_history(group_did_manager.blockchain), list
     ), "control keys available"
     return group_did_manager
 

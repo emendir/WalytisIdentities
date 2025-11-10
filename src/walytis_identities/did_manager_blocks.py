@@ -10,7 +10,7 @@ from multi_crypt import Crypt, verify_signature
 from strict_typing import strictly_typed
 from walytis_beta_api import Blockchain
 
-from .key_objects import Key, KeyGroup
+from .key_objects import Key, KeyGroup, GenericKey
 from .exceptions import NotValidDidBlockchainError
 from .utils import bytes_from_string, bytes_to_string, logger
 
@@ -144,11 +144,11 @@ class InfoBlock(ABC):
         """Get the portion of this block's content that will be signed."""
         return json.dumps(self.info_content).encode()
 
-    def sign(self, crypt: Crypt) -> None:
+    def sign(self, key: GenericKey) -> None:
         """Sign this block's content with a control-key."""
-        self.signature = bytes_to_string(crypt.sign(self.get_signature_data()))
+        self.signature = bytes_to_string(key.sign(self.get_signature_data()))
 
-    def verify_signature(self, key: Key) -> bool:
+    def verify_signature(self, key: GenericKey) -> bool:
         """Verify this block's signature."""
         return verify_signature(
             key.family,
@@ -273,7 +273,7 @@ def verify_control_key_update(
     )
 
 
-def get_all_control_keys(blockchain: Blockchain) -> list[Key]:
+def get_control_keys_history(blockchain: Blockchain) -> list[Key]:
     """Get all a DID-Managers control keys.
 
     All the control keys ever issued are listed in chronological order.
@@ -312,7 +312,7 @@ def get_all_control_keys(blockchain: Blockchain) -> list[Key]:
 
 def get_latest_control_key(blockchain: Blockchain) -> Key:
     """Get a DID-Manager's blockchain's newest control-key."""
-    return get_all_control_keys(blockchain)[-1]
+    return get_control_keys_history(blockchain)[-1]
 
 
 # type representing the child-classes of InfoBlocks
@@ -405,7 +405,7 @@ def get_info_blocks(
 
 
 def get_control_key_age(blockchain: Blockchain, key_id: str):
-    keys = get_all_control_keys(blockchain)
+    keys = get_control_keys_history(blockchain)
     keys.reverse()
     for i, key in enumerate(keys):
         if key.get_id() == key_id:
