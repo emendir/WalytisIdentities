@@ -44,7 +44,7 @@ from walytis_identities.did_manager_blocks import (
     SuperRegistrationBlock,
     get_info_blocks,
 )
-from walytis_identities.key_objects import Key
+from walytis_identities.key_objects import Key, KeyGroup
 from walytis_identities.group_did_manager import GroupDidManager
 from walytis_identities.key_store import KeyStore
 
@@ -882,8 +882,8 @@ class DidManagerWithSupers(DidManagerWrapper):
     def key_store(self) -> KeyStore:
         return self._did_manager.key_store
 
-    def renew_control_key(self, new_ctrl_key: Crypt | None = None) -> None:
-        return self._did_manager.renew_control_key(new_ctrl_key)
+    def renew_control_key(self, new_ctrl_key: KeyGroup | None = None) -> None:
+        return self._did_manager.renew_control_key(KeyGroup)
 
     def update_did_doc(self, did_doc: dict) -> None:
         return self.update_did_doc(did_doc)

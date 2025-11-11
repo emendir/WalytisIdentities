@@ -46,3 +46,20 @@ def test_encryption():
     data = generate_random_string(20).encode()
     cipher = shared_data.locked_kg.encrypt(data)
     assert shared_data.keygroup.decrypt(cipher) == data
+
+
+def test_serialisation_private():
+    serialisation_key = Key.create(KEY_FAMILIES[0])
+    data = shared_data.keygroup.serialise_private_encrypted(serialisation_key)
+    reloaded = KeyGroup.deserialise_private_encrypted(data, serialisation_key)
+    assert reloaded.get_id() == shared_data.keygroup.get_id()
+    assert reloaded.is_unlocked()
+
+
+def test_serialisation():
+    data = shared_data.keygroup.serialise_private()
+    reloaded = KeyGroup.deserialise_private(
+        data,
+    )
+    assert reloaded.get_id() == shared_data.keygroup.get_id()
+    assert reloaded.is_unlocked()

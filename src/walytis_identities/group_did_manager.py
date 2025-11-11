@@ -1,7 +1,7 @@
 """Classes for managing Person and Device identities."""
 
 from . import settings
-from .datatransmission import COMMS_TIMEOUT_S
+from .datatransmission import COMMS_TIMEOUT_S, SESSION_KEY_FAMILY
 from .utils import string_to_time
 from .key_store import CodePackage
 from ipfs_tk_transmission import Conversation
@@ -47,7 +47,7 @@ from walytis_beta_tools.exceptions import (
 )
 
 from . import did_manager_blocks
-from .did_manager import DidManager, blockchain_id_from_did
+from .did_manager import DidManager, blockchain_id_from_did, CTRL_KEY_FAMILIES
 from .did_manager_blocks import (
     InfoBlock,
     KeyOwnershipBlock,
@@ -888,16 +888,13 @@ class GroupDidManager(_GroupDidManager):
             key_id = message["key_id"]
 
             key = None
-            private_key = None
             try:
-                key = self.key_store.get_key(key_id)
-                private_key = key.private_key
+                key = self.key_store.get_generic_key(key_id)
             except UnknownKeyError:
                 logger.debug("KRH: unknown private key!.")
-                private_key = None
                 return
 
-            if not key or not private_key:
+            if not (key and key.is_unlocked()):
                 logger.debug("KRH: Sending DontOwnKey")
                 assert conv.say(
                     json.dumps(
@@ -912,7 +909,7 @@ class GroupDidManager(_GroupDidManager):
 
             logger.debug("KRH: Sending key!")
             assert conv.say(
-                json.dumps({"private_key": private_key.hex()}).encode()
+                json.dumps({"key": key.serialise_private()}).encode()
             )
             logger.debug(f"KRH: Shared key!: {key.get_id()}")
 
@@ -1045,10 +1042,11 @@ class GroupDidManager(_GroupDidManager):
             if "error" in response.keys():
                 logger.warning(response)
                 continue
-            private_key = bytes.fromhex(response["private_key"])
-            key = Key.from_id(key_id)
-            key.unlock(private_key)
-            self.key_store.add_key(key)
+            key = KeyGroup.derserialise_private(response["key"])
+            if not key.get_id() == key_id:
+                logger.warning("RK: Received wrong key.")
+                continue
+            self.key_store.add_keygroup(key)
             self.publish_key_ownership(key)
             logger.debug(f"RK: Got key!: {key.get_id()}")
             return key
@@ -1066,7 +1064,8 @@ class GroupDidManager(_GroupDidManager):
             if KeyOwnershipBlock.walytis_block_topic not in block.topics:
                 continue
             if (
-                block.creation_time - self.get_control_keys()[0].creation_time
+                block.creation_time
+                - self.get_control_keys().keys[0].creation_time
             ).total_seconds() > 0:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
                     block.content
@@ -1080,7 +1079,7 @@ class GroupDidManager(_GroupDidManager):
                 ]:
                     continue
 
-                key = Key.from_id(key_id)
+                key = KeyGroup.from_id(key_id)
                 proof = string_to_bytes(key_ownership["proof"])
                 key_ownership.pop("proof")
 
@@ -1158,7 +1157,7 @@ class GroupDidManager(_GroupDidManager):
             Whether or not we are now prepared to renew control keys
         """
         logger.debug("Initiating control key update...")
-        key = Key.create(CRYPTO_FAMILY)
+        key = KeyGroup.create(CTRL_KEY_FAMILIES)
         self.key_store.add_key(key)
         self.candidate_keys.update(
             {key.get_id(): [self.member_did_manager.did]}
@@ -1179,7 +1178,7 @@ class GroupDidManager(_GroupDidManager):
         if not self.candidate_keys:
             return False
 
-        ctrl_key_timestamp = self.get_control_keys()[0].creation_time
+        ctrl_key_timestamp = self.get_control_keys().keys[0].creation_time
         ctrl_key_age_hr = (
             (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
@@ -1385,7 +1384,7 @@ class JoinProcess:
         self.thread.start()
 
     def join_blockchain(self):
-        one_time_key = Key.create(CRYPTO_FAMILY)
+        one_time_key = Key.create(SESSION_KEY_FAMILY)
 
         def encrypt(data):
             return self.invitation_code.key.encrypt(data)
@@ -1435,7 +1434,7 @@ class JoinProcess:
         logger_gdm_join.debug("Processing data...")
         data = json.loads(bytes.decode(keys_data))
         gdm_keys = [
-            KeyGroup.deserialise_private_encrypted(key, one_time_key)
+            Key.deserialise_private_encrypted(key, one_time_key)
             for key in data["group_keys"]
         ]
         blockchain_id = data["blockchain_id"]

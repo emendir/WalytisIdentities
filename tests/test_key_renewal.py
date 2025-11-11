@@ -116,8 +116,8 @@ def test_create_identity_and_invitation():
         )
 
     Thread(target=run_on_docker).start()
+    sleep(3) # wait for GDMs to load in docker
 
-    sleep(JOIN_DUR)
 
 
 def test_add_member_identity():
@@ -139,6 +139,7 @@ def test_add_member_identity():
     )
     member = DidManager.create(shared_data.group_2_config_dir)
     try:
+        logger.debug("GDM Joining...")
         shared_data.group_2 = GroupDidManager.join(
             invitation, group_keystore, member
         )
@@ -150,6 +151,7 @@ def test_add_member_identity():
     # wait a short amount to allow the docker container to learn of the new member
     polite_wait(JOIN_DUR)
 
+    sleep(5) # wait for GDMs terminate in docker
     print("Adding member on docker...")
     python_code = "\n".join(
         [

@@ -113,6 +113,8 @@ class KeyStore:
             self.add_key(key)
 
     def get_key(self, key_id: str) -> Key:
+        if "|" in key_id:
+            raise Exception("It looks like this key_id belongs to a KeyGroup")
         key = self.keys.get(key_id, None)
         if not key:
             raise UnknownKeyError
