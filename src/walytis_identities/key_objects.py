@@ -38,7 +38,7 @@ class GenericKey(ABC):
         pass
 
     @abstractmethod
-    def decrypt(self, data_to_decrypt: bytes) -> bytes:
+    def decrypt(self, encrypted_data: bytes) -> bytes:
         pass
 
     @abstractmethod
@@ -360,10 +360,10 @@ class KeyGroup(GenericKey):
 
     def decrypt(
         self,
-        data_to_decrypt: bytes,
+        encrypted_data: bytes,
         encryption_options: list[str] | None = None,
     ) -> bytes:
-        data = data_to_decrypt
+        data = encrypted_data
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
         for key in self.keys[::-1]:  # iterate through keys backwards
             data = key.decrypt(data, encryption_options=encryption_options)

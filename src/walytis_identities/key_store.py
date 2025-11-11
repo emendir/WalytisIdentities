@@ -174,7 +174,7 @@ class KeyStore:
         else:
             key = self.get_generic_key(code_package.key.get_id())
         return key.decrypt(
-            data_to_decrypt=code_package.code,
+            encrypted_data=code_package.code,
             encryption_options=code_package.operation_options,
         )
 
