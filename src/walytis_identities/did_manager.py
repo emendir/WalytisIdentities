@@ -361,15 +361,6 @@ class DidManager(GenericDidManager):
                 self._dm_other_blocks_handler(block)
         # logger.debug("DM: processed block")
 
-    def unlock(self, private_key: bytes | bytearray | str) -> None:
-        control_key = self.get_control_keys()
-        if control_key:
-            control_key.unlock(private_key)
-            self._key_store.save_appdata()
-        else:
-            # TODO: raise custom exception
-            raise Exception("Don't have control key yet!")
-
     def encrypt(
         self, data: bytes, encryption_options: str | None = None
     ) -> bytes:

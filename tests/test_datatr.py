@@ -56,18 +56,10 @@ def test_preparations():
         build_docker_image(verbose=False)
     shared_data.group_did_manager = None
     shared_data.containers: list[WalytisIdentitiesDocker] = []
-    create_docker_containers()
-    # Load pre-created GroupDidManager objects for testing:
-
-    logger.info("Loading GDMs from tar files...")
-    # choose which group_did_manager to load
-    tarfile = "group_did_manager_2.tar"
-    shared_data.group_did_manager = load_did_manager(
-        os.path.join(os.path.dirname(__file__), tarfile)
-    )
 
 
-def create_docker_containers():
+
+def test_create_docker_containers():
     logger.info("Creating docker containers...")
     for i in range(1):
         shared_data.containers.append(
@@ -86,6 +78,7 @@ def create_docker_containers():
     from threading import Thread
 
     Thread(target=run_py).start()
+    logger.debug("Continuing...")
 
 
 def cleanup():
@@ -99,7 +92,13 @@ def cleanup():
 
 def test_load_blockchain():
     """Test that we can load the prebuilt GroupDidManager."""
-    logger.debug("Loading prebuilt GDM...")
+    logger.info("Loading GDMs from tar files...")
+    # choose which group_did_manager to load
+    tarfile = "group_did_manager_2.tar"
+    shared_data.group_did_manager = load_did_manager(
+        os.path.join(os.path.dirname(__file__), tarfile)
+    )
+    logger.debug("Loaded prebuilt GDM!")
     assert isinstance(shared_data.group_did_manager, GroupDidManager), (
         "Load prebuilt GDM"
     )

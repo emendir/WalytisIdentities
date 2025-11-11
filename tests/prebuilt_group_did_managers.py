@@ -91,11 +91,11 @@ def create_did_managers():
     group_1_keystore = KeyStore(
         os.path.join(config_dir_1, "group_keys.json"), key
     )
-    group_2_keystore = group_1_keystore.clone(
-        os.path.join(config_dir_2, "group_keys.json"), key
-    )
     group_did_manager_1 = GroupDidManager.create(
         group_1_keystore, member_1_did_manager
+    )
+    group_2_keystore = group_1_keystore.clone(
+        os.path.join(config_dir_2, "group_keys.json"), key
     )
     logger.debug(group_did_manager_1.blockchain.blockchain_id)
     logger.debug(get_control_keys_history(group_did_manager_1.blockchain))
@@ -108,9 +108,10 @@ def create_did_managers():
     group_did_manager_2 = GroupDidManager(
         group_2_keystore, member_2_did_manager, allow_locked=True
     )
-    group_did_manager_2.unlock(
-        group_did_manager_1.get_control_keys().is_unlocked()
-    )
+    # group_did_manager_2.unlock(
+    #     group_did_manager_1.get_control_keys().is_unlocked()
+    # )
+    assert group_did_manager_2.get_control_keys().is_unlocked()
     assert isinstance(group_did_manager_2.get_control_keys_history(), list)
 
     print("Copying blockchain data...")

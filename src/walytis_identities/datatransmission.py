@@ -20,6 +20,8 @@ from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
 COMMS_TIMEOUT_S = 30
 CHALLENGE_STRING_LENGTH = 200
 
+SESSION_KEY_FAMILY = "EC-secp256k1"
+
 
 def listen_for_conversations(
     gdm: "GroupDidManager", listener_name: str, eventhandler: Callable
@@ -28,7 +30,7 @@ def listen_for_conversations(
         logger.debug("Received join request")
         salutation = json.loads(salutation_start.decode())
         their_one_time_key = Crypt.deserialise(salutation["one_time_key"])
-        our_one_time_key = Crypt.new(gdm.get_control_keys().family)
+        our_one_time_key = Crypt.new(SESSION_KEY_FAMILY)
         their_challenge = salutation["challenge_data"]
         data = handle_challenge(gdm, their_challenge)
         our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
@@ -112,7 +114,7 @@ def start_conversation(
     others_req_listener: str,
 ) -> Conversation | None:
     logger.debug("Starting conversation...")
-    our_one_time_key = Crypt.new(gdm.get_control_keys().family)
+    our_one_time_key = Crypt.new(SESSION_KEY_FAMILY)
     our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
     salutation = json.dumps(
         {
@@ -262,10 +264,10 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
         logger.debug("Member DID not validated.")
         return False
 
-    logger.debug(member_key_proof.public_key.hex())
-    logger.debug(
-        [key.get_public_key_str() for key in member._get_member_control_keys()]
-    )
+    # logger.debug(member_key_proof.public_key.hex())
+    # logger.debug(
+    #     [key.get_public_key_str() for key in member._get_member_control_keys()]
+    # )
     logger.debug(member._get_control_key_age(member_key.get_id()))
     logger.debug(member.is_control_key_active(member_key.get_id()))
     if not member.is_control_key_active(member_key.get_id()):

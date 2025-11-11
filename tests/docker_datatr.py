@@ -27,7 +27,7 @@ logger_datatr.setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
 
 CONV_NAME = "WalIdDataTransTest"
-SYNC_DUR = 40
+SYNC_DUR = 60
 
 
 class SharedData:

@@ -738,7 +738,7 @@ class GroupDidManager(_GroupDidManager):
         #     get_latest_control_key(self.blockchain).get_id()
         # )
         # logger.debug(self.blockchain._terminate)
-        if control_key.private_key:
+        if control_key.is_unlocked():
             # logger.debug(f"GDM: Already control key owner {self.did}")
             return
 
@@ -1066,7 +1066,7 @@ class GroupDidManager(_GroupDidManager):
             if KeyOwnershipBlock.walytis_block_topic not in block.topics:
                 continue
             if (
-                block.creation_time - self.get_control_keys().creation_time
+                block.creation_time - self.get_control_keys()[0].creation_time
             ).total_seconds() > 0:
                 key_ownership = KeyOwnershipBlock.load_from_block_content(
                     block.content
@@ -1112,7 +1112,7 @@ class GroupDidManager(_GroupDidManager):
         #     "Checking control key update preparation "
         #     f"{len(self.candidate_keys)}"
         # )
-        ctrl_key_timestamp = self.get_control_keys().creation_time
+        ctrl_key_timestamp = self.get_control_keys().keys[0].creation_time
         ctrl_key_age_hr = (
             (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
@@ -1179,7 +1179,7 @@ class GroupDidManager(_GroupDidManager):
         if not self.candidate_keys:
             return False
 
-        ctrl_key_timestamp = self.get_control_keys().creation_time
+        ctrl_key_timestamp = self.get_control_keys()[0].creation_time
         ctrl_key_age_hr = (
             (datetime.now(UTC) - ctrl_key_timestamp).total_seconds() / 60 / 60
         )
