@@ -110,7 +110,7 @@ def docker_join_dm(invitation: str):
 
     sleep(PROFILE_JOIN_TIMEOUT_S)
     ctrl_key = shared_data.dm.get_control_keys()
-    if ctrl_key.private_key:
+    if ctrl_key.is_unlocked():
         print("DOCKER: Got control key!")
     else:
         print("DOCKER: Haven't got control key...")
@@ -134,6 +134,6 @@ def docker_join_super(invitation: str | dict):
     sleep(CORRESP_JOIN_TIMEOUT_S)
     ctrl_key = super.get_control_keys()
     logger.info(f"DOCKER: Joined: {type(ctrl_key)}")
-    if ctrl_key.private_key:
+    if ctrl_key.is_unlocked():
         print("DOCKER: Got control key!")
     return super
