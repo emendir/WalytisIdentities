@@ -22,7 +22,7 @@ from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
 
 from walytis_identities.log import (
-    logger_datatr,
+    logger_ckm,
     logger_gdm_join,
     file_handler,
     logger_gdm,
@@ -30,19 +30,17 @@ from walytis_identities.log import (
 import logging
 
 logger_gdm.setLevel(logging.DEBUG)
-logger_datatr.setLevel(logging.DEBUG)
-logger_gdm_join.setLevel(logging.DEBUG)
+logger_ckm.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
 
 
-logger_datatr.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 
 walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0.1
-JOIN_DUR = 20
-SHARE_DUR = 40
+JOIN_DUR = 10
+SHARE_DUR = 20
 
 
 class SharedData:
@@ -207,8 +205,12 @@ def docker_renew_control_key():
     # make GroupDidManager propose a new control key
     walytis_identities.settings.CTRL_KEY_RENEWAL_AGE_HR = 0
     walytis_identities.settings.CTRL_KEY_RENEWAL_RANDOMISER_MAX = 0
+    # walytis_identities.settings.CTRL_KEY_MAX_RENEWAL_DUR_HR = 0
+    walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0
     walytis_identities.group_did_manager.CTRL_KEY_RENEWAL_AGE_HR = 0
     walytis_identities.group_did_manager.CTRL_KEY_RENEWAL_RANDOMISER_MAX = 0
+    # walytis_identities.group_did_manager.CTRL_KEY_MAX_RENEWAL_DUR_HR = 0
+    walytis_identities.group_did_manager.CTRL_KEY_MGMT_PERIOD = 1
     shared_data.group_1.CTRL_KEY_RENEWAL_RANDOMISER = 0
     for i in range(SHARE_DUR):
         if len(shared_data.group_1.candidate_keys) > num_ck:

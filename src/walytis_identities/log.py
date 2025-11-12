@@ -47,7 +47,12 @@ logger_gdm.setLevel(logging.INFO)
 logger_gdm.addHandler(file_handler)
 logger_gdm.addHandler(console_handler)
 
-logger_gdm_join = logging.getLogger("WalId.GDM-Join")
+logger_ckm = logging.getLogger("WalId.GDM_CKM")
+logger_ckm.setLevel(logging.INFO)
+logger_ckm.addHandler(file_handler)
+logger_ckm.addHandler(console_handler)
+
+logger_gdm_join = logging.getLogger("WalId.GDM_Join")
 logger_gdm_join.setLevel(logging.INFO)
 logger_gdm_join.addHandler(file_handler)
 logger_gdm_join.addHandler(console_handler)

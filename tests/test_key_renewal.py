@@ -31,7 +31,7 @@ from walytis_identities.log import (
 import logging
 
 logger_gdm.setLevel(logging.DEBUG)
-logger_datatr.setLevel(logging.DEBUG)
+# logger_datatr.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
@@ -116,8 +116,7 @@ def test_create_identity_and_invitation():
         )
 
     Thread(target=run_on_docker).start()
-    sleep(3) # wait for GDMs to load in docker
-
+    sleep(5)  # wait for GDMs to load in docker
 
 
 def test_add_member_identity():
@@ -151,7 +150,7 @@ def test_add_member_identity():
     # wait a short amount to allow the docker container to learn of the new member
     polite_wait(JOIN_DUR)
 
-    sleep(5) # wait for GDMs terminate in docker
+    sleep(5)  # wait for GDMs terminate in docker
     print("Adding member on docker...")
     python_code = "\n".join(
         [
@@ -215,9 +214,8 @@ def test_renew_control_key():
     polite_wait(SHARE_DUR)
     new_keys = shared_data.group_2.get_control_keys()
 
-    assert (
-        new_keys.get_id() != old_keys.get_id() and new_keys.is_unlocked()
-    ), "Shared key on renewal."
+    assert new_keys.get_id() != old_keys.get_id()
+    assert new_keys.is_unlocked()
 
 
 def test_threads_cleanup() -> None:

@@ -6,7 +6,7 @@ from .utils import string_to_time
 from .key_store import CodePackage
 from ipfs_tk_transmission import Conversation
 from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
-from .log import logger_gdm_join, logger_gdm as logger
+from .log import logger_gdm_join, logger_gdm as logger, logger_ckm
 from threading import Event
 from walytis_beta_api import Blockchain, join_blockchain_from_zip
 from dataclasses_json import dataclass_json
@@ -775,22 +775,37 @@ class GroupDidManager(_GroupDidManager):
                 logger.warning(
                     f"GDM: Request for control key failed. {self.did}"
                 )
-            sleep(0.5)
+            if not sleep(0.5):
+                return
 
     def manage_control_key(self):
         # logger.debug(f"Starting Control key manager for {self.did}")
         while not self._terminate:
             try:
                 self.assert_ownership()
-                time.sleep(1)
+                if not self.sleep(1):
+                    return
                 # refresh our list of published candidate_keys
                 self.get_published_candidate_keys()
                 self.check_prepare_control_key_update()
                 self.check_apply_control_key_update()
             except Exception as e:
-                logger.error(traceback.format_exc())
-                logger.error(f"Recovered from bug in manage_control_key:\n{e}")
-            sleep(CTRL_KEY_MGMT_PERIOD)
+                logger_ckm.error(traceback.format_exc())
+                logger_ckm.error(
+                    f"Recovered from bug in manage_control_key:\n{e}"
+                )
+            if not self.sleep(CTRL_KEY_MGMT_PERIOD):
+                return
+
+    def sleep(self, sleep_dur_sec: float) -> bool:
+        """Sleep with centisecond precision, to be interrupted if self._terminate."""
+        for i in range(round(sleep_dur_sec * 100)):
+            if self._terminate:
+                return False
+            sleep(0.01)
+        if self._terminate:
+            return False
+        return True
 
     def manage_member_keys(self):
         while not self._terminate:
@@ -803,11 +818,14 @@ class GroupDidManager(_GroupDidManager):
                     except JoinFailureError:
                         pass
             except Exception as e:
-                logger.error(traceback.format_exc())
-                logger.error(f"Recovered from bug in manage_member_keys\n{e}")
+                logger_ckm.error(traceback.format_exc())
+                logger_ckm.error(
+                    f"Recovered from bug in manage_member_keys\n{e}"
+                )
             if self._terminate:
                 return
-            sleep(5)
+            if not self.sleep(5):
+                return
 
     def serialise(self) -> dict:
         """Generate this Identity's appdata."""
@@ -867,16 +885,16 @@ class GroupDidManager(_GroupDidManager):
 
     def key_requests_handler(self, conv: Conversation) -> None:
         """Respond to key requests from other members."""
-        logger.debug(f"KRH: Getting key request!")
+        logger_ckm.debug(f"KRH: Getting key request!")
         # double-check communications are encrypted
         assert conv._encryption_callback is not None
         assert conv._decryption_callback is not None
 
-        logger.start_recording("KEY_REQUESTS_HANDLER")
+        logger_ckm.start_recording("KEY_REQUESTS_HANDLER")
         try:
             if self._terminate:
                 return
-            logger.debug("KRH: Joined conversation.")
+            logger_ckm.debug("KRH: Joined conversation.")
             assert conv.say("Hello there!".encode())
             if self._terminate:
                 return
@@ -884,18 +902,18 @@ class GroupDidManager(_GroupDidManager):
             message = json.loads(conv.listen(timeout=COMMS_TIMEOUT_S).decode())
             if self._terminate:
                 return
-            logger.debug("KRH: got key request.")
+            logger_ckm.debug("KRH: got key request.")
             key_id = message["key_id"]
 
             key = None
             try:
                 key = self.key_store.get_generic_key(key_id)
             except UnknownKeyError:
-                logger.debug("KRH: unknown private key!.")
+                logger_ckm.debug("KRH: unknown private key!.")
                 return
 
             if not (key and key.is_unlocked()):
-                logger.debug("KRH: Sending DontOwnKey")
+                logger_ckm.debug("KRH: Sending DontOwnKey")
                 assert conv.say(
                     json.dumps(
                         {
@@ -904,31 +922,31 @@ class GroupDidManager(_GroupDidManager):
                         }
                     ).encode()
                 )
-                logger.warning(f"KRH: Don't have requested key: {key_id}")
+                logger_ckm.warning(f"KRH: Don't have requested key: {key_id}")
                 return
 
-            logger.debug("KRH: Sending key!")
+            logger_ckm.debug("KRH: Sending key!")
             assert conv.say(
                 json.dumps({"key": key.serialise_private()}).encode()
             )
-            logger.debug(f"KRH: Shared key!: {key.get_id()}")
+            logger_ckm.debug(f"KRH: Shared key!: {key.get_id()}")
 
         except ConvListenTimeout:
-            logger.warning(
+            logger_ckm.warning(
                 "KRH: Timeout in key request handler."
-                f"\n{logger.get_recording('KEY_REQUESTS_HANDLER')}"
+                f"\n{logger_ckm.get_recording('KEY_REQUESTS_HANDLER')}"
             )
 
         except Exception as error:
-            logger.error(
-                f"\n{logger.get_recording('KEY_REQUESTS_HANDLER')}"
+            logger_ckm.error(
+                f"\n{logger_ckm.get_recording('KEY_REQUESTS_HANDLER')}"
                 f"\n{traceback.format_exc()}"
                 f"RK: Error in request_key: {type(error)} {error}"
             )
         finally:
             if conv:
                 conv.terminate()
-            logger.stop_recording("KEY_REQUESTS_HANDLER")
+            logger_ckm.stop_recording("KEY_REQUESTS_HANDLER")
 
     def get_member_control_key(self, did: str) -> Key:
         """Get the DID control key of another member."""
@@ -964,7 +982,6 @@ class GroupDidManager(_GroupDidManager):
 
     def request_key(self, key_id: str, other_member_did: str) -> Key | None:
         """Request a key from another member."""
-        key = self.member_did_manager.get_control_keys()
         key_request_message = {
             "key_id": key_id,
         }
@@ -973,12 +990,12 @@ class GroupDidManager(_GroupDidManager):
             if peer_id == ipfs.peer_id:
                 continue
             count += 1
-            logger.debug(
+            logger_ckm.debug(
                 f"RK: Requesting key from {other_member_did} for {key_id}..."
             )
 
             # collect debug logs in case we encounter error
-            logger.start_recording("KEY_REQUESTS")
+            logger_ckm.start_recording("KEY_REQUESTS")
 
             conv = None
             try:
@@ -994,7 +1011,7 @@ class GroupDidManager(_GroupDidManager):
 
                 if self._terminate:
                     return
-                logger.debug("RK: started conversation")
+                logger_ckm.debug("RK: started conversation")
 
                 # receive salutation
                 salute = conv.listen(timeout=COMMS_TIMEOUT_S)
@@ -1002,34 +1019,34 @@ class GroupDidManager(_GroupDidManager):
 
                 if self._terminate:
                     return
-                logger.debug("RK: requesting key...")
+                logger_ckm.debug("RK: requesting key...")
                 assert conv.say(
                     json.dumps(key_request_message).encode(),
                 )
                 if self._terminate:
                     return
-                logger.debug("RK: awaiting response...")
+                logger_ckm.debug("RK: awaiting response...")
                 response = json.loads(
                     conv.listen(timeout=COMMS_TIMEOUT_S).decode()
                 )
                 if self._terminate:
                     return
-                logger.debug("RK: Got Response!")
+                logger_ckm.debug("RK: Got Response!")
 
             except ConvListenTimeout:
-                logger.warning(
+                logger_ckm.warning(
                     "RK: Timeout in key request."
                     f"KeyRequest-{key_id}, "
                     f"{peer_id}, {other_member_did}-KeyRequests"
                     f"\nRequested key for {other_member_did} "
                     f"from {peer_id}"
-                    f"\n{logger.get_recording('KEY_REQUESTS')}"
+                    f"\n{logger_ckm.get_recording('KEY_REQUESTS')}"
                 )
 
                 continue
             except Exception as error:
-                logger.error(
-                    f"\n{logger.get_recording('KEY_REQUESTS')}"
+                logger_ckm.error(
+                    f"\n{logger_ckm.get_recording('KEY_REQUESTS')}"
                     f"\n{traceback.format_exc()}"
                     f"RK: Error in request_key: {type(error)} {error}"
                 )
@@ -1037,20 +1054,20 @@ class GroupDidManager(_GroupDidManager):
             finally:
                 if conv:
                     conv.terminate()
-                logger.stop_recording("KEY_REQUESTS")
+                logger_ckm.stop_recording("KEY_REQUESTS")
 
             if "error" in response.keys():
-                logger.warning(response)
+                logger_ckm.warning(response)
                 continue
-            key = KeyGroup.derserialise_private(response["key"])
+            key = KeyGroup.deserialise_private(response["key"])
             if not key.get_id() == key_id:
-                logger.warning("RK: Received wrong key.")
+                logger_ckm.warning("RK: Received wrong key.")
                 continue
             self.key_store.add_keygroup(key)
             self.publish_key_ownership(key)
-            logger.debug(f"RK: Got key!: {key.get_id()}")
+            logger_ckm.debug(f"RK: Got key!: {key.get_id()}")
             return key
-        logger.debug(
+        logger_ckm.debug(
             f"RK: Failed to get key for {other_member_did} "
             f"after asking {count} peers"
         )
@@ -1058,7 +1075,7 @@ class GroupDidManager(_GroupDidManager):
 
     def get_published_candidate_keys(self) -> dict["str", list[str]]:
         """Update our list of candidate control keys and their owners."""
-        # logger.debug("Updating candidate keys...")
+        # logger_ckm.debug("Updating candidate keys...")
         candidate_keys: dict[str, list[str]] = {}
         for block in self.blockchain.get_blocks(reverse=True):
             if KeyOwnershipBlock.walytis_block_topic not in block.topics:
@@ -1086,13 +1103,13 @@ class GroupDidManager(_GroupDidManager):
                 if not key.verify_signature(
                     proof, json.dumps(key_ownership).encode()
                 ):
-                    logger.warning(
+                    logger_ckm.warning(
                         "Found key ownership block with invalid proof."
                     )
                     continue
 
                 if key_id in candidate_keys.keys():
-                    candidate_keys[key_id] += owner
+                    candidate_keys[key_id].append(owner)
                 else:
                     candidate_keys.update({key_id: [owner]})
         self.candidate_keys = candidate_keys
@@ -1107,7 +1124,7 @@ class GroupDidManager(_GroupDidManager):
         Returns:
             Whether or not we are now prepared to renew control keys
         """
-        # logger.debug(
+        # logger_ckm.debug(
         #     "Checking control key update preparation "
         #     f"{len(self.candidate_keys)}"
         # )
@@ -1128,7 +1145,7 @@ class GroupDidManager(_GroupDidManager):
                         #     continue
                         key = self.request_key(key_id, member)
                         if key:
-                            self.candidate_keys[key_id] += (
+                            self.candidate_keys[key_id].append(
                                 self.member_did_manager.did
                             )
                             break
@@ -1156,9 +1173,9 @@ class GroupDidManager(_GroupDidManager):
         Returns:
             Whether or not we are now prepared to renew control keys
         """
-        logger.debug("Initiating control key update...")
+        logger_ckm.debug("Initiating control key update...")
         key = KeyGroup.create(CTRL_KEY_FAMILIES)
-        self.key_store.add_key(key)
+        self.key_store.add_keygroup(key)
         self.candidate_keys.update(
             {key.get_id(): [self.member_did_manager.did]}
         )
@@ -1171,10 +1188,10 @@ class GroupDidManager(_GroupDidManager):
         Renews our DidManager's control key if the new key has already been shared
         with all peers or the current keys have reached a critical age.
         """
-        # logger.debug(
-        #     "Checking control key update application: "
-        #     f"{len(self.candidate_keys)}"
-        # )
+        logger_ckm.debug(
+            "Checking control key update application: "
+            f"{len(self.candidate_keys)}"
+        )
         if not self.candidate_keys:
             return False
 
@@ -1184,12 +1201,12 @@ class GroupDidManager(_GroupDidManager):
         )
 
         new_control_key = None
-        num_key_owners = 1
+        num_key_owners = 0
         # if control key isn't too old yet
         # look for key with the most key owners
         for key_id, owners in list(self.candidate_keys.items()):
             # exclude keys which we don't own
-            key = self.key_store.keys.get(key_id, None)
+            key = self.key_store.get_keygroup(key_id)
             if not key:
                 continue
 
@@ -1201,6 +1218,7 @@ class GroupDidManager(_GroupDidManager):
                 if num_key_owners >= len(self.get_members()):
                     break
         if not new_control_key:
+            logger_ckm.debug("We don't own any candidate keys yet")
             return False
 
         # control key is critically old, renew now
@@ -1210,7 +1228,7 @@ class GroupDidManager(_GroupDidManager):
             + CTRL_KEY_MAX_RENEWAL_DUR_HR
             + self.CTRL_KEY_RENEWAL_RANDOMISER
         ):
-            logger.debug("Renewing control keys...")
+            logger_ckm.debug("Renewing control keys...")
             self.renew_control_key(new_control_key)
             self.candidate_keys = {}
             return True
@@ -1218,16 +1236,19 @@ class GroupDidManager(_GroupDidManager):
         # if not all members have the same candidate key yet,
         # we'll wait a little longer
         if num_key_owners < len(self.get_members()):
+            logger_ckm.debug("control keys not fully shared yet...")
             return False
         # all members have the candidate control key
         if (
             ctrl_key_age_hr
             < CTRL_KEY_RENEWAL_AGE_HR + self.CTRL_KEY_RENEWAL_RANDOMISER
         ):
-            logger.debug("Renewing control keys...")
+            logger_ckm.debug("Renewing control keys...")
             self.renew_control_key(new_control_key)
             self.candidate_keys = {}
             return True
+
+        logger_ckm.debug("Awaiting randomness before renewing control key")
         return False
 
     def listen_for_conversations(
@@ -1423,7 +1444,7 @@ class JoinProcess:
 
         keys_data = conv.listen(datatransmission.COMMS_TIMEOUT_S)
 
-        logger.debug(conv.ipfs_client.tunnels.get_tunnels())
+        # logger.debug(conv.ipfs_client.tunnels.get_tunnels())
         logger.debug("Awaiting file...")
         blockchain_data = conv.listen_for_file()["filepath"]
         conv.terminate()
