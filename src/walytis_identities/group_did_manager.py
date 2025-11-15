@@ -1,5 +1,6 @@
 """Classes for managing Person and Device identities."""
 
+from hashlib import sha256
 from . import settings
 from .datatransmission import COMMS_TIMEOUT_S, SESSION_KEY_FAMILY
 from .utils import string_to_time
@@ -922,14 +923,16 @@ class GroupDidManager(_GroupDidManager):
                         }
                     ).encode()
                 )
-                logger_ckm.warning(f"KRH: Don't have requested key: {key_id}")
+                logger_ckm.warning(
+                    f"KRH: Don't have requested key: {key_id[:30]}"
+                )
                 return
 
             logger_ckm.debug("KRH: Sending key!")
             assert conv.say(
                 json.dumps({"key": key.serialise_private()}).encode()
             )
-            logger_ckm.debug(f"KRH: Shared key!: {key.get_id()}")
+            logger_ckm.debug(f"KRH: Shared key!: {key.get_id()[:30]}")
 
         except ConvListenTimeout:
             logger_ckm.warning(
@@ -991,7 +994,9 @@ class GroupDidManager(_GroupDidManager):
                 continue
             count += 1
             logger_ckm.debug(
-                f"RK: Requesting key from {other_member_did} for {key_id}..."
+                f"RK: Requesting key from {other_member_did} for {
+                    key_id[:30]
+                }..."
             )
 
             # collect debug logs in case we encounter error
@@ -1001,7 +1006,9 @@ class GroupDidManager(_GroupDidManager):
             try:
                 conv = datatransmission.start_conversation(
                     self,
-                    conv_name=f"KeyRequest-{key_id}",
+                    conv_name=(
+                        f"KeyRequest-{sha256(key_id.encode()).hexdigest()}"
+                    ),
                     peer_id=peer_id,
                     others_req_listener=f"{self.did}-KeyRequests",
                 )
@@ -1036,7 +1043,7 @@ class GroupDidManager(_GroupDidManager):
             except ConvListenTimeout:
                 logger_ckm.warning(
                     "RK: Timeout in key request."
-                    f"KeyRequest-{key_id}, "
+                    f"KeyRequest-{key_id[:30]}, "
                     f"{peer_id}, {other_member_did}-KeyRequests"
                     f"\nRequested key for {other_member_did} "
                     f"from {peer_id}"
@@ -1065,7 +1072,7 @@ class GroupDidManager(_GroupDidManager):
                 continue
             self.key_store.add_keygroup(key)
             self.publish_key_ownership(key)
-            logger_ckm.debug(f"RK: Got key!: {key.get_id()}")
+            logger_ckm.debug(f"RK: Got key!: {key.get_id()[:30]}")
             return key
         logger_ckm.debug(
             f"RK: Failed to get key for {other_member_did} "
@@ -1434,7 +1441,14 @@ class JoinProcess:
             f"WaliInvite-{self.invitation_code.key.get_public_key()}"
         )
         conv = ipfs.start_conversation(
-            conv_name=f"WalidJoin-{self.invitation_code.key.get_public_key()}",
+            conv_name=(
+                f"WalidJoin-"
+                f"{
+                    sha256(
+                        self.invitation_code.key.get_public_key().encode()
+                    ).hexdigest()
+                }"
+            ),
             peer_id=self.invitation_code.ipfs_id,
             others_req_listener=others_req_listener,
             encryption_callbacks=(encrypt, decrypt),

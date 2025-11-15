@@ -1,10 +1,16 @@
-FROM local/brenthy_testing:latest
+FROM ubuntu:latest AS liboqs_build
+
+RUN apt update && apt install -y build-essential git python3-dev cmake libssl-dev
+
+RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib && cd $(mktemp -d) && git clone --depth=1 https://github.com/open-quantum-safe/liboqs && cmake -S liboqs -B liboqs/build -DBUILD_SHARED_LIBS=ON && cmake --build liboqs/build --parallel 8 && cmake --build liboqs/build --target install
+
+
+FROM local/brenthy_testing:latest AS walytis_installation
+COPY --from=liboqs_build /usr/local/lib/liboqs* /usr/local/lib
 WORKDIR /opt/walytis_identities
 
-# COPY tests/walid_docker/IPFS-Monitoring /opt/IPFS-Monitor
-RUN apt-get install -y iputils-ping rsync
-# run installer except for its last line, removing all use of `sudo`
-# RUN cd /opt/IPFS-Monitor && head -n -1 /opt/IPFS-Monitor/install_linux_systemd.sh | sed 's/sudo //g' | bash
+
+RUN apt-get install -y iputils-ping rsync sudo
 
 COPY . /opt/walytis_identities
 RUN pip install --break-system-packages --root-user-action ignore -r /opt/walytis_identities/requirements-dev.txt
