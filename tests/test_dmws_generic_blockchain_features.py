@@ -4,6 +4,7 @@ import tempfile
 from time import sleep
 
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 from emtest import await_thread_cleanup
 from walytis_beta_api._experimental import generic_blockchain_testing
 
@@ -19,13 +20,14 @@ from walytis_identities.key_store import KeyStore
 # walytis_api.log.PRINT_DEBUG = False
 
 
-class SharedData():
+class SharedData:
     def __init__(self):
         """Setup resources in preparation for tests."""
         # declare 'global' variables
         self.profile_config_dir = tempfile.mkdtemp()
         self.key_store_path = os.path.join(
-            self.profile_config_dir, "master_keystore.json")
+            self.profile_config_dir, "master_keystore.json"
+        )
 
         # the cryptographic family to use for the tests
         self.CRYPTO_FAMILY = "EC-secp256k1"
@@ -36,7 +38,8 @@ class SharedData():
 
         device_keystore_path = os.path.join(config_dir, "device_keystore.json")
         profile_keystore_path = os.path.join(
-            config_dir, "profile_keystore.json")
+            config_dir, "profile_keystore.json"
+        )
 
         self.device_did_keystore = KeyStore(device_keystore_path, key)
         self.profile_did_keystore = KeyStore(profile_keystore_path, key)
@@ -48,7 +51,7 @@ class SharedData():
         self.group_did_manager = GroupDidManager(
             self.profile_did_keystore,
             self.device_did_manager,
-            auto_load_missed_blocks=False
+            auto_load_missed_blocks=False,
         )
         dmws = DidManagerWithSupers(
             did_manager=self.group_did_manager,
@@ -59,18 +62,19 @@ class SharedData():
         sleep(1)
         self.dmws.terminate()
 
+
 shared_data = SharedData()
+
 
 def test_profile():
     print("Running test for DidManagerWithSupers...")
     shared_data.group_did_manager = GroupDidManager(
         shared_data.profile_did_keystore,
         shared_data.device_did_manager,
-        auto_load_missed_blocks=False
+        auto_load_missed_blocks=False,
     )
     dmws = generic_blockchain_testing.run_generic_blockchain_test(
-        DidManagerWithSupers,
-        did_manager=shared_data.group_did_manager
+        DidManagerWithSupers, did_manager=shared_data.group_did_manager
     )
     dmws.terminate()
 
@@ -80,13 +84,14 @@ def test_super():
     super = generic_blockchain_testing.run_generic_blockchain_test(
         GroupDidManager,
         group_key_store=shared_data.super.key_store,
-        member=shared_data.super.member_did_manager.key_store
+        member=shared_data.super.member_did_manager.key_store,
     )
     super.terminate()
 
 
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
+    cleanup_walytis_ipfs()
     if shared_data.dmws:
         shared_data.dmws.delete()
     if os.path.exists(shared_data.profile_config_dir):
@@ -98,4 +103,3 @@ def test_threads_cleanup() -> None:
     if shared_data.dmws:
         shared_data.dmws.terminate()
     assert await_thread_cleanup(timeout=10)
-

@@ -5,6 +5,7 @@ COPY . /opt/walytis_identities
 # RUN pip install --root-user-action ignore --no-dependencies /opt/walytis_identities/
 RUN rm *.log || true
 RUN rm ./tests/*.log || true
+RUN echo "" > ./tests/.walytis_identities.log
 # RUN pip show walytis_identities
 ## Run with:
 # docker run -it --privileged local/walid_testing

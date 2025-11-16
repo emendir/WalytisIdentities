@@ -68,7 +68,7 @@ def docker_part():
 
     def eventhandler(conv: Conversation):
         logger.debug("Received transmission!")
-        data = conv.listen(COMMS_TIMEOUT_S)
+        data = conv.listen(SYNC_DUR)
         logger.debug("Received message!")
         # logger.debug(f"Received data: {data}")
         if data == HELLO_THERE:

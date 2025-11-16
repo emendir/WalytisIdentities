@@ -6,6 +6,7 @@ import json
 from walytis_beta_embedded import ipfs
 from typing import Callable
 from walytis_beta_embedded import ipfs
+from ipfs_tk_transmission.errors import UnreadableReply
 
 from walytis_beta_api._experimental.generic_blockchain import (
     GenericBlock,
@@ -161,7 +162,7 @@ def start_conversation(
             conv.say(json.dumps({"challenge_result": "failed"}).encode())
             conv.close()
             logger.debug("Challenge verification failed.")
-            raise HandshakeFailedError()
+            raise ChallengeFailedError()
 
         message = handle_challenge(gdm, salutation_join["challenge_data"])
         message.update({"challenge_result": "passed"})
@@ -173,11 +174,11 @@ def start_conversation(
             case "failed":
                 logger.debug("DataTr: received conversation denied")
                 conv.close()
-                raise HandshakeFailedError()
+                raise ChallengeFailedError()
             case _:
                 logger.debug(f"DataTr: received unexpected reply: {message}")
                 conv.close()
-                raise HandshakeFailedError()
+                raise UnreadableReply()
         member = gdm.get_members_dict()[salutation_join["member_did"]]
         their_one_time_key = KeyGroup.from_id(salutation_join["one_time_key"])
 
@@ -211,7 +212,7 @@ def start_conversation(
         logger.error(f"Error in Datatransmission handshake: {e}")
         if conv:
             conv.terminate()
-        raise HandshakeFailedError()
+        raise HandshakeFailedError(e)
     return conv
 
 
@@ -317,5 +318,13 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
     return True
 
 
-class HandshakeFailedError(Exception):
+class ChallengeFailedError(Exception):
     pass
+
+
+class HandshakeFailedError(Exception):
+    def __init__(self, exception: Exception):
+        self.data = type(exception)
+
+    def __str__(self):
+        return f"{self.data}"

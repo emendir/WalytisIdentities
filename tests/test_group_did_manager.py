@@ -4,6 +4,7 @@ import shutil
 import tempfile
 
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 import pytest
 import walytis_beta_api
 from emtest import await_thread_cleanup
@@ -198,6 +199,7 @@ def cleanup() -> None:
     """Clean up resources used during tests."""
     if os.path.exists(shared_data.person_config_dir):
         shutil.rmtree(shared_data.person_config_dir)
+    cleanup_walytis_ipfs()
 
 
 def test_threads_cleanup() -> None:

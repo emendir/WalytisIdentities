@@ -4,6 +4,7 @@ import shutil
 from threading import Thread
 
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 import pytest
 from brenthy_docker import DockerShellError, DockerShellTimeoutError
 from brenthy_tools_beta.utils import function_name
@@ -143,6 +144,7 @@ def cleanup():
         shared_data.super.delete()
     if shared_data.dm:
         shared_data.dm.delete()
+    cleanup_walytis_ipfs()
 
 
 def setup_dm(docker_container: WalytisIdentitiesDocker):

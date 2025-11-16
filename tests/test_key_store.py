@@ -3,6 +3,7 @@ import shutil
 import tempfile
 
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 from emtest import await_thread_cleanup
 
 from walytis_identities.key_objects import Key, KeyGroup
@@ -118,6 +119,7 @@ def test_keygroup():
 
 def test_cleanup() -> None:
     """Test that no threads are left running."""
+    cleanup_walytis_ipfs()
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
     assert await_thread_cleanup(timeout=10)

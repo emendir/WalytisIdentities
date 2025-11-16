@@ -93,3 +93,10 @@ if True:
 
     file_handler.setLevel(logging.DEBUG)
     console_handler.setLevel(logging.DEBUG)
+
+
+def cleanup_walytis_ipfs():
+    if not USING_BRENTHY:
+        print("Terminating Walytis...")
+        walytis_beta_embedded.terminate()
+        ipfs.terminate()

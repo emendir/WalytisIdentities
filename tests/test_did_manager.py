@@ -1,5 +1,6 @@
 from emtest import await_thread_cleanup
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 import os
 import shutil
 import tempfile
@@ -50,6 +51,7 @@ def cleanup():
     """Clean up resources used during tests."""
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
+    cleanup_walytis_ipfs()
 
 
 def test_create_did_manager():

@@ -6,6 +6,7 @@ import shutil
 from time import sleep
 
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 import walytis_beta_api as walytis_api
 from emtest import await_thread_cleanup, env_vars, polite_wait
 from docker_key_renewal import SharedData, JOIN_DUR, SHARE_DUR
@@ -100,6 +101,7 @@ def cleanup():
     shutil.rmtree(shared_data.group_4_config_dir)
     shutil.rmtree(os.path.dirname(shared_data.member_3_keystore_file))
     shutil.rmtree(os.path.dirname(shared_data.member_4_keystore_file))
+    cleanup_walytis_ipfs()
 
 
 def test_create_identity_and_invitation():

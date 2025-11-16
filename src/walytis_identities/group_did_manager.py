@@ -658,8 +658,8 @@ class GroupDidManager(_GroupDidManager):
             other_blocks_handler=other_blocks_handler,
         )
         join_process.joined.wait()
-        if join_process.failed:
-            raise GdmJoinFailureError()
+        if join_process.error_message:
+            raise GdmJoinFailureError(join_process.error_message)
         return join_process.group_did_manager
 
     @classmethod
@@ -1398,10 +1398,11 @@ class JoinProcess:
         else:
             raise TypeError(f"Wrong type or invitation: {type(invitation)}")
 
-        self.failed = False
+        self.error_message = None
         self.invitation_code = invitation_code
         self.peer_found = Event()
         self.data_received = Event()
+        self.joined_blockchain = Event()
         self.joined = Event()
         self.group_did_manager: GroupDidManager | None = None
         self.group_key_store = group_key_store
@@ -1418,8 +1419,6 @@ class JoinProcess:
             try:
                 self.join_blockchain()
             except Exception as e:
-                import traceback
-
                 logger_gdm_join.error(e)
                 traceback.print_exc()
 
@@ -1551,6 +1550,8 @@ class JoinProcess:
                 pass
             logger_gdm_join.debug("Loading blockchain...")
             blockchain = Blockchain(blockchain_id)
+            self.joined_blockchain.set()
+
             logger_gdm_join.debug("Processing keys...")
             if isinstance(self.group_key_store, str):
                 # use blockchain ID instead of DID
@@ -1574,15 +1575,22 @@ class JoinProcess:
             )
             logger_gdm_join.debug("Joined GroupDidManager!")
             self.joined.set()
+        except Exception as e:
+            logger_gdm_join.error("HERE")
+            logger_gdm_join.error(e)
+            logger_gdm_join.error(traceback.format_exc())
         finally:
             if not self.peer_found.is_set():
-                self.failed = True
+                self.error_message = "Peer not found."
                 self.peer_found.set()
-            if not self.data_received.is_set():
-                self.failed = True
+            elif not self.data_received.is_set():
+                self.error_message = "Failed to negotiate with peer."
                 self.data_received.set()
-            if not self.joined.is_set():
-                self.failed = True
+            elif not self.joined_blockchain.is_set():
+                self.error_message = "Failed to join blockchain."
+                self.joined_blockchain.set()
+            elif not self.joined.is_set():
+                self.error_message = "Failed to load Group-DID-Manager."
                 self.joined.set()
 
 
@@ -1753,7 +1761,11 @@ class MemberBlockchainNotJoinedError(Exception):
 
 
 class GdmJoinFailureError(Exception):
-    pass
+    def __init__(self, data):
+        self.data = data
+
+    def __str__(self):
+        return f"{self.data}"
 
 
 # decorate_all_functions(strictly_typed, __name__)

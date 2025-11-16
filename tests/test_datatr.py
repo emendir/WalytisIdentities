@@ -1,5 +1,6 @@
 import _auto_run_with_pytest  # noqa
-
+from conftest import cleanup_walytis_ipfs
+from time import sleep
 from ipfs_tk_transmission.errors import CommunicationTimeout
 import logging
 import os
@@ -88,6 +89,8 @@ def cleanup():
     shared_data.group_did_manager.terminate()
     if shared_data.group_did_manager:
         shared_data.group_did_manager.delete()
+    cleanup_walytis_ipfs()
+
 
 
 def test_load_blockchain():
@@ -126,6 +129,8 @@ docker_datatr.docker_part()
 def test_datatransmission():
     """Test that the previously created block is available in the container."""
 
+    # give docker container more time to initialise
+    sleep(10)
     logger.debug("Starting datatransmission...")
     conv = start_conversation(
         shared_data.group_did_manager,

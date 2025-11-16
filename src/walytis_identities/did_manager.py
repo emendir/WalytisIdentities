@@ -42,7 +42,7 @@ from .log import logger_dm as logger
 DID_METHOD_NAME = "walytisidentities"
 
 CRYPTO_FAMILY = "EC-secp256k1"
-CTRL_KEY_FAMILIES = ["EC-secp256k1"]
+CTRL_KEY_FAMILIES = ["EC-secp256k1", "PQ-ML-KEM-1024-ML-DSA-87"]
 
 _DidManager = TypeVar("_DidManager", bound="DidManager")
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata

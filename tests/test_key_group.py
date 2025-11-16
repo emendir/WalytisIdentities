@@ -2,6 +2,7 @@ import os
 import tempfile
 
 import _auto_run_with_pytest  # noqa
+from conftest import cleanup_walytis_ipfs
 from emtest import await_thread_cleanup
 
 from walytis_identities.key_objects import Key, KeyGroup
@@ -63,3 +64,9 @@ def test_serialisation():
     )
     assert reloaded.get_id() == shared_data.keygroup.get_id()
     assert reloaded.is_unlocked()
+
+
+def test_threads_cleanup() -> None:
+    """Test that no threads are left running."""
+    cleanup_walytis_ipfs()
+    assert await_thread_cleanup(timeout=10)

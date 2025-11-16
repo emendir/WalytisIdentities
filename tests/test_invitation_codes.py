@@ -1,5 +1,6 @@
 import _auto_run_with_pytest  # noqa
 from emtest import await_thread_cleanup, env_vars, polite_wait
+from conftest import cleanup_walytis_ipfs
 from walytis_identities.group_did_manager import (
     InvitationCode,
     InvitationManager,
@@ -21,4 +22,5 @@ def test_invitation_code():
 
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
+    cleanup_walytis_ipfs()
     assert await_thread_cleanup(timeout=10)
