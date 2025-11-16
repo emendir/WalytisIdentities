@@ -1,5 +1,6 @@
 """Classes for managing Person and Device identities."""
 
+from .utils import generate_random_string
 from hashlib import sha256
 from . import settings
 from .datatransmission import COMMS_TIMEOUT_S
@@ -13,6 +14,7 @@ from walytis_beta_api import Blockchain, join_blockchain_from_zip
 from dataclasses_json import dataclass_json
 from dataclasses import dataclass
 from . import datatransmission
+from .datatransmission import CHALLENGE_STRING_LENGTH
 import json
 import os
 import random
@@ -79,6 +81,7 @@ random.seed(datetime.now(UTC).microsecond)
 WALYTIS_BLOCK_TOPIC = "GroupDidManager"
 
 CRYPTO_FAMILY = "EC-secp256k1"
+INVITATION_KEY_FAMILY = "EC-secp256k1"
 GroupDidManagerType = TypeVar("GroupDidManagerType", bound="GroupDidManager")
 
 
@@ -107,10 +110,16 @@ class Member:
 
     @property
     def blockchain(self):
+        print("DEPRECATED: Member.blockchain")
+        return self.get_blockchain()
+
+    def get_blockchain(self) -> Blockchain:
         with self._blockchain_lock:
             if self._blockchain:
                 return self._blockchain
             self._blockchain = self._get_member_blockchain()
+            if not self._blockchain:
+                raise MemberBlockchainNotJoinedError()
             return self._blockchain
 
     def _get_member_ipfs_ids(self) -> set[str]:
@@ -135,7 +144,7 @@ class Member:
         return get_control_keys_history(self.blockchain)
 
     def _get_control_key_age(self, key_id: str) -> int:
-        return get_control_key_age(self._blockchain, key_id)
+        return get_control_key_age(self.get_blockchain(), key_id)
 
     def is_control_key_active(self, key_id: str) -> bool:
         return self._get_control_key_age(key_id) < NUM_ACTIVE_CONTROL_KEYS
@@ -351,7 +360,7 @@ class _GroupDidManager(DidManager):
             f"member_invitations-{self.blockchain.blockchain_id}.json",
         )
 
-    def load_invitation(self, key: KeyGroup) -> dict:
+    def load_invitation(self, key: Key) -> dict:
         """Create and register a member invitation on the blockchain."""
         invitation = InvitationManager(self, key)
         self.member_invitations.append(invitation)
@@ -649,6 +658,8 @@ class GroupDidManager(_GroupDidManager):
             other_blocks_handler=other_blocks_handler,
         )
         join_process.joined.wait()
+        if join_process.failed:
+            raise GdmJoinFailureError()
         return join_process.group_did_manager
 
     @classmethod
@@ -1215,8 +1226,9 @@ class GroupDidManager(_GroupDidManager):
         # look for key with the most key owners
         for key_id, owners in list(self.candidate_keys.items()):
             # exclude keys which we don't own
-            key = self.key_store.get_keygroup(key_id)
-            if not key:
+            try:
+                key = self.key_store.get_keygroup(key_id)
+            except UnknownKeyError:
                 continue
 
             nko = len(self.candidate_keys[key_id])
@@ -1386,6 +1398,7 @@ class JoinProcess:
         else:
             raise TypeError(f"Wrong type or invitation: {type(invitation)}")
 
+        self.failed = False
         self.invitation_code = invitation_code
         self.peer_found = Event()
         self.data_received = Event()
@@ -1410,114 +1423,187 @@ class JoinProcess:
                 logger_gdm_join.error(e)
                 traceback.print_exc()
 
-        self.thread = Thread(target=join)
+        self.thread = Thread(target=join, name="JoinGdmBlockchain")
         self.thread.start()
 
     def join_blockchain(self):
-        one_time_key = Key.create(SESSION_KEY_FAMILY)
-
-        def encrypt(data):
-            return self.invitation_code.key.encrypt(data)
-
-        def decrypt(data):
-            return one_time_key.decrypt(data)
-
-        # find and connect to IPFS peer
-        logger_gdm_join.debug("Finding peer...")
-        ipfs_join_threads: list[Thread] = []
-        for addr in self.invitation_code.ipfs_addresses:
-            logger.debug(f"{addr}/p2p/{self.invitation_code.ipfs_id}")
-            thr = Thread(
-                target=ipfs.peers.connect,
-                args=(f"{addr}/p2p/{self.invitation_code.ipfs_id}",),
-            )
-            thr.start()
-        ipfs_join_threads.append(thr)
-        for thr in ipfs_join_threads:
-            thr.join()
-        self.peer_found.set()
-
-        # talk to peer, get data
-        logger_gdm_join.debug("Contacting peer...")
-        others_req_listener = (
-            f"WaliInvite-{self.invitation_code.key.get_public_key()}"
-        )
-        conv = ipfs.start_conversation(
-            conv_name=(
-                f"WalidJoin-"
-                f"{
-                    sha256(
-                        self.invitation_code.key.get_public_key().encode()
-                    ).hexdigest()
-                }"
-            ),
-            peer_id=self.invitation_code.ipfs_id,
-            others_req_listener=others_req_listener,
-            encryption_callbacks=(encrypt, decrypt),
-            salutation_message=one_time_key.get_id().encode(),
-        )
-        logger_gdm_join.debug("Talking to peer...")
-
-        keys_data = conv.listen(datatransmission.COMMS_TIMEOUT_S)
-
-        # logger.debug(conv.ipfs_client.tunnels.get_tunnels())
-        logger.debug("Awaiting file...")
-        blockchain_data = conv.listen_for_file()["filepath"]
-        conv.terminate()
-
-        self.data_received.set()
-
-        # load data received from peer
-        logger_gdm_join.debug("Processing data...")
-        data = json.loads(bytes.decode(keys_data))
-        gdm_keys = [
-            Key.deserialise_private_encrypted(key, one_time_key)
-            for key in data["group_keys"]
-        ]
-        blockchain_id = data["blockchain_id"]
         try:
-            join_blockchain_from_zip(blockchain_id, blockchain_data)
-        except BlockchainAlreadyExistsError:
-            pass
-        blockchain = Blockchain(blockchain_id)
-        if isinstance(self.group_key_store, str):
-            # use blockchain ID instead of DID
-            # as some filesystems don't support colons
-            key_store_path = os.path.join(
-                self.group_key_store,
-                f"{blockchain.blockchain_id}.json",
-            )
-            self.group_key_store = KeyStore(
-                key_store_path, Key.create(CRYPTO_FAMILY)
-            )
+            one_time_key = KeyGroup.create(CTRL_KEY_FAMILIES)
 
-        for key in gdm_keys:
-            self.group_key_store.add_key(key)
-        logger_gdm_join.debug("Loading GroupDidManager...")
-        self.group_did_manager = GroupDidManager._join_from_blockchain(
-            blockchain=blockchain,
-            group_key_store=self.group_key_store,
-            member=self.member,
-            other_blocks_handler=self.other_blocks_handler,
-        )
-        logger_gdm_join.debug("Joined GroupDidManager!")
-        self.joined.set()
+            # find and connect to IPFS peer
+            logger_gdm_join.debug("Finding peer...")
+            ipfs_join_threads: list[Thread] = []
+            for i, addr in enumerate(self.invitation_code.ipfs_addresses):
+                logger.debug(f"{addr}/p2p/{self.invitation_code.ipfs_id}")
+                thr = Thread(
+                    target=ipfs.peers.connect,
+                    args=(f"{addr}/p2p/{self.invitation_code.ipfs_id}",),
+                    name=f"Gdm-Join-Connect-to-peer-{i}",
+                )
+                thr.start()
+            ipfs_join_threads.append(thr)
+            for thr in ipfs_join_threads:
+                thr.join()
+            if not ipfs.peers.is_connected(
+                self.invitation_code.ipfs_id, ping_count=1
+            ):
+                return
+            self.peer_found.set()
+
+            # talk to peer, get data
+            logger_gdm_join.debug("Contacting peer...")
+            others_req_listener = f"WaliInvite-{
+                sha256(self.invitation_code.key.get_id().encode()).hexdigest()
+            }"
+            logger_gdm_join.debug(f"Contacting peer at {others_req_listener}")
+            logger.debug(self.invitation_code.key.get_id())
+            keys_data = None
+            blockchain_data = None
+            conv = None
+            try:
+                # START HANDSHAKE -----------------------
+                our_challenge_data = generate_random_string(
+                    CHALLENGE_STRING_LENGTH
+                )
+                salutation = json.dumps(
+                    {
+                        # "member_did": gdm.member_did_manager.did,
+                        "one_time_key": one_time_key.get_id(),
+                        "challenge_data": our_challenge_data,
+                    }
+                ).encode()
+
+                logger_gdm_join.debug("GJT: STARTING TRANSMISSION")
+                conv = ipfs.start_conversation(
+                    conv_name=(
+                        f"WalidJoin-"
+                        f"{
+                            sha256(
+                                self.invitation_code.key.get_id().encode()
+                            ).hexdigest()
+                        }"
+                    ),
+                    peer_id=self.invitation_code.ipfs_id,
+                    others_req_listener=others_req_listener,
+                    # encryption_callbacks=(encrypt, decrypt),
+                    salutation_message=salutation,
+                )
+
+                salutation_join = json.loads(conv.salutation_join.decode())
+
+                # upgrade to a more secure key than the one from the invitation
+                their_key = KeyGroup.from_id(salutation_join["one_time_key"])
+                if not self.invitation_code.key.verify_signature(
+                    string_to_bytes(salutation_join["inviter_proof"]),
+                    (our_challenge_data).encode(),
+                ):
+                    logger_gdm_join.warning(
+                        "Failed to verify that our peer is the author of this invitaion."
+                    )
+                    conv.terminate()
+                    return
+
+                def encrypt(data):
+                    return their_key.encrypt(data)
+
+                def decrypt(data):
+                    return one_time_key.decrypt(data)
+
+                conv.set_encryption_functions(encrypt, decrypt)
+                logger_gdm_join.debug("Talking to peer...")
+                conv.say("Ready!".encode())
+                # FINISH HANDSHAKE -----------------------
+
+                keys_data = conv.listen(datatransmission.COMMS_TIMEOUT_S)
+
+                # logger.debug(conv.ipfs_client.tunnels.get_tunnels())
+                logger.debug("Awaiting file...")
+                blockchain_data = conv.listen_for_file(
+                    no_coms_timeout=COMMS_TIMEOUT_S
+                )["filepath"]
+                conv.terminate()
+            except (CommunicationTimeout, ConvListenTimeout):
+                pass
+            finally:
+                if conv:
+                    logger_gdm_join.debug("GJT: CLOSING TRANSMISSION")
+                    conv.terminate()
+                else:
+                    logger_gdm_join.debug("GJT: FAILED TRANSMISSION")
+
+            if not (blockchain_data and keys_data):
+                return
+
+            self.data_received.set()
+
+            # load data received from peer
+            logger_gdm_join.debug("Processing data...")
+            data = json.loads(bytes.decode(keys_data))
+            gdm_keys = [
+                Key.deserialise_private_encrypted(key, one_time_key)
+                for key in data["group_keys"]
+            ]
+            blockchain_id = data["blockchain_id"]
+            logger_gdm_join.debug("Joining blockchain...")
+            try:
+                join_blockchain_from_zip(blockchain_id, blockchain_data)
+            except BlockchainAlreadyExistsError:
+                pass
+            logger_gdm_join.debug("Loading blockchain...")
+            blockchain = Blockchain(blockchain_id)
+            logger_gdm_join.debug("Processing keys...")
+            if isinstance(self.group_key_store, str):
+                # use blockchain ID instead of DID
+                # as some filesystems don't support colons
+                key_store_path = os.path.join(
+                    self.group_key_store,
+                    f"{blockchain.blockchain_id}.json",
+                )
+                self.group_key_store = KeyStore(
+                    key_store_path, Key.create(CRYPTO_FAMILY)
+                )
+
+            for key in gdm_keys:
+                self.group_key_store.add_key(key)
+            logger_gdm_join.debug("Loading GroupDidManager...")
+            self.group_did_manager = GroupDidManager._join_from_blockchain(
+                blockchain=blockchain,
+                group_key_store=self.group_key_store,
+                member=self.member,
+                other_blocks_handler=self.other_blocks_handler,
+            )
+            logger_gdm_join.debug("Joined GroupDidManager!")
+            self.joined.set()
+        finally:
+            if not self.peer_found.is_set():
+                self.failed = True
+                self.peer_found.set()
+            if not self.data_received.is_set():
+                self.failed = True
+                self.data_received.set()
+            if not self.joined.is_set():
+                self.failed = True
+                self.joined.set()
 
 
 class InvitationManager:
     def __init__(self, gdm: GroupDidManager, key: Key):
         self.gdm = gdm
         self.key = key
+        listener_name = (
+            f"WaliInvite-{sha256(self.key.get_id().encode()).hexdigest()}"
+        )
         self.listener = ipfs_tk_transmission.ConversationListener(
             ipfs_client=ipfs,
-            listener_name=f"WaliInvite-{self.key.get_public_key()}",
+            listener_name=listener_name,
             eventhandler=self._handler,
         )
-        logger_gdm_join.debug("Created InvitationManager.")
+        logger_gdm_join.debug(f"Created InvitationManager: {listener_name}")
+        logger.debug(key.get_id())
 
     @classmethod
     def create(cls, gdm: GroupDidManager):
-        return cls(gdm=gdm, key=Key.create(CRYPTO_FAMILY))
+        return cls(gdm=gdm, key=Key.create(INVITATION_KEY_FAMILY))
 
     def serialise(self) -> str:
         # encrypt self.key with key from self.gdm
@@ -1550,15 +1636,31 @@ class InvitationManager:
             logger_gdm_join.error(e)
 
     def handler(self, conv_name, peer_id, salutation_start):
+        # START HANDSHAKE -----------------------
         logger_gdm_join.debug("Received request.")
 
-        their_key = Key.from_id(salutation_start.decode())
+        salutation_start = json.loads(salutation_start.decode())
+        their_key = KeyGroup.from_id(salutation_start["one_time_key"])
+
+        # sign their challenge with invitation key to prove that we created the invitation
+        their_challenge = (salutation_start["challenge_data"]).encode()
+        challenge_signature = self.key.sign(their_challenge)
+
+        # use a stronger key for communications than the invitation key
+        our_key = self.gdm.get_control_keys()
+        salutation = json.dumps(
+            {
+                # "member_did": gdm.member_did_manager.did,
+                "one_time_key": our_key.get_id(),
+                "inviter_proof": bytes_to_string(challenge_signature),
+            }
+        ).encode()
 
         def encrypt(data):
             return their_key.encrypt(data)
 
         def decrypt(data):
-            return self.key.decrypt(data)
+            return our_key.decrypt(data)
 
         logger_gdm_join.debug("Joining conversation...")
         conv = ipfs.join_conversation(
@@ -1566,11 +1668,24 @@ class InvitationManager:
             peer_id=peer_id,
             others_trsm_listener=conv_name,
             encryption_callbacks=(encrypt, decrypt),
+            salutation_message=salutation,
         )
+
+        # prepare while waiting
         keys = [
             key.serialise_private_encrypted(their_key)
             for key in self.gdm.key_store.get_all_keys()
         ]
+
+        # wait until peer has finished setting up new encryption
+        ready = conv.listen(timeout=COMMS_TIMEOUT_S)
+        if ready != b"Ready!":
+            logger_gdm_join.error(f"Received unexpected reply: {ready}")
+            conv.terminate()
+            return
+
+        # FINISH HANDSHAKE -----------------------
+
         logger_gdm_join.debug("Sending keys...")
         conv.say(
             str.encode(
@@ -1582,7 +1697,8 @@ class InvitationManager:
                 )
             )
         )
-        logger_gdm_join.debug("Getting blockchain data...")
+
+        logger_gdm_join.debug("Retrieving blockchain data...")
         blockchain_data = self.gdm.blockchain.get_blockchain_data()
         logger_gdm_join.debug("Sending blockchain data...")
         conv.transmit_file(blockchain_data)
@@ -1630,6 +1746,14 @@ class IdentityJoinError(Exception):
 
     def __str__(self):
         return self.message
+
+
+class MemberBlockchainNotJoinedError(Exception):
+    pass
+
+
+class GdmJoinFailureError(Exception):
+    pass
 
 
 # decorate_all_functions(strictly_typed, __name__)

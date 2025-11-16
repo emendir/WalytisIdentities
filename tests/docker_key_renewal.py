@@ -40,7 +40,7 @@ logger_gdm_join.setLevel(logging.DEBUG)
 
 walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0.1
 JOIN_DUR = 10
-SHARE_DUR = 15
+SHARE_DUR = 20
 
 
 class SharedData:
@@ -149,7 +149,10 @@ def docker_check_new_member(did: str):
     if success:
         print("Member has joined!")
     else:
-        print("\nDocker: Members:\n", shared_data.group_1.get_members())
+        print(
+            "\nDocker: Members:\n",
+            [m.did for m in shared_data.group_1.get_members()],
+        )
 
     shared_data.group_1.terminate()
 

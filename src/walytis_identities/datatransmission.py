@@ -40,54 +40,77 @@ def listen_for_conversations(
             }
         )
         salutation_join = json.dumps(data).encode()
-        conv = ipfs.join_conversation(
-            conv_name,
-            peer_id,
-            conv_name,
-            salutation_message=salutation_join,
-        )
-        conv.salutation_message_start = salutation_start
-        message = json.loads(conv.listen(COMMS_TIMEOUT_S).decode())
-        match message["challenge_result"]:
-            case "passed":
-                pass
-            case "failed":
-                logger.debug("DataTr: received conversation denied")
+        conv = None
+        try:
+            conv = ipfs.join_conversation(
+                conv_name,
+                peer_id,
+                conv_name,
+                salutation_message=salutation_join,
+            )
+            conv.salutation_message_start = salutation_start
+            message = json.loads(conv.listen(COMMS_TIMEOUT_S).decode())
+            match message["challenge_result"]:
+                case "passed":
+                    pass
+                case "failed":
+                    logger.debug("DataTr: received conversation denied")
+                    conv.close()
+                    return
+                case _:
+                    logger.debug(
+                        f"DataTr: received unexpected reply: {message}"
+                    )
+                    conv.close()
+                    return
+
+            if not verify_challenge(gdm, message, our_challenge_data):
+                conv.say(json.dumps({"challenge_result": "failed"}).encode())
                 conv.close()
                 return
-            case _:
-                logger.debug(f"DataTr: received unexpected reply: {message}")
+
+            group_key_proof = CodePackage.deserialise(
+                message["group_key_proof"]
+            )
+            member_key_proof = CodePackage.deserialise(
+                message["member_key_proof"]
+            )
+            # already validated as active by verify_challenge
+            group_key = group_key_proof.get_key()
+            member_key = member_key_proof.get_key()
+
+            def _encrypt(plaintext: bytearray) -> bytearray:
+                return encrypt(
+                    plaintext=plaintext,
+                    group_key=group_key,
+                    member_key=member_key,
+                    one_time_key=their_one_time_key,
+                )
+
+            def _decrypt(cipher: bytearray) -> bytearray:
+                return decrypt(
+                    cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
+                )
+
+            conv.say(json.dumps({"challenge_result": "passed"}).encode())
+            conv.set_encryption_functions(_encrypt, _decrypt)
+
+            # wait till peer has set up their encryption functions
+            ready = conv.listen(timeout=COMMS_TIMEOUT_S)
+            if not ready == b"Ready":
+                logger.error(f"Received unexpected reply: {ready}")
                 conv.close()
                 return
+            logger.debug("Starting joined converstation.")
+        except Exception as e:
+            logger.error(f"Error in Datatransmission handshake: {e}")
+            if conv:
+                conv.terminate()
 
-        if not verify_challenge(gdm, message, our_challenge_data):
-            conv.say(json.dumps({"challenge_result": "failed"}).encode())
-            conv.close()
-            return
-
-        conv.say(json.dumps({"challenge_result": "passed"}).encode())
-        group_key_proof = CodePackage.deserialise(message["group_key_proof"])
-        member_key_proof = CodePackage.deserialise(message["member_key_proof"])
-        # already validated as active by verify_challenge
-        group_key = group_key_proof.get_key()
-        member_key = member_key_proof.get_key()
-
-        def _encrypt(plaintext: bytearray) -> bytearray:
-            return encrypt(
-                plaintext=plaintext,
-                group_key=group_key,
-                member_key=member_key,
-                one_time_key=their_one_time_key,
-            )
-
-        def _decrypt(cipher: bytearray) -> bytearray:
-            return decrypt(
-                cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
-            )
-
-        conv.set_encryption_functions(_encrypt, _decrypt)
-        logger.debug("Starting joined converstation.")
-        eventhandler(conv)
+        try:
+            eventhandler(conv)
+        finally:
+            conv.terminate()
 
     def _handle_join_request(conv_name, peer_id, salutation_start):
         try:
@@ -123,62 +146,72 @@ def start_conversation(
     ).encode()
 
     logger.debug("Contacting peer...")
-    conv: ipfs.Conversation = ipfs.start_conversation(
-        conv_name,
-        peer_id,
-        f"WalIdenDatatr-{gdm.blockchain_id}-{others_req_listener}",
-        salutation_message=salutation,
-    )
-    logger.debug("Conversation started!")
-    salutation_join = json.loads(conv.salutation_join.decode())
-
-    if not verify_challenge(gdm, salutation_join, our_challenge_data):
-        conv.say(json.dumps({"challenge_result": "failed"}).encode())
-        conv.close()
-        logger.debug("Challenge verification failed.")
-        raise HandshakeFailed()
-
-    message = handle_challenge(gdm, salutation_join["challenge_data"])
-    message.update({"challenge_result": "passed"})
-    conv.say(json.dumps(message).encode())
-    message = json.loads(conv.listen(COMMS_TIMEOUT_S).decode())
-    match message["challenge_result"]:
-        case "passed":
-            pass
-        case "failed":
-            logger.debug("DataTr: received conversation denied")
-            conv.close()
-            raise HandshakeFailed()
-        case _:
-            logger.debug(f"DataTr: received unexpected reply: {message}")
-            conv.close()
-            raise HandshakeFailed()
-    member = gdm.get_members_dict()[salutation_join["member_did"]]
-    their_one_time_key = KeyGroup.from_id(salutation_join["one_time_key"])
-
-    group_key_proof = CodePackage.deserialise(
-        salutation_join["group_key_proof"]
-    )
-    member_key_proof = CodePackage.deserialise(
-        salutation_join["member_key_proof"]
-    )
-    # already validated as active by verify_challenge
-    group_key = group_key_proof.get_key()
-    member_key = member_key_proof.get_key()
-
-    def _encrypt(plaintext: bytearray) -> bytearray:
-        return encrypt(
-            plaintext=plaintext,
-            group_key=group_key,
-            member_key=member_key,
-            one_time_key=their_one_time_key,
+    conv = None
+    try:
+        conv: ipfs.Conversation = ipfs.start_conversation(
+            conv_name,
+            peer_id,
+            f"WalIdenDatatr-{gdm.blockchain_id}-{others_req_listener}",
+            salutation_message=salutation,
         )
+        logger.debug("Conversation started!")
+        salutation_join = json.loads(conv.salutation_join.decode())
 
-    def _decrypt(cipher: bytearray) -> bytearray:
-        return decrypt(cipher=cipher, gdm=gdm, one_time_key=our_one_time_key)
+        if not verify_challenge(gdm, salutation_join, our_challenge_data):
+            conv.say(json.dumps({"challenge_result": "failed"}).encode())
+            conv.close()
+            logger.debug("Challenge verification failed.")
+            raise HandshakeFailedError()
 
-    conv.set_encryption_functions(_encrypt, _decrypt)
-    logger.debug("Starting conversation.")
+        message = handle_challenge(gdm, salutation_join["challenge_data"])
+        message.update({"challenge_result": "passed"})
+        conv.say(json.dumps(message).encode())
+        message = json.loads(conv.listen(COMMS_TIMEOUT_S).decode())
+        match message["challenge_result"]:
+            case "passed":
+                pass
+            case "failed":
+                logger.debug("DataTr: received conversation denied")
+                conv.close()
+                raise HandshakeFailedError()
+            case _:
+                logger.debug(f"DataTr: received unexpected reply: {message}")
+                conv.close()
+                raise HandshakeFailedError()
+        member = gdm.get_members_dict()[salutation_join["member_did"]]
+        their_one_time_key = KeyGroup.from_id(salutation_join["one_time_key"])
+
+        group_key_proof = CodePackage.deserialise(
+            salutation_join["group_key_proof"]
+        )
+        member_key_proof = CodePackage.deserialise(
+            salutation_join["member_key_proof"]
+        )
+        # already validated as active by verify_challenge
+        group_key = group_key_proof.get_key()
+        member_key = member_key_proof.get_key()
+
+        def _encrypt(plaintext: bytearray) -> bytearray:
+            return encrypt(
+                plaintext=plaintext,
+                group_key=group_key,
+                member_key=member_key,
+                one_time_key=their_one_time_key,
+            )
+
+        def _decrypt(cipher: bytearray) -> bytearray:
+            return decrypt(
+                cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
+            )
+
+        conv.set_encryption_functions(_encrypt, _decrypt)
+        conv.say(b"Ready")
+        logger.debug("Starting conversation.")
+    except Exception as e:
+        logger.error(f"Error in Datatransmission handshake: {e}")
+        if conv:
+            conv.terminate()
+        raise HandshakeFailedError()
     return conv
 
 
@@ -284,5 +317,5 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
     return True
 
 
-class HandshakeFailed(Exception):
+class HandshakeFailedError(Exception):
     pass

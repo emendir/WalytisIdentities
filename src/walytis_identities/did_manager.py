@@ -86,6 +86,7 @@ class DidManager(GenericDidManager):
                 "The parameter `key_store` must be of type KeyStore, "
                 f"not {type(key_store)}"
             )
+        logger.debug("Loading DID-Manager...")
         self._key_store = key_store
         # assert that the key_store is unlocked
         key_store.key.get_private_key()
@@ -100,6 +101,7 @@ class DidManager(GenericDidManager):
                 "in the keystore's custom metadata"
             )
 
+        logger.debug("Loading blockchain...")
         self._blockchain = Blockchain(
             blockchain_id,
             appdata_dir=self.get_blockchain_appdata_path(key_store),
@@ -107,6 +109,7 @@ class DidManager(GenericDidManager):
             block_received_handler=self._dm_on_block_received,
             update_blockids_before_handling=True,
         )
+        logger.debug("Created blockchain!")
         self._dm_other_blocks_handler = other_blocks_handler
         self._control_key_id = ""
         # logger.debug("DM: Getting control key...")
@@ -116,13 +119,15 @@ class DidManager(GenericDidManager):
         if auto_load_missed_blocks:
             DidManager.load_missed_blocks(self)
 
-        # logger.debug("DM: Built DID-Manager object!")
+        logger.debug("DM: Built DID-Manager object!")
 
     def load_missed_blocks(self):
+        logger.debug("Loading missed blocks...")
         self._blockchain.load_missed_blocks(
             waly.blockchain_model.N_STARTUP_BLOCKS
         )
 
+        logger.debug("Loading DID-Doc...")
         self._did_doc = get_latest_did_doc(self._blockchain)
         if not self._did_doc:
             raise NotValidDidBlockchainError()
@@ -146,14 +151,14 @@ class DidManager(GenericDidManager):
                     If a directory is passed, a KeyStore is created in there
                     named after the blockchain ID of the created DidManager.
         """
-        # logger.debug("DM: Creating DID-Manager...")
+        logger.debug("DM: Creating DID-Manager...")
         # create crypto keys
         ctrl_keys = KeyGroup(
             [Key.create(family) for family in CTRL_KEY_FAMILIES]
         )
         # logger.debug("DM: Createing DID-Manager's blockchain...")
         # create blockchain
-        # logger.debug("DM: Creating Blockchain...")
+        logger.debug("DM: Creating Blockchain...")
 
         blockchain_id = create_blockchain(
             blockchain_name=f"WalID-{
@@ -161,7 +166,9 @@ class DidManager(GenericDidManager):
             }",
         )
 
+        logger.debug("Creating key store...")
         key_store = cls.assign_keystore(key_store, blockchain_id)
+        logger.debug("Loading blockchain...")
         blockchain = Blockchain(
             blockchain_id,
             appdata_dir=DidManager.get_blockchain_appdata_path(key_store),
@@ -172,7 +179,7 @@ class DidManager(GenericDidManager):
         # logger.debug("DM: Initialising cryptography...")
 
         # publish first key on blockchain
-        # logger.debug("DM: Adding ControlKey block...")
+        logger.debug("DM: Adding ControlKey block...")
         keyblock = ControlKeyBlock.new(
             old_keys=ctrl_keys,
             new_keys=ctrl_keys,
@@ -183,7 +190,7 @@ class DidManager(GenericDidManager):
             topics=[WALYTIS_BLOCK_TOPIC, keyblock.walytis_block_topic],
         )
 
-        # logger.debug("DM: Adding DID-Doc block...")
+        logger.debug("DM: Adding DID-Doc block...")
         did = did_from_blockchain_id(blockchain.blockchain_id)
         did_doc = {"id": did}
         did_doc_block = DidDocBlock.new(did_doc)
@@ -192,15 +199,14 @@ class DidManager(GenericDidManager):
             did_doc_block.generate_block_content(),
             [WALYTIS_BLOCK_TOPIC, did_doc_block.walytis_block_topic],
         )
-        # logger.debug("DM: Instantiating...")
+        logger.debug("DM: Instantiating...")
 
-        blockchain.terminate()
         blockchain.terminate()
         did_manager = cls(
             key_store=key_store, other_blocks_handler=other_blocks_handler
         )
 
-        # logger.debug("DM: created DID-Manager!")
+        logger.debug("DM: created DID-Manager!")
         return did_manager
 
     @classmethod

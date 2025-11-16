@@ -1,4 +1,5 @@
 from threading import Thread
+import pytest
 import json
 import os
 import shutil
@@ -24,6 +25,7 @@ from walytis_identities.key_store import KeyStore
 from walytis_identities.utils import logger
 from walytis_identities.log import (
     logger_datatr,
+    logger_dm,
     logger_gdm_join,
     file_handler,
     logger_gdm,
@@ -32,6 +34,7 @@ import logging
 
 logger_gdm.setLevel(logging.DEBUG)
 # logger_datatr.setLevel(logging.DEBUG)
+logger_dm.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
@@ -119,7 +122,7 @@ def test_create_identity_and_invitation():
     sleep(5)  # wait for GDMs to load in docker
 
 
-def test_add_member_identity():
+def test_member_joined():
     """Test that a new member can be added to an existing group DID manager."""
     peer_id = shared_data.containers[0].ipfs_id
     multi_addrs = shared_data.containers[0].get_multi_addrs()
@@ -139,20 +142,16 @@ def test_add_member_identity():
     logger.debug("Creating member...")
     member = DidManager.create(shared_data.group_2_config_dir)
     logger.debug("GDM Joining...")
-    try:
-        shared_data.group_2 = GroupDidManager.join(
+    shared_data.group_2 = GroupDidManager.join(
             invitation, group_keystore, member
         )
-    except Exception as e:
-        logger.error(e)
-        raise e
     shared_data.group_2_did = shared_data.group_2.member_did_manager.did
 
     # wait a short amount to allow the docker container to learn of the new member
     polite_wait(JOIN_DUR)
 
     sleep(5)  # wait for GDMs terminate in docker
-    print("Adding member on docker...")
+    print("Checking new member on docker...")
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
@@ -170,6 +169,8 @@ def test_add_member_identity():
 
 
 def test_get_control_key():
+    if not shared_data.group_2:
+        pytest.skip("Test aborted due to previoud failures.")
     # create an GroupDidManager object to run on the docker container in the
     # background to handle a key request from shared_data.group_2
     # python_code = "\n".join(
@@ -194,6 +195,8 @@ def test_get_control_key():
 
 
 def test_renew_control_key():
+    if not shared_data.group_2:
+        pytest.skip("Test aborted due to previoud failures.")
     old_keys = shared_data.group_2.get_control_keys()
     python_code = "\n".join(
         [
