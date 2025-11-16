@@ -11,16 +11,11 @@ def test_invitation_code():
     invitation_code = invitation_manager.generate_code()
     invitation_code2 = InvitationCode.deserialise(invitation_code.serialise())
     assert (
-        invitation_code2.key.get_public_key()
-        == invitation_code.key.get_public_key()
-        and invitation_code2.key.family == invitation_code.key.family
+        invitation_code2.key.get_id() == invitation_code.key.get_id()
         and invitation_code2.ipfs_id == invitation_code.ipfs_id
         and invitation_code2.ipfs_addresses == invitation_code.ipfs_addresses
     ), "InvitationCode Serialisation"
-    assert (
-        invitation_code2.key.get_public_key()
-        == invitation_manager.key.get_public_key()
-    )
+    assert invitation_code2.key.get_id() == invitation_manager.key.get_id()
     invitation_manager.terminate()
 
 

@@ -115,7 +115,7 @@ def test_create_identity_and_invitation():
             python_code, print_output=True, background=False, timeout=JOIN_DUR
         )
 
-    Thread(target=run_on_docker).start()
+    Thread(target=run_on_docker, name="docker_create_identity_and_invitation").start()
     sleep(5)  # wait for GDMs to load in docker
 
 
@@ -136,9 +136,10 @@ def test_add_member_identity():
         os.path.join(shared_data.group_2_config_dir, "group_2.json"),
         shared_data.KEY,
     )
+    logger.debug("Creating member...")
     member = DidManager.create(shared_data.group_2_config_dir)
+    logger.debug("GDM Joining...")
     try:
-        logger.debug("GDM Joining...")
         shared_data.group_2 = GroupDidManager.join(
             invitation, group_keystore, member
         )
@@ -209,7 +210,7 @@ def test_renew_control_key():
             python_code, background=False, print_output=True
         )
 
-    Thread(target=docker_renew_keys).start()
+    Thread(target=docker_renew_keys, name="docker_renew_keys").start()
     print("Waiting for key sharing...")
     polite_wait(SHARE_DUR)
     new_keys = shared_data.group_2.get_control_keys()

@@ -1,8 +1,7 @@
-from .key_objects import Key
+from .key_objects import KeyGroup
 from ipfs_tk_transmission import Conversation
 from walytis_identities.key_store import CodePackage
 from .utils import generate_random_string
-from multi_crypt import Crypt
 import json
 from walytis_beta_embedded import ipfs
 from typing import Callable
@@ -14,13 +13,12 @@ from walytis_beta_api._experimental.generic_blockchain import (
 )
 from .log import logger_datatr as logger
 import json
+from .did_manager import CTRL_KEY_FAMILIES
 
 from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
 
 COMMS_TIMEOUT_S = 30
 CHALLENGE_STRING_LENGTH = 200
-
-SESSION_KEY_FAMILY = "EC-secp256k1"
 
 
 def listen_for_conversations(
@@ -29,15 +27,15 @@ def listen_for_conversations(
     def handle_join_request(conv_name, peer_id, salutation_start):
         logger.debug("Received join request")
         salutation = json.loads(salutation_start.decode())
-        their_one_time_key = Crypt.deserialise(salutation["one_time_key"])
-        our_one_time_key = Crypt.new(SESSION_KEY_FAMILY)
+        their_one_time_key = KeyGroup.from_id(salutation["one_time_key"])
+        our_one_time_key = KeyGroup.create(CTRL_KEY_FAMILIES)
         their_challenge = salutation["challenge_data"]
         data = handle_challenge(gdm, their_challenge)
         our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
         data.update(
             {
                 # "member_did": gdm.member_did_manager.did,
-                "one_time_key": our_one_time_key.serialise_public(),
+                "one_time_key": our_one_time_key.get_id(),
                 "challenge_data": our_challenge_data,
             }
         )
@@ -114,12 +112,12 @@ def start_conversation(
     others_req_listener: str,
 ) -> Conversation | None:
     logger.debug("Starting conversation...")
-    our_one_time_key = Crypt.new(SESSION_KEY_FAMILY)
+    our_one_time_key = KeyGroup.create(CTRL_KEY_FAMILIES)
     our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
     salutation = json.dumps(
         {
             # "member_did": gdm.member_did_manager.did,
-            "one_time_key": our_one_time_key.serialise_public(),
+            "one_time_key": our_one_time_key.get_id(),
             "challenge_data": our_challenge_data,
         }
     ).encode()
@@ -156,7 +154,7 @@ def start_conversation(
             conv.close()
             raise HandshakeFailed()
     member = gdm.get_members_dict()[salutation_join["member_did"]]
-    their_one_time_key = Crypt.deserialise(salutation_join["one_time_key"])
+    their_one_time_key = KeyGroup.from_id(salutation_join["one_time_key"])
 
     group_key_proof = CodePackage.deserialise(
         salutation_join["group_key_proof"]
@@ -186,9 +184,9 @@ def start_conversation(
 
 def encrypt(
     plaintext: bytearray,
-    group_key: Key,
-    member_key: Key,
-    one_time_key: Crypt,
+    group_key: KeyGroup,
+    member_key: KeyGroup,
+    one_time_key: KeyGroup,
 ) -> bytearray:
     logger.debug("Encrypting content...")
 
@@ -210,7 +208,7 @@ def encrypt(
 
 
 def decrypt(
-    cipher: bytearray, gdm: "GroupDidManager", one_time_key: Crypt
+    cipher: bytearray, gdm: "GroupDidManager", one_time_key: KeyGroup
 ) -> bytearray:
     logger.debug("Decrypting content...")
 
@@ -265,9 +263,6 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
         return False
 
     # logger.debug(member_key_proof.public_key.hex())
-    # logger.debug(
-    #     [key.get_public_key_str() for key in member._get_member_control_keys()]
-    # )
     logger.debug(member._get_control_key_age(member_key.get_id()))
     logger.debug(member.is_control_key_active(member_key.get_id()))
     if not member.is_control_key_active(member_key.get_id()):

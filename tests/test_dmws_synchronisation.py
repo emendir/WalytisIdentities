@@ -23,7 +23,18 @@ from walid_docker.walid_docker import (
     delete_containers,
 )
 
-from walytis_identities.utils import logger
+from walytis_identities.log import (
+    logger_dmws as logger,
+    file_handler,
+    console_handler,
+    logger_gdm_join,
+)
+import logging
+
+file_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.DEBUG)
+logger_gdm_join.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
@@ -219,8 +230,6 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
 
     if len(docker_lines) < 2:
         assert False, function_name()
-
-        return None
 
     last_line = docker_lines[-1] if len(docker_lines) > 0 else None
 

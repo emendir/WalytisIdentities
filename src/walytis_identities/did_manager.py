@@ -3,6 +3,7 @@
 Doesn't include machinery for managing other members.
 """
 
+from hashlib import sha256
 import os
 from collections.abc import Generator
 from typing import Callable, TypeVar
@@ -41,7 +42,7 @@ from .log import logger_dm as logger
 DID_METHOD_NAME = "walytisidentities"
 
 CRYPTO_FAMILY = "EC-secp256k1"
-CTRL_KEY_FAMILIES = ["EC-secp256k1", "PQ-ML-KEM-768-ML-DSA-65"]
+CTRL_KEY_FAMILIES = ["EC-secp256k1"]
 
 _DidManager = TypeVar("_DidManager", bound="DidManager")
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
@@ -155,7 +156,9 @@ class DidManager(GenericDidManager):
         # logger.debug("DM: Creating Blockchain...")
 
         blockchain_id = create_blockchain(
-            blockchain_name=f"WalID-{ctrl_keys.keys[0].get_public_key()}",
+            blockchain_name=f"WalID-{
+                sha256(ctrl_keys.keys[0].get_id().encode()).hexdigest()
+            }",
         )
 
         key_store = cls.assign_keystore(key_store, blockchain_id)

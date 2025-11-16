@@ -40,7 +40,7 @@ logger_gdm_join.setLevel(logging.DEBUG)
 
 walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0.1
 JOIN_DUR = 10
-SHARE_DUR = 20
+SHARE_DUR = 15
 
 
 class SharedData:

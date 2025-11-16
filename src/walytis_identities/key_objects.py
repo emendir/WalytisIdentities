@@ -57,6 +57,10 @@ class GenericKey(ABC):
     ) -> dict:
         pass
 
+    @abstractmethod
+    def clone_public(self):
+        pass
+
 
 @dataclass
 class Key(Crypt, GenericKey):
@@ -215,6 +219,9 @@ class Key(Crypt, GenericKey):
             "creation_time": time_to_string(self.creation_time),
         }
 
+    def clone_public(self):
+        return Key.from_id(self.get_id())
+
     def is_unlocked(self) -> bool:
         if self.private_key:
             return True
@@ -254,9 +261,6 @@ class Key(Crypt, GenericKey):
             creation_time=string_to_time(data["creation_time"]),
         )
 
-    def get_public_key(self) -> str:
-        return self.public_key.hex()
-
     def get_private_key(self) -> str:
         if not self.private_key:
             raise ValueError("This key's private key hasn't been defined")
@@ -267,14 +271,6 @@ class Key(Crypt, GenericKey):
             family=self.family,
             creation_time=self.creation_time,
             public_key=self.public_key,
-        )
-
-    def clone_public(self) -> "Key":
-        return Key(
-            public_key=self.public_key,
-            private_key=None,
-            family=self.family,
-            creation_time=self.creation_time,
         )
 
     def __str__(self):
@@ -311,7 +307,8 @@ class KeyGroup(GenericKey):
 
     def get_id(self) -> str:
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
-        return "|".join(self.get_ids())
+        # leading "|" to ensure that key-groups with 1 key are recognised as KeyGroup objects
+        return "|" + "|".join(self.get_ids())
 
     def get_keys(self) -> list[Key]:
         assert len(self.keys) > 0, "Error: This GroupKey has 0 keys."
@@ -415,6 +412,9 @@ class KeyGroup(GenericKey):
             ]
         )
 
+    def clone_public(self):
+        return KeyGroup.from_id(self.get_id())
+
     def generate_key_specs(self, controller: str) -> list[dict]:
         """Generate a key spec for a DID document."""
         return [key.generate_key_spec(controller) for key in self.keys]
@@ -425,7 +425,8 @@ class KeyGroup(GenericKey):
 
 
 def decode_keygroup_id(group_key_id: str) -> list[str]:
-    return group_key_id.split("|")
+    # take account for leading "|"
+    return [x for x in group_key_id.split("|") if x]
 
 
 _CodePackage = TypeVar("_CodePackage", bound="CodePackage")

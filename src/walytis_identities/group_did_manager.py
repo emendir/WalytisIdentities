@@ -2,7 +2,7 @@
 
 from hashlib import sha256
 from . import settings
-from .datatransmission import COMMS_TIMEOUT_S, SESSION_KEY_FAMILY
+from .datatransmission import COMMS_TIMEOUT_S
 from .utils import string_to_time
 from .key_store import CodePackage
 from ipfs_tk_transmission import Conversation
@@ -128,10 +128,10 @@ class Member:
         did_doc = get_latest_did_doc(self.blockchain)
         return did_doc
 
-    def _get_member_control_key(self) -> Key:
+    def _get_member_control_key(self) -> KeyGroup:
         return get_latest_control_key(self.blockchain)
 
-    def _get_member_control_keys(self) -> list[Key]:
+    def _get_member_control_keys(self) -> list[KeyGroup]:
         return get_control_keys_history(self.blockchain)
 
     def _get_control_key_age(self, key_id: str) -> int:
@@ -351,7 +351,7 @@ class _GroupDidManager(DidManager):
             f"member_invitations-{self.blockchain.blockchain_id}.json",
         )
 
-    def load_invitation(self, key: Key) -> dict:
+    def load_invitation(self, key: KeyGroup) -> dict:
         """Create and register a member invitation on the blockchain."""
         invitation = InvitationManager(self, key)
         self.member_invitations.append(invitation)
@@ -873,7 +873,7 @@ class GroupDidManager(_GroupDidManager):
             ipfs_ids.update(member._get_member_ipfs_ids())
         return set(ipfs_ids)
 
-    def publish_key_ownership(self, key: Key) -> None:
+    def publish_key_ownership(self, key: KeyGroup) -> None:
         """Publish a public key and proof that we have it's private key."""
         key_ownership = {
             "owner": self.member_did_manager.did,
@@ -951,7 +951,7 @@ class GroupDidManager(_GroupDidManager):
                 conv.terminate()
             logger_ckm.stop_recording("KEY_REQUESTS_HANDLER")
 
-    def get_member_control_key(self, did: str) -> Key:
+    def get_member_control_key(self, did: str) -> KeyGroup:
         """Get the DID control key of another member."""
         members = [
             member for member in self.get_members() if member.did == did
@@ -983,7 +983,9 @@ class GroupDidManager(_GroupDidManager):
         member = members[0]
         return member._get_member_did_doc()
 
-    def request_key(self, key_id: str, other_member_did: str) -> Key | None:
+    def request_key(
+        self, key_id: str, other_member_did: str
+    ) -> KeyGroup | None:
         """Request a key from another member."""
         key_request_message = {
             "key_id": key_id,
