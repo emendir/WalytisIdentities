@@ -17,7 +17,12 @@ To achieve this goal in a sustainably secure fashion, WalytisIdentities' core ta
 - fully peer-to-peer: no servers of any kind involved
 - multi-controller support: a Walytis Identity can be managed by any number of controllers
 - identity nesting: Walytis Identities can be controlled by other Walytis Identities
-- ephemeral cryptography: regular key renewal, algorithm-agnostic, room for future algorithms
+- secure data transmission
+- cryptography:
+	- key rotation
+	- hybrid cryptography combining classical and post-quantum algorithms
+	- cryptographic agility (upgradable to novel algorithms)
+	- perfect forward and backward secrecy for transmissions
 
 _See [Related Projects](#Related%20Projects) if this isn't quite what you're looking for!_
 
