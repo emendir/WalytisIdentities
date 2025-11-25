@@ -161,9 +161,10 @@ class DidManager(GenericDidManager):
         logger.debug("DM: Creating Blockchain...")
 
         blockchain_id = create_blockchain(
-            blockchain_name=f"WalID-{
-                sha256(ctrl_keys.keys[0].get_id().encode()).hexdigest()
-            }",
+            blockchain_name=(
+                f"WalID-"
+                f"{sha256(ctrl_keys.keys[0].get_id().encode()).hexdigest()}"
+            ),
         )
 
         logger.debug("Creating key store...")

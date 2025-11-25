@@ -1007,9 +1007,8 @@ class GroupDidManager(_GroupDidManager):
                 continue
             count += 1
             logger_ckm.debug(
-                f"RK: Requesting key from {other_member_did} for {
-                    key_id[:30]
-                }..."
+                f"RK: Requesting key from {other_member_did} for "
+                f"{key_id[:30]}..."
             )
 
             # collect debug logs in case we encounter error
@@ -1451,9 +1450,12 @@ class JoinProcess:
 
             # talk to peer, get data
             logger_gdm_join.debug("Contacting peer...")
-            others_req_listener = f"WaliInvite-{
-                sha256(self.invitation_code.key.get_id().encode()).hexdigest()
-            }"
+            others_req_listener = (
+                f"WaliInvite-"
+                + sha256(
+                    self.invitation_code.key.get_id().encode()
+                ).hexdigest()
+            )
             logger_gdm_join.debug(f"Contacting peer at {others_req_listener}")
             logger.debug(self.invitation_code.key.get_id())
             keys_data = None
@@ -1476,11 +1478,9 @@ class JoinProcess:
                 conv = ipfs.start_conversation(
                     conv_name=(
                         f"WalidJoin-"
-                        f"{
-                            sha256(
-                                self.invitation_code.key.get_id().encode()
-                            ).hexdigest()
-                        }"
+                        + sha256(
+                            self.invitation_code.key.get_id().encode()
+                        ).hexdigest()
                     ),
                     peer_id=self.invitation_code.ipfs_id,
                     others_req_listener=others_req_listener,

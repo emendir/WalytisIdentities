@@ -5,6 +5,7 @@ Runs automatically when pytest runs a test before loading the test module.
 
 import logging
 import os
+import sys
 
 import pytest
 from emtest import (
@@ -34,6 +35,9 @@ add_path_to_python(SRC_DIR)
 def pytest_configure(config):
     """Make changes to pytest's behaviour."""
     configure_pytest_reporter(config, print_errors=PRINT_ERRORS)
+    terminal = config.pluginmanager.get_plugin("terminalreporter")
+    if terminal:
+        terminal.write_line(f"Python {sys.version.split(' ')[0]}")
 
 
 if True:

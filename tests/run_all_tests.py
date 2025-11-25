@@ -14,7 +14,7 @@ pytest_args = sys.argv[1:]
 def run_tests() -> None:
     """Run each test file with pytest."""
     pytest_args = sys.argv[1:]
-    os.system(f"pytest {WORKDIR} {' '.join(pytest_args)}")
+    os.system(f"{sys.executable} -m pytest {WORKDIR} {' '.join(pytest_args)}")
 
 
 print("Restarting Brenthy...")
