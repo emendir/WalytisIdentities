@@ -3,7 +3,11 @@
 from .utils import generate_random_string
 from hashlib import sha256
 from . import settings
-from .datatransmission import COMMS_TIMEOUT_S
+from .datatransmission import (
+    COMMS_TIMEOUT_S,
+    ChallengeFailedError,
+    HandshakeFailedError,
+)
 from .utils import string_to_time
 from .key_store import CodePackage
 from ipfs_tk_transmission import Conversation
@@ -74,6 +78,7 @@ from .settings import (
     CTRL_KEY_MGMT_PERIOD,
 )
 from .utils import validate_did_doc
+from ipfs_tk_transmission.errors import PeerNotFound as PeerNotFoundError
 
 random.seed(datetime.now(UTC).microsecond)
 
@@ -111,6 +116,9 @@ class Member:
     @property
     def blockchain(self):
         print("DEPRECATED: Member.blockchain")
+        import traceback
+
+        print("    ".join(traceback.format_stack()))
         return self.get_blockchain()
 
     def get_blockchain(self) -> Blockchain:
@@ -134,14 +142,14 @@ class Member:
     def _get_member_did_doc(
         self,
     ) -> dict:
-        did_doc = get_latest_did_doc(self.blockchain)
+        did_doc = get_latest_did_doc(self.get_blockchain())
         return did_doc
 
     def _get_member_control_key(self) -> KeyGroup:
-        return get_latest_control_key(self.blockchain)
+        return get_latest_control_key(self.get_blockchain())
 
     def _get_member_control_keys(self) -> list[KeyGroup]:
-        return get_control_keys_history(self.blockchain)
+        return get_control_keys_history(self.get_blockchain())
 
     def _get_control_key_age(self, key_id: str) -> int:
         return get_control_key_age(self.get_blockchain(), key_id)
@@ -1432,7 +1440,9 @@ class JoinProcess:
             logger_gdm_join.debug("Finding peer...")
             ipfs_join_threads: list[Thread] = []
             for i, addr in enumerate(self.invitation_code.ipfs_addresses):
-                logger.debug(f"{addr}/p2p/{self.invitation_code.ipfs_id}")
+                logger_gdm_join.debug(
+                    f"{addr}/p2p/{self.invitation_code.ipfs_id}"
+                )
                 thr = Thread(
                     target=ipfs.peers.connect,
                     args=(f"{addr}/p2p/{self.invitation_code.ipfs_id}",),
@@ -1445,7 +1455,9 @@ class JoinProcess:
             if not ipfs.peers.is_connected(
                 self.invitation_code.ipfs_id, ping_count=1
             ):
-                return
+                logger_gdm_join.debug("Couldn't find peer.")
+                logger_gdm_join.debug(self.invitation_code.ipfs_id)
+                raise PeerNotFoundError
             self.peer_found.set()
 
             # talk to peer, get data
@@ -1500,7 +1512,7 @@ class JoinProcess:
                         "Failed to verify that our peer is the author of this invitaion."
                     )
                     conv.terminate()
-                    return
+                    raise ChallengeFailedError()
 
                 def encrypt(data):
                     return their_key.encrypt(data)
@@ -1531,7 +1543,7 @@ class JoinProcess:
                     logger_gdm_join.debug("GJT: FAILED TRANSMISSION")
 
             if not (blockchain_data and keys_data):
-                return
+                raise HandshakeFailedError()
 
             self.data_received.set()
 
@@ -1582,16 +1594,16 @@ class JoinProcess:
         finally:
             if not self.peer_found.is_set():
                 self.error_message = "Peer not found."
-                self.peer_found.set()
             elif not self.data_received.is_set():
                 self.error_message = "Failed to negotiate with peer."
-                self.data_received.set()
             elif not self.joined_blockchain.is_set():
                 self.error_message = "Failed to join blockchain."
-                self.joined_blockchain.set()
             elif not self.joined.is_set():
                 self.error_message = "Failed to load Group-DID-Manager."
-                self.joined.set()
+            self.peer_found.set()
+            self.data_received.set()
+            self.joined_blockchain.set()
+            self.joined.set()
 
 
 class InvitationManager:

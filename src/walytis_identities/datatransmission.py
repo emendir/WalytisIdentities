@@ -107,11 +107,12 @@ def listen_for_conversations(
             logger.error(f"Error in Datatransmission handshake: {e}")
             if conv:
                 conv.terminate()
-
-        try:
-            eventhandler(conv)
-        finally:
-            conv.terminate()
+            conv = None
+        if conv:
+            try:
+                eventhandler(conv)
+            finally:
+                conv.terminate()
 
     def _handle_join_request(conv_name, peer_id, salutation_start):
         try:
