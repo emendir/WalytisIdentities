@@ -50,10 +50,16 @@ def prepare():
 
 
 def cleanup():
-    if shared_data.super:
-        shared_data.super.delete()
-    if shared_data.dm:
-        shared_data.dm.delete()
+    try:
+        if shared_data.super:
+            shared_data.super.delete()
+    except:
+        pass
+    try:
+        if shared_data.dm:
+            shared_data.dm.delete()
+    except:
+        pass
     if os.path.exists(dm_config_dir):
         shutil.rmtree(dm_config_dir)
     cleanup_walytis_ipfs()

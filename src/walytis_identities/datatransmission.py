@@ -104,7 +104,9 @@ def listen_for_conversations(
                 return
             logger.debug("Starting joined converstation.")
         except Exception as e:
-            logger.error(f"Error in Datatransmission handshake: {e}")
+            logger.error(
+                f"Error in Datatransmission handshake: {type(e)}: {e}"
+            )
             if conv:
                 conv.terminate()
             conv = None
@@ -210,7 +212,7 @@ def start_conversation(
         conv.say(b"Ready")
         logger.debug("Starting conversation.")
     except Exception as e:
-        logger.error(f"Error in Datatransmission handshake: {e}")
+        logger.error(f"Error in Datatransmission handshake: {type(e)}: {e}")
         if conv:
             conv.terminate()
         raise HandshakeFailedError(e)

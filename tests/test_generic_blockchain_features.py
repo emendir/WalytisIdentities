@@ -14,33 +14,41 @@ from walytis_identities.key_store import KeyStore
 
 
 class SharedData:
-    def __init__(self):
-        """Setup resources in preparation for tests."""
-        # declare 'global' variables
-        self.person_config_dir = tempfile.mkdtemp()
-        self.person_config_dir2 = tempfile.mkdtemp()
-        self.key_store_path = os.path.join(
-            self.person_config_dir, "master_keystore.json"
-        )
-        # the cryptographic family to use for the tests
-        self.CRYPTO_FAMILY = "EC-secp256k1"
-        self.KEY = Key.create(self.CRYPTO_FAMILY)
-        device_keystore_path = os.path.join(
-            self.person_config_dir, "device_keystore.json"
-        )
-        profile_keystore_path = os.path.join(
-            self.person_config_dir, "profile_keystore.json"
-        )
-        self.device_did_keystore = KeyStore(device_keystore_path, self.KEY)
-        self.profile_did_keystore = KeyStore(profile_keystore_path, self.KEY)
-        self.member_1 = DidManager.create(self.device_did_keystore)
-        self.group_1 = GroupDidManager.create(
-            self.profile_did_keystore, self.member_1
-        )
-        self.group_1.terminate()
+    member_1: DidManager
+    group_1: GroupDidManager
 
 
 shared_data = SharedData()
+
+
+def test_preparations():
+    """Setup resources in preparation for tests."""
+    # declare 'global' variables
+    shared_data.person_config_dir = tempfile.mkdtemp()
+    shared_data.person_config_dir2 = tempfile.mkdtemp()
+    shared_data.key_store_path = os.path.join(
+        shared_data.person_config_dir, "master_keystore.json"
+    )
+    # the cryptographic family to use for the tests
+    shared_data.CRYPTO_FAMILY = "EC-secp256k1"
+    shared_data.KEY = Key.create(shared_data.CRYPTO_FAMILY)
+    device_keystore_path = os.path.join(
+        shared_data.person_config_dir, "device_keystore.json"
+    )
+    profile_keystore_path = os.path.join(
+        shared_data.person_config_dir, "profile_keystore.json"
+    )
+    shared_data.device_did_keystore = KeyStore(
+        device_keystore_path, shared_data.KEY
+    )
+    shared_data.profile_did_keystore = KeyStore(
+        profile_keystore_path, shared_data.KEY
+    )
+    shared_data.member_1 = DidManager.create(shared_data.device_did_keystore)
+    shared_data.group_1 = GroupDidManager.create(
+        shared_data.profile_did_keystore, shared_data.member_1
+    )
+    shared_data.group_1.terminate()
 
 
 def cleanup() -> None:

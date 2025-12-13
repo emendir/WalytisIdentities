@@ -1473,6 +1473,7 @@ class JoinProcess:
             keys_data = None
             blockchain_data = None
             conv = None
+            handshake_error = None
             try:
                 # START HANDSHAKE -----------------------
                 our_challenge_data = generate_random_string(
@@ -1533,8 +1534,12 @@ class JoinProcess:
                     no_coms_timeout=COMMS_TIMEOUT_S
                 )["filepath"]
                 conv.terminate()
-            except (CommunicationTimeout, ConvListenTimeout):
-                pass
+                if not (blockchain_data and keys_data):
+                    raise HandshakeFailedError(
+                        "Completed handshake, but data was empty."
+                    )
+            except (CommunicationTimeout, ConvListenTimeout) as e:
+                handshake_error = e
             finally:
                 if conv:
                     logger_gdm_join.debug("GJT: CLOSING TRANSMISSION")
@@ -1543,7 +1548,7 @@ class JoinProcess:
                     logger_gdm_join.debug("GJT: FAILED TRANSMISSION")
 
             if not (blockchain_data and keys_data):
-                raise HandshakeFailedError()
+                raise HandshakeFailedError(handshake_error)
 
             self.data_received.set()
 
@@ -1588,7 +1593,6 @@ class JoinProcess:
             logger_gdm_join.debug("Joined GroupDidManager!")
             self.joined.set()
         except Exception as e:
-            logger_gdm_join.error("HERE")
             logger_gdm_join.error(e)
             logger_gdm_join.error(traceback.format_exc())
         finally:
@@ -1740,6 +1744,7 @@ class InvitationManager:
                 if not addr.startswith("/dns")
                 and "127.0.0.1" not in addr
                 and "webrtc" not in addr
+                and "certhash" not in addr
             ],
         )
 

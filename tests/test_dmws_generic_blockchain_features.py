@@ -21,58 +21,66 @@ from walytis_identities.key_store import KeyStore
 
 
 class SharedData:
-    def __init__(self):
-        """Setup resources in preparation for tests."""
-        # declare 'global' variables
-        self.profile_config_dir = tempfile.mkdtemp()
-        self.key_store_path = os.path.join(
-            self.profile_config_dir, "master_keystore.json"
-        )
-
-        # the cryptographic family to use for the tests
-        self.CRYPTO_FAMILY = "EC-secp256k1"
-        self.KEY = Key.create(self.CRYPTO_FAMILY)
-
-        config_dir = self.profile_config_dir
-        key = self.KEY
-
-        device_keystore_path = os.path.join(config_dir, "device_keystore.json")
-        profile_keystore_path = os.path.join(
-            config_dir, "profile_keystore.json"
-        )
-
-        self.device_did_keystore = KeyStore(device_keystore_path, key)
-        self.profile_did_keystore = KeyStore(profile_keystore_path, key)
-        self.device_did_manager = DidManager.create(self.device_did_keystore)
-        self.dmws_did_manager = GroupDidManager.create(
-            self.profile_did_keystore, self.device_did_manager
-        )
-        self.dmws_did_manager.terminate()
-        self.group_did_manager = GroupDidManager(
-            self.profile_did_keystore,
-            self.device_did_manager,
-            auto_load_missed_blocks=False,
-        )
-        dmws = DidManagerWithSupers(
-            did_manager=self.group_did_manager,
-        )
-
-        self.dmws = dmws
-        self.super = self.dmws.create_super()
-        sleep(1)
-        self.dmws.terminate()
+    profile_config_dir: str
+    key_store_path: str
+    CRYPTO_FAMILY: str
+    KEY: str
+    device_did_keystore: KeyStore
+    profile_did_keystore: KeyStore
+    device_did_manager: DidManager
+    dmws_did_manager: GroupDidManager
+    group_did_manager: GroupDidManager
+    dmws: DidManagerWithSupers
+    super: GroupDidManager
 
 
 shared_data = SharedData()
 
 
-def test_profile():
-    print("Running test for DidManagerWithSupers...")
+def test_preparations():
+    """Setup resources in preparation for tests."""
+    # declare 'global' variables
+    shared_data.profile_config_dir = tempfile.mkdtemp()
+    shared_data.key_store_path = os.path.join(
+        shared_data.profile_config_dir, "master_keystore.json"
+    )
+
+    # the cryptographic family to use for the tests
+    shared_data.CRYPTO_FAMILY = "EC-secp256k1"
+    shared_data.KEY = Key.create(shared_data.CRYPTO_FAMILY)
+
+    config_dir = shared_data.profile_config_dir
+    key = shared_data.KEY
+
+    device_keystore_path = os.path.join(config_dir, "device_keystore.json")
+    profile_keystore_path = os.path.join(config_dir, "profile_keystore.json")
+
+    shared_data.device_did_keystore = KeyStore(device_keystore_path, key)
+    shared_data.profile_did_keystore = KeyStore(profile_keystore_path, key)
+
+    shared_data.device_did_manager = DidManager.create(
+        shared_data.device_did_keystore
+    )
+    dmws_did_manager = GroupDidManager.create(
+        shared_data.profile_did_keystore, shared_data.device_did_manager
+    )
+    dmws_did_manager.terminate()
     shared_data.group_did_manager = GroupDidManager(
         shared_data.profile_did_keystore,
         shared_data.device_did_manager,
         auto_load_missed_blocks=False,
     )
+    shared_data.dmws = DidManagerWithSupers(
+        did_manager=shared_data.group_did_manager,
+    )
+
+    shared_data.super = shared_data.dmws.create_super()
+    sleep(1)
+    shared_data.dmws.terminate()
+
+
+def test_profile():
+    print("Running test for DidManagerWithSupers...")
     dmws = generic_blockchain_testing.run_generic_blockchain_test(
         DidManagerWithSupers, did_manager=shared_data.group_did_manager
     )
@@ -92,14 +100,33 @@ def test_super():
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
     cleanup_walytis_ipfs()
-    if shared_data.dmws:
-        shared_data.dmws.delete()
+    try:
+        if shared_data.super:
+            shared_data.super.terminate()
+            shared_data.super.delete()
+    except:
+        pass
+
+    try:
+        if shared_data.dmws:
+            shared_data.dmws.terminate()
+            shared_data.dmws.delete()
+    except:
+        pass
+
+    try:
+        if shared_data.group_did_manager:
+            shared_data.group_did_manager.terminate()
+            shared_data.group_did_manager.delete()
+    except:
+        pass
+
+    try:
+        if shared_data.device_did_manager:
+            shared_data.device_did_manager.terminate()
+            shared_data.device_did_manager.delete()
+    except:
+        pass
     if os.path.exists(shared_data.profile_config_dir):
         shutil.rmtree(shared_data.profile_config_dir)
-    if shared_data.group_did_manager:
-        shared_data.group_did_manager.terminate()
-    if shared_data.super:
-        shared_data.super.terminate()
-    if shared_data.dmws:
-        shared_data.dmws.terminate()
     assert await_thread_cleanup(timeout=10)
