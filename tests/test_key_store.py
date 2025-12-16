@@ -79,6 +79,26 @@ def test_reopen_keystore():
     ), "reopen keystore"
 
 
+def test_keystore_from_keystore():
+    """Test that a key store can be loaded passing a keystore instead of a key"""
+    # create parent KeyStore
+    parent_keystore = KeyStore(shared_data.key_store_path, shared_data.KEY)
+    key = parent_keystore.add_key(Key.create(shared_data.CRYPTO_FAMILY))
+    assert isinstance(key, Key)
+
+    # create child KeyStore
+    tempdir = tempfile.mkdtemp()
+    key_store_path = os.path.join(tempdir, "keystore.json")
+    child_keystore = KeyStore(key_store_path, key)
+    child_key = child_keystore.add_key(Key.create(shared_data.CRYPTO_FAMILY))
+    child_keystore.terminate()
+
+    # reload KeyStore
+    reloaded_keystore = KeyStore(key_store_path, parent_keystore)
+    reloaded_key = reloaded_keystore.get_key(child_key.get_id())
+    assert reloaded_key.private_key == child_key.private_key
+
+
 PLAIN_TEXT = "Hello there!".encode()
 
 

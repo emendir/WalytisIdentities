@@ -22,19 +22,33 @@ from .utils import (
 from datetime import datetime
 
 
+_KeyStore = TypeVar("_KeyStore", bound="KeyStore")
+
+
 class KeyStore:
     keys: dict[str, Key]  # key_id: Key object
 
-    def __init__(self, key_store_path: str, key: Key):
+    def __init__(
+        self,
+        key_store_path: str,
+        key: Key | KeyGroup | _KeyStore,
+    ):
+        assert (
+            isinstance(key, Key)
+            or isinstance(key, KeyGroup)
+            or isinstance(key, KeyStore)
+        ), f"INITIALISING: KEY IS {type(key)}"
         self.key_store_path = key_store_path
         self.lock_file_path = key_store_path + ".lock"
-        self.key = key
         self.keys: dict[str, Key] = {}
         self._custom_metadata = {}
         self.app_lock = portalocker.Lock(self.lock_file_path)
-        self._load_appdata()
+        self._load_appdata(key)
+        assert isinstance(self.key, Key) or isinstance(self.key, KeyGroup), (
+            f"INITIALISED: KEY IS {type(key)}"
+        )
 
-    def _load_appdata(self):
+    def _load_appdata(self, _key: Key | _KeyStore):
         if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError(
                 "The directory of the keystore path doesn't exist:\n"
@@ -44,14 +58,26 @@ class KeyStore:
 
         if not os.path.exists(self.key_store_path):
             self.keys: dict[str, Key] = {}
+            if isinstance(_key, KeyStore):
+                raise ValueError(
+                    "Key must be supplied when creating a new KeyStore."
+                )
+            self.key = _key
             return
         with open(self.key_store_path, "r") as file:
             data = json.loads(file.read())
 
         appdata_encryption_public_key = data["appdata_encryption_public_key"]
-        encrypted_keys = data["keys"]
-
-        if appdata_encryption_public_key != self.key.get_id():
+        if isinstance(_key, KeyStore):
+            owner_keystore = _key
+            key = owner_keystore.get_generic_key(appdata_encryption_public_key)
+        else:
+            key = _key
+        assert isinstance(key, Key) or isinstance(key, KeyGroup), (
+            "_load_appdata: KEY IS NONE"
+        )
+        self.key = key
+        if appdata_encryption_public_key != key.get_id():
             raise ValueError(
                 "Wrong cryptographic key for unlocking keystore.\n"
                 f"{appdata_encryption_public_key}\n"
@@ -59,6 +85,7 @@ class KeyStore:
             )
 
         keys = {}
+        encrypted_keys = data["keys"]
         for encrypted_key in encrypted_keys:
             key = Key.deserialise_private_encrypted(encrypted_key, self.key)
             keys.update({key.get_id(): key})
@@ -83,6 +110,9 @@ class KeyStore:
     def save_appdata(self):
         encrypted_keys = []
         for key_id, key in list(self.keys.items()):
+            assert isinstance(self.key, Key) or isinstance(
+                self.key, KeyGroup
+            ), "SAVING: KEY IS NONE"
             encrypted_serialised_key = key.serialise_private_encrypted(
                 self.key, allow_missing_private_key=True
             )
@@ -96,10 +126,10 @@ class KeyStore:
         with open(self.key_store_path, "w+") as file:
             file.write(json.dumps(data))
 
-    def add_key(self, key: Key):
+    def add_key(self, key: Key | KeyGroup) -> Key | KeyGroup:
         if isinstance(key, KeyGroup):
-            self.add_keygroup(key)
-            return
+            return self.add_keygroup(key)
+
         key_id = key.get_id()
         if key_id not in self.keys:
             self.keys.update({key_id: key})
@@ -107,10 +137,12 @@ class KeyStore:
         elif key.private_key and not self.keys[key_id].private_key:
             self.keys[key_id].unlock(key.private_key)
             self.save_appdata()
+        return key
 
-    def add_keygroup(self, keygroup: KeyGroup) -> None:
+    def add_keygroup(self, keygroup: KeyGroup) -> KeyGroup:
         for key in keygroup.keys:
             self.add_key(key)
+        return keygroup
 
     def get_key(self, key_id: str) -> Key:
         if "|" in key_id:
@@ -233,7 +265,7 @@ class KeyStore:
         self.app_lock.release()
 
     def reload(self) -> "KeyStore":
-        self._load_appdata()
+        self._load_appdata(self.key)
         return self
 
     def clone(self, key_store_path: str, key: Key) -> "KeyStore":
