@@ -1,4 +1,4 @@
-FROM ubuntu:latest AS liboqs_build
+FROM ubuntu:noble-20251013 AS liboqs_build
 
 RUN apt update && apt install -y build-essential git python3-dev cmake libssl-dev
 
