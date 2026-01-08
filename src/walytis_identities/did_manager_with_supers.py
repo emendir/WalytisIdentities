@@ -132,11 +132,11 @@ class DidManagerWithSupers(DidManagerWrapper):
     def get_num_blocks(self) -> int:
         return self._blocks.get_num_blocks()
 
-    def get_block(self, id: bytes) -> GenericBlock:
+    def get_block(self, block_id: bytes) -> GenericBlock:
         # if index is passed instead of block_id, get block_id from index
-        if isinstance(id, int):
+        if isinstance(block_id, int):
             try:
-                id = self.get_block_ids()[id]
+                block_id = self.get_block_ids()[block_id]
             except IndexError:
                 message = (
                     "Walytis_BetaAPI.Blockchain: Get Block from index: "
@@ -144,7 +144,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 )
                 raise IndexError(message)
         else:
-            id_bytearray = bytearray(id)
+            id_bytearray = bytearray(block_id)
             len_id = len(id_bytearray)
             if (
                 bytearray([0, 0, 0, 0]) not in id_bytearray
@@ -156,11 +156,11 @@ class DidManagerWithSupers(DidManagerWrapper):
                         break
                 if not short_id:
                     raise BlockNotFoundError()
-                id = bytes(short_id)
-        if isinstance(id, bytearray):
-            id = bytes(id)
+                block_id = bytes(short_id)
+        if isinstance(block_id, bytearray):
+            block_id = bytes(block_id)
         try:
-            block = self._blocks[id]
+            block = self._blocks[block_id]
             return block
         except KeyError:
             error = BlockNotFoundError(

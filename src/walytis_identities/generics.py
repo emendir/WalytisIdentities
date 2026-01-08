@@ -63,8 +63,8 @@ class DidManagerWrapper(GenericDidManager, ABC):
     def get_num_blocks(self) -> int:
         return self.did_manager.get_num_blocks()
 
-    def get_block(self, id: bytes) -> GenericBlock:
-        return self.did_manager.get_block(id=id)
+    def get_block(self, block_id: bytes) -> GenericBlock:
+        return self.did_manager.get_block(block_id)
 
     def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
         """Encrypt the provided data using the specified public key.
@@ -209,8 +209,8 @@ class GroupDidManagerWrapper(ABC):
     def get_num_blocks(self) -> int:
         return self.did_manager.get_num_blocks()
 
-    def get_block(self, id: bytes) -> GenericBlock:
-        return self.did_manager.get_block(id=id)
+    def get_block(self, block_id: bytes) -> GenericBlock:
+        return self.did_manager.get_block(block_id)
 
     def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
         """Encrypt the provided data using the specified public key.
