@@ -71,8 +71,8 @@ clean-preview: ## Show what would be deleted by the `clean` target
 	git ls-files --ignored --exclude-from=$$tmpfile --others --directory; \
 	rm $$tmpfile
 
-# install: build ## Install on local machine
-# 	$(PIP) install $(DIST_DIR)/*.whl
+install: build ## Install on local machine
+	$(PIP) install $(DIST_DIR)/*.whl
 
 # ----------------------------
 # Documentation
@@ -82,16 +82,16 @@ clean-preview: ## Show what would be deleted by the `clean` target
 docs: ## Build/process documentation
 	$(MAKE) -C docs/_docs_tools all
 
-# # ----------------------------
-# # Release Helpers
-# # ----------------------------
-# .PHONY: dist upload
-#
-# dist: build ## List built distributions
-# 	ls -lh $(DIST_DIR)
-#
-# upload: build ## Upload package to PyPI (requires twine)
-# 	twine upload $(DIST_DIR)/*
+# ----------------------------
+# Release Helpers
+# ----------------------------
+.PHONY: dist publish
+
+dist: build ## List built distributions
+	ls -lh $(DIST_DIR)
+
+publish: build ## Upload package to PyPI (requires twine)
+	$(PYTHON) -m twine upload $(DIST_DIR)/*
 
 # ----------------------------
 # Help
