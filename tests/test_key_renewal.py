@@ -1,3 +1,6 @@
+import _auto_run_with_pytest  # noqa
+from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
+from emtest import get_pytest_report_dirs
 from threading import Thread
 import pytest
 import json
@@ -5,7 +8,6 @@ import os
 import shutil
 from time import sleep
 
-import _auto_run_with_pytest  # noqa
 from conftest import cleanup_walytis_ipfs
 import walytis_beta_api as walytis_api
 from emtest import await_thread_cleanup, env_vars, polite_wait
@@ -73,35 +75,29 @@ def test_preparations(delete_files: bool = False):
 
 N_DOCKER_CONTAINERS = 1
 
+CONTAINER_NAME_PREFIX = "test_walid_keys_"
+
 
 def test_create_docker_containers():
+    shared_data.containers: list[WalytisIdentitiesDocker] = [
+        None
+    ] * N_DOCKER_CONTAINERS
+
+    threads = []
+    delete_containers(container_name_substr=CONTAINER_NAME_PREFIX)
     for i in range(N_DOCKER_CONTAINERS):
-        shared_data.containers.append(WalytisIdentitiesDocker())
 
+        def task(number):
+            shared_data.containers[number] = WalytisIdentitiesDocker(
+                container_name=f"{CONTAINER_NAME_PREFIX}{number}"
+            )
 
-def cleanup():
-    for container in shared_data.containers:
-        container.delete()
-    if shared_data.group_2:
-        shared_data.group_2.delete()
-        # shared_data.group_2.member_did_manager.delete()
-    if shared_data.group_1:
-        shared_data.group_1.delete()
-    if shared_data.group_3:
-        shared_data.group_3.delete()
-    if shared_data.group_4:
-        shared_data.group_4.delete()
-    if shared_data.member_3:
-        shared_data.member_3.delete()
-    if shared_data.member_4:
-        shared_data.member_4.delete()
-    shutil.rmtree(shared_data.group_1_config_dir)
-    shutil.rmtree(shared_data.group_2_config_dir)
-    shutil.rmtree(shared_data.group_3_config_dir)
-    shutil.rmtree(shared_data.group_4_config_dir)
-    shutil.rmtree(os.path.dirname(shared_data.member_3_keystore_file))
-    shutil.rmtree(os.path.dirname(shared_data.member_4_keystore_file))
-    cleanup_walytis_ipfs()
+        thread = Thread(target=task, args=(i,))
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()
+    print("Set up docker containers.")
 
 
 def test_create_identity_and_invitation():
@@ -120,7 +116,9 @@ def test_create_identity_and_invitation():
             python_code, print_output=True, background=False, timeout=JOIN_DUR
         )
 
-    Thread(target=run_on_docker, name="docker_create_identity_and_invitation").start()
+    Thread(
+        target=run_on_docker, name="docker_create_identity_and_invitation"
+    ).start()
     sleep(5)  # wait for GDMs to load in docker
 
 
@@ -145,8 +143,8 @@ def test_member_joined():
     member = DidManager.create(shared_data.group_2_config_dir)
     logger.debug("GDM Joining...")
     shared_data.group_2 = GroupDidManager.join(
-            invitation, group_keystore, member
-        )
+        invitation, group_keystore, member
+    )
     shared_data.group_2_did = shared_data.group_2.member_did_manager.did
 
     # wait a short amount to allow the docker container to learn of the new member
@@ -224,7 +222,37 @@ def test_renew_control_key():
     assert new_keys.is_unlocked()
 
 
+def test_cleanup(request: pytest.FixtureRequest) -> None:
+    """Ensure all resources used by tests are cleaned up."""
+    # get logs from, then delete containers
+    get_logs_and_delete_dockers(
+        shared_data.containers,
+        DOCKER_LOG_FILES,
+        get_pytest_report_dirs(request.config),
+    )
+
+    if shared_data.group_2:
+        shared_data.group_2.delete()
+        # shared_data.group_2.member_did_manager.delete()
+    if shared_data.group_1:
+        shared_data.group_1.delete()
+    if shared_data.group_3:
+        shared_data.group_3.delete()
+    if shared_data.group_4:
+        shared_data.group_4.delete()
+    if shared_data.member_3:
+        shared_data.member_3.delete()
+    if shared_data.member_4:
+        shared_data.member_4.delete()
+    shutil.rmtree(shared_data.group_1_config_dir)
+    shutil.rmtree(shared_data.group_2_config_dir)
+    shutil.rmtree(shared_data.group_3_config_dir)
+    shutil.rmtree(shared_data.group_4_config_dir)
+    shutil.rmtree(os.path.dirname(shared_data.member_3_keystore_file))
+    shutil.rmtree(os.path.dirname(shared_data.member_4_keystore_file))
+    cleanup_walytis_ipfs()
+
+
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
-    cleanup()
     assert await_thread_cleanup(timeout=10)

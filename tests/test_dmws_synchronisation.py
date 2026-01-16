@@ -1,9 +1,11 @@
+import _auto_run_with_pytest  # noqa
+from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
+from emtest import get_pytest_report_dirs
 import json
 import os
 import shutil
 from threading import Thread
 
-import _auto_run_with_pytest  # noqa
 from conftest import cleanup_walytis_ipfs
 import pytest
 from brenthy_docker import DockerShellError, DockerShellTimeoutError
@@ -40,7 +42,7 @@ logger.setLevel(logging.DEBUG)
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
 
-CONTAINER_NAME_PREFIX = "walytis_identities_tests_device_"
+CONTAINER_NAME_PREFIX = "walytis_identities_tests_dmws_"
 
 
 # Boilerplate python code when for running python tests in a docker container
@@ -104,7 +106,7 @@ shared_data = SharedData()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_and_teardown() -> None:
+def setup_and_teardown(request: pytest.FixtureRequest) -> None:
     """Wrap around tests, running preparations and cleaning up afterwards.
 
     A module-level fixture that runs once for all tests in this file.
@@ -117,7 +119,7 @@ def setup_and_teardown() -> None:
 
     # Teardown: code here runs after the tests
     print(f"\nFinished tests for {__name__}\n")
-    cleanup()
+    # cleanup(request)
 
 
 def prepare():
@@ -129,22 +131,6 @@ def prepare():
         build_docker_image(verbose=False)
 
     shared_data.init_dockers()
-
-
-def cleanup():
-    if os.path.exists(dm_config_dir):
-        shutil.rmtree(dm_config_dir)
-    for container in shared_data.containers:
-        try:
-            container.delete()
-        except:
-            pass
-    shared_data.containers = []
-    if shared_data.super:
-        shared_data.super.delete()
-    if shared_data.dm:
-        shared_data.dm.delete()
-    cleanup_walytis_ipfs()
 
 
 def setup_dm(docker_container: WalytisIdentitiesDocker):
@@ -585,7 +571,25 @@ def test_auto_join_super_2():
     # create second dm with multiple devices
 
 
+def test_cleanup(request: pytest.FixtureRequest) -> None:
+    """Ensure all resources used by tests are cleaned up."""
+    # get logs from, then delete containers
+    get_logs_and_delete_dockers(
+        shared_data.containers,
+        DOCKER_LOG_FILES,
+        get_pytest_report_dirs(request.config),
+    )
+
+    if os.path.exists(dm_config_dir):
+        shutil.rmtree(dm_config_dir)
+    shared_data.containers = []
+    if shared_data.super:
+        shared_data.super.delete()
+    if shared_data.dm:
+        shared_data.dm.delete()
+    cleanup_walytis_ipfs()
+
+
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
-    cleanup()
     assert await_thread_cleanup(timeout=10)

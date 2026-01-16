@@ -1,5 +1,5 @@
-from emtest import await_thread_cleanup
 import _auto_run_with_pytest  # noqa
+from emtest import await_thread_cleanup
 from conftest import cleanup_walytis_ipfs
 import os
 import shutil
@@ -20,7 +20,7 @@ shared_data = SharedData()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_and_teardown() -> None:
+def setup_and_teardown(request: pytest.FixtureRequest) -> None:
     """Wrap around tests, running preparations and cleaning up afterwards.
 
     A module-level fixture that runs once for all tests in this file.
@@ -33,7 +33,7 @@ def setup_and_teardown() -> None:
 
     # Teardown: code here runs after the tests
     print(f"\nFinished tests for {__name__}\n")
-    cleanup()
+    cleanup(request)
 
 
 def prepare():
@@ -47,7 +47,7 @@ def prepare():
     shared_data.CRYPT = Key.create(shared_data.CRYPTO_FAMILY)
 
 
-def cleanup():
+def cleanup(request: pytest.FixtureRequest):
     """Clean up resources used during tests."""
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
@@ -133,7 +133,7 @@ def test_signing():
     ), "Signature verification across key renewal works"
 
 
-def test_delete_did_manager():
+def test_delete_did_manager(request: pytest.FixtureRequest):
     blockchain_id = shared_data.did_manager.blockchain.blockchain_id
 
     shared_data.did_manager.delete()
@@ -145,5 +145,5 @@ def test_delete_did_manager():
     def test_threads_cleanup() -> None:
         """Test that no threads are left running."""
 
-    cleanup()
+    cleanup(request)
     assert await_thread_cleanup(timeout=10)

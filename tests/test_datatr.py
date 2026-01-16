@@ -1,4 +1,7 @@
 import _auto_run_with_pytest  # noqa
+import pytest
+from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
+from emtest import get_pytest_report_dirs
 from conftest import cleanup_walytis_ipfs
 from time import sleep
 from ipfs_tk_transmission.errors import CommunicationTimeout
@@ -59,7 +62,6 @@ def test_preparations():
     shared_data.containers: list[WalytisIdentitiesDocker] = []
 
 
-
 def test_create_docker_containers():
     logger.info("Creating docker containers...")
     for i in range(1):
@@ -80,17 +82,6 @@ def test_create_docker_containers():
 
     Thread(target=run_py).start()
     logger.debug("Continuing...")
-
-
-def cleanup():
-    for container in shared_data.containers:
-        container.delete()
-
-    shared_data.group_did_manager.terminate()
-    if shared_data.group_did_manager:
-        shared_data.group_did_manager.delete()
-    cleanup_walytis_ipfs()
-
 
 
 def test_load_blockchain():
@@ -154,7 +145,21 @@ def test_datatransmission():
         conv.terminate()
 
 
+def test_cleanup(request: pytest.FixtureRequest) -> None:
+    """Ensure all resources used by tests are cleaned up."""
+    # get logs from, then delete containers
+    get_logs_and_delete_dockers(
+        shared_data.containers,
+        DOCKER_LOG_FILES,
+        get_pytest_report_dirs(request.config),
+    )
+
+    shared_data.group_did_manager.terminate()
+    if shared_data.group_did_manager:
+        shared_data.group_did_manager.delete()
+    cleanup_walytis_ipfs()
+
+
 def test_threads_cleanup() -> None:
     """Test that no threads are left running."""
-    cleanup()
     assert await_thread_cleanup(timeout=10)
