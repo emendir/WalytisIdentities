@@ -20,5 +20,7 @@ __pycache__
 tests/report*
 tests/.blockchains
 tests/.ipfs_repo
+tests/walid_docker/python_packages.txt
+tests/walid_docker/python_packages
 # <<< CLEANUP
 .obsidian

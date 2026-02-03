@@ -1,4 +1,5 @@
 import _auto_run_with_pytest  # noqa
+from testing_utils import cleanup_logs
 from emtest import await_thread_cleanup
 from conftest import cleanup_walytis_ipfs
 import os
@@ -37,6 +38,7 @@ def setup_and_teardown(request: pytest.FixtureRequest) -> None:
 
 
 def prepare():
+    cleanup_logs()
     shared_data.tempdir = tempfile.mkdtemp()
     shared_data.key_store_path = os.path.join(
         shared_data.tempdir, "keystore.json"

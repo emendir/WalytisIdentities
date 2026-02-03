@@ -1168,8 +1168,7 @@ class GroupDidManager(_GroupDidManager):
                     for member in members:
                         if self._terminate:
                             return True
-                        # if member == self.member_did_manager.did:
-                        #     continue
+                        logger_ckm.debug(f"Requesting candidate key: {key_id}")
                         key = self.request_key(key_id, member)
                         if key:
                             self.candidate_keys[key_id].append(
@@ -1455,9 +1454,10 @@ class JoinProcess:
             if not ipfs.peers.is_connected(
                 self.invitation_code.ipfs_id, ping_count=1
             ):
-                logger_gdm_join.debug("Couldn't find peer.")
-                logger_gdm_join.debug(self.invitation_code.ipfs_id)
-                raise PeerNotFoundError
+                logger_gdm_join.error(
+                    f"Couldn't find peer: {self.invitation_code.ipfs_id}"
+                )
+                raise PeerNotFoundError(self.invitation_code.ipfs_id)
             self.peer_found.set()
 
             # talk to peer, get data
@@ -1545,7 +1545,7 @@ class JoinProcess:
                     logger_gdm_join.debug("GJT: CLOSING TRANSMISSION")
                     conv.terminate()
                 else:
-                    logger_gdm_join.debug("GJT: FAILED TRANSMISSION")
+                    logger_gdm_join.warning("GJT: FAILED TRANSMISSION")
 
             if not (blockchain_data and keys_data):
                 raise HandshakeFailedError(handshake_error)

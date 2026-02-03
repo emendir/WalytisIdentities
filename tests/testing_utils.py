@@ -1,3 +1,20 @@
+from walytis_identities.log import LOG_TIMESTAMP_FORMAT
+import pytest
+from walid_docker.walid_docker import (
+    WalytisIdentitiesDocker,
+    delete_containers,
+)
+from emtest import (
+    await_thread_cleanup,
+    env_vars,
+    polite_wait,
+    ensure_dir_exists,
+    get_pytest_report_dirs,
+)
+import shutil
+from datetime import datetime
+from pathlib import Path
+import os
 from datetime import datetime, UTC
 from walytis_identities.log import console_handler
 from walytis_identities.key_objects import Key
@@ -8,7 +25,20 @@ from brenthy_docker.utils import get_logs_and_delete_dockers  # noqa
 DOCKER_LOG_FILES = [
     "/opt/Brenthy/Brenthy.log",
     "/opt/Brenthy/Walytis_Beta.log",
-    "/opt/walytis_identities/tests/.walytis_identities.log",
+    "/opt/log/WalytisIdentities/WalytisIdentities.log",
+    "/opt/log/WalytisOffchain/WalytisOffchain.log",
+    "/opt/log/WalytisMutability/WalytisMutability.log",
+    "/opt/log/IPFS_TK/IPFS_TK.log",
+    "/opt/log/WalId_Tests/WalIdTests.log",
+    "/opt/log/IpfsPeersLogger/ipfs_peers_logger.log",
+]
+HOST_LOG_FILES = [
+    "/opt/log/WalytisIdentities/WalytisIdentities.log",
+    "/opt/log/WalytisOffchain/WalytisOffchain.log",
+    "/opt/log/WalytisMutability/WalytisMutability.log",
+    "/opt/log/IPFS_TK/IPFS_TK.log",
+    "/opt/log/WalId_Tests/WalIdTests.log",
+    "/opt/log/IpfsPeersLogger/ipfs_peers_logger.log",
 ]
 console_handler.setLevel(logging.DEBUG)
 
@@ -24,5 +54,102 @@ dm_config_dir = "/tmp/wali_test_dmws_synchronisation"
 
 # used for creation, first loading test, and invitation creation
 PROFILE_CREATE_TIMEOUT_S = 20
-PROFILE_JOIN_TIMEOUT_S = 40
-CORRESP_JOIN_TIMEOUT_S = 40
+PROFILE_JOIN_TIMEOUT_S = 50
+CORRESP_JOIN_TIMEOUT_S = 50
+
+
+def cleanup_logs():
+    for log_file in HOST_LOG_FILES:
+        if os.path.exists(log_file):
+            print("Removing log file", log_file)
+            os.remove(log_file)
+        else:
+            print("Log file not found", log_file)
+
+
+def copy_logs_from_starttime(
+    logfile_path: str | Path,
+    target_path: str | Path,
+    pytest_start_time: datetime,
+    timestamp_format: str,
+    timestamp_next_char: str,
+) -> Path:
+    """
+    Copy log lines from `logfile_path` starting at the first line whose
+    timestamp is >= `pytest_start_time`, then copy all remaining lines
+    verbatim into a new logfile at `target_path`.
+    """
+    logfile_path = Path(logfile_path)
+    target_path = Path(target_path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    copying = False
+
+    with (
+        logfile_path.open("r", encoding="utf-8") as src,
+        target_path.open("w", encoding="utf-8") as dst,
+    ):
+        for line in src:
+            if not copying:
+                # Try to parse timestamp only until we find the first match
+                try:
+                    timestamp_str = line.split(timestamp_next_char)[0]
+                    print(timestamp_str)
+                    timestamp = datetime.strptime(
+                        timestamp_str,
+                        timestamp_format,
+                    )
+                except (ValueError, IndexError):
+                    continue
+
+                if timestamp >= pytest_start_time:
+                    copying = True
+                    dst.write(line)
+            else:
+                # After the cut point, copy everything verbatim
+                dst.write(line)
+    if not copying:
+        print("Didn't find timestamp!")
+        print(logfile_path)
+    return target_path
+
+
+def collect_all_test_logs(
+    test_name,
+    docker_containers: list[WalytisIdentitiesDocker],
+    pytest_data: pytest.Config,
+    test_start_time: datetime,
+):
+    """Gather logs from host and docker containers.
+
+
+    WARNING: deletes the given docker containers.
+    Copies logs to all report directories registered in pytest.
+    """
+    # get logs from, then delete containers
+    get_logs_and_delete_dockers(
+        docker_containers,
+        DOCKER_LOG_FILES,
+        [
+            os.path.join(d, test_name)
+            for d in get_pytest_report_dirs(pytest_data)
+        ],
+    )
+
+    for report_dir in get_pytest_report_dirs(pytest_data):
+        target_dir = ensure_dir_exists(os.path.join(report_dir, test_name))
+
+        for log_file in HOST_LOG_FILES:
+            if not os.path.exists(log_file):
+                print(f"Log file not found: {log_file}")
+                continue
+            target_path = os.path.join(
+                target_dir, f"host-{os.path.basename(log_file)}"
+            )
+            copy_logs_from_starttime(
+                log_file,
+                target_path,
+                test_start_time,
+                LOG_TIMESTAMP_FORMAT,
+                " ",
+            )

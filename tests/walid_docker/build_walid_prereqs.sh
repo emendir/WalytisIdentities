@@ -23,6 +23,11 @@ if [[ -f "$PACKAGES_LIST" ]]; then
 
         rsync -XAvaL "$line" "$PYTHON_PACKAGES_DIR"
     done < "$PACKAGES_LIST"
+else
+    echo "# CAREFUL: don't suffix paths with slashes.
+# You can paths relative to the project directory.
+# You can prefix lines with hashtags for comments.
+"
 fi
 
 

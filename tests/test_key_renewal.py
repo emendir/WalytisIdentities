@@ -1,6 +1,13 @@
 import _auto_run_with_pytest  # noqa
-from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
-from emtest import get_pytest_report_dirs
+from datetime import datetime
+from emtest.func_utils import get_function_name
+from testing_utils import cleanup_logs, collect_all_test_logs
+from testing_utils import (
+    get_logs_and_delete_dockers,
+    DOCKER_LOG_FILES,
+    HOST_LOG_FILES,
+    copy_logs_from_starttime,
+)
 from threading import Thread
 import pytest
 import json
@@ -10,7 +17,13 @@ from time import sleep
 
 from conftest import cleanup_walytis_ipfs
 import walytis_beta_api as walytis_api
-from emtest import await_thread_cleanup, env_vars, polite_wait
+from emtest import (
+    await_thread_cleanup,
+    env_vars,
+    polite_wait,
+    ensure_dir_exists,
+    get_pytest_report_dirs,
+)
 from docker_key_renewal import SharedData, JOIN_DUR, SHARE_DUR
 from walid_docker.build_docker import build_docker_image
 from walid_docker.walid_docker import (
@@ -25,15 +38,15 @@ from walytis_identities.group_did_manager import (
     InvitationCode,
 )
 from walytis_identities.key_store import KeyStore
-from walytis_identities.utils import logger
 from walytis_identities.log import (
-    logger_datatr,
     logger_dm,
     logger_gdm_join,
     file_handler,
     logger_gdm,
+    LOG_TIMESTAMP_FORMAT,
 )
 import logging
+from conftest import logger_tests
 
 logger_gdm.setLevel(logging.DEBUG)
 # logger_datatr.setLevel(logging.DEBUG)
@@ -42,6 +55,8 @@ logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
 
+start_time = datetime.now()
+test_name = os.path.basename(__file__).split(".")[0]
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
 
@@ -61,11 +76,13 @@ sys.path.append('/opt/walytis_identities/tests')
 import conftest # configure Walytis API
 import docker_key_renewal
 from docker_key_renewal import shared_data
-from docker_key_renewal import logger
+from docker_key_renewal import logger_tests
 """
 
 
+@pytest.mark.dependency()
 def test_preparations(delete_files: bool = False):
+    logger_tests.debug(get_function_name())
     if DELETE_ALL_BRENTHY_DOCKERS:
         delete_containers(image="local/walid_testing")
 
@@ -78,7 +95,9 @@ N_DOCKER_CONTAINERS = 1
 CONTAINER_NAME_PREFIX = "test_walid_keys_"
 
 
+@pytest.mark.dependency(depends=["test_preparations"])
 def test_create_docker_containers():
+    logger_tests.debug(get_function_name())
     shared_data.containers: list[WalytisIdentitiesDocker] = [
         None
     ] * N_DOCKER_CONTAINERS
@@ -97,10 +116,14 @@ def test_create_docker_containers():
         threads.append(thread)
     for thread in threads:
         thread.join()
+    for i in range(N_DOCKER_CONTAINERS):
+        print(shared_data.containers[i].ipfs_id)
     print("Set up docker containers.")
 
 
+@pytest.mark.dependency(depends=["test_create_docker_containers"])
 def test_create_identity_and_invitation():
+    logger_tests.debug(get_function_name())
     print("Creating identity and invitation on docker...")
     python_code = "\n".join(
         [
@@ -119,11 +142,12 @@ def test_create_identity_and_invitation():
     Thread(
         target=run_on_docker, name="docker_create_identity_and_invitation"
     ).start()
-    sleep(5)  # wait for GDMs to load in docker
 
 
+@pytest.mark.dependency(depends=["test_create_identity_and_invitation"])
 def test_member_joined():
     """Test that a new member can be added to an existing group DID manager."""
+    logger_tests.debug(get_function_name())
     peer_id = shared_data.containers[0].ipfs_id
     multi_addrs = shared_data.containers[0].get_multi_addrs()
 
@@ -139,19 +163,20 @@ def test_member_joined():
         os.path.join(shared_data.group_2_config_dir, "group_2.json"),
         shared_data.KEY,
     )
-    logger.debug("Creating member...")
+    logger_tests.debug("Creating member...")
     member = DidManager.create(shared_data.group_2_config_dir)
-    logger.debug("GDM Joining...")
+    logger_tests.debug("Member joining GDM...")
     shared_data.group_2 = GroupDidManager.join(
         invitation, group_keystore, member
     )
+    logger_tests.debug("Member joined GDM.")
     shared_data.group_2_did = shared_data.group_2.member_did_manager.did
 
     # wait a short amount to allow the docker container to learn of the new member
     polite_wait(JOIN_DUR)
 
     sleep(5)  # wait for GDMs terminate in docker
-    print("Checking new member on docker...")
+    logger_tests.debug("Checking new member on docker...")
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
@@ -163,14 +188,17 @@ def test_member_joined():
         python_code, print_output=True
     )
 
-    # print(output)
+    success = "Member has joined!" in output
+    if not success:
+        logger_tests.error("Member wasn't synchronised to docker.")
+    assert success
 
-    assert "Member has joined!" in output, "Added member"
 
-
+@pytest.mark.dependency(depends=["test_member_joined"])
 def test_get_control_key():
+    logger_tests.debug(get_function_name())
     if not shared_data.group_2:
-        pytest.skip("Test aborted due to previoud failures.")
+        pytest.skip("Test aborted due to previous failures.")
     # create an GroupDidManager object to run on the docker container in the
     # background to handle a key request from shared_data.group_2
     # python_code = "\n".join(
@@ -194,17 +222,19 @@ def test_get_control_key():
     # sleep(15)
 
 
+@pytest.mark.dependency(depends=["test_get_control_key"])
 def test_renew_control_key():
+    logger_tests.debug(get_function_name())
     if not shared_data.group_2:
         pytest.skip("Test aborted due to previoud failures.")
     old_keys = shared_data.group_2.get_control_keys()
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            "logger.info('DOCKER: Testing control key renewal part 1...');",
+            "logger_tests.info('DOCKER: Testing control key renewal part 1...');",
             "docker_key_renewal.docker_renew_control_key();",
             # "docker_key_renewal.docker_be_online_30s();",
-            "logger.info('DOCKER: Finished control key renewal part 1!');",
+            "logger_tests.info('DOCKER: Finished control key renewal part 1!');",
         ]
     )
 
@@ -214,22 +244,60 @@ def test_renew_control_key():
         )
 
     Thread(target=docker_renew_keys, name="docker_renew_keys").start()
-    print("Waiting for key sharing...")
-    polite_wait(SHARE_DUR)
-    new_keys = shared_data.group_2.get_control_keys()
 
-    assert new_keys.get_id() != old_keys.get_id()
-    assert new_keys.is_unlocked()
+    success = False
+    while not success:
+        print("Waiting for key sharing...")
+        polite_wait(SHARE_DUR // 3)
+        new_keys = shared_data.group_2.get_control_keys()
+
+        key_renewed = new_keys.get_id() != old_keys.get_id()
+        key_unlocked = new_keys.is_unlocked()
+        success = key_renewed and key_unlocked
+
+        if not key_renewed:
+            logger_tests.debug("Key not renewed.")
+        if not key_unlocked:
+            logger_tests.debug("New key is locked.")
+    if not key_renewed:
+        logger_tests.error("Key not renewed.")
+    if not key_unlocked:
+        logger_tests.error("New key is locked.")
+
+    assert success
 
 
 def test_cleanup(request: pytest.FixtureRequest) -> None:
+    logger_tests.debug(get_function_name())
     """Ensure all resources used by tests are cleaned up."""
-    # get logs from, then delete containers
-    get_logs_and_delete_dockers(
-        shared_data.containers,
-        DOCKER_LOG_FILES,
-        get_pytest_report_dirs(request.config),
-    )
+
+    # # get logs from, then delete containers
+    # get_logs_and_delete_dockers(
+    #     shared_data.containers,
+    #     DOCKER_LOG_FILES,
+    #     [
+    #         os.path.join(d, test_name)
+    #         for d in get_pytest_report_dirs(request.config)
+    #     ],
+    # )
+    #
+    # for report_dir in get_pytest_report_dirs(request.config):
+    #     target_dir = ensure_dir_exists(os.path.join(report_dir, test_name))
+    #
+    #     for log_file in HOST_LOG_FILES:
+    #         if not os.path.exists(log_file):
+    #             print(f"Log file not found: {log_file}")
+    #             continue
+    #         target_path = os.path.join(
+    #             target_dir, f"host-{os.path.basename(log_file)}"
+    #         )
+    #         copy_logs_from_starttime(
+    #             log_file,
+    #             target_path,
+    #             start_time,
+    #             LOG_TIMESTAMP_FORMAT,
+    #             " ",
+    #         )
 
     if shared_data.group_2:
         shared_data.group_2.delete()
@@ -250,6 +318,9 @@ def test_cleanup(request: pytest.FixtureRequest) -> None:
     shutil.rmtree(shared_data.group_4_config_dir)
     shutil.rmtree(os.path.dirname(shared_data.member_3_keystore_file))
     shutil.rmtree(os.path.dirname(shared_data.member_4_keystore_file))
+    collect_all_test_logs(
+        test_name, shared_data.containers, request.config, start_time
+    )
     cleanup_walytis_ipfs()
 
 

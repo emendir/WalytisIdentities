@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import os
 from logging.handlers import RotatingFileHandler
@@ -5,12 +6,33 @@ from logging.handlers import RotatingFileHandler
 # extra in-memory recording functionality for logging.Logger objects
 import emtest.log_recording  # noqa
 
-LOG_PATH = ".walytis_identities.log"
+from emtest.log_utils import get_app_log_dir
+
+LOG_PATH = os.path.join(
+    get_app_log_dir("WalytisIdentities", "Waly"), "WalytisIdentities.log"
+)
 print(f"Logging to {os.path.abspath(LOG_PATH)}")
 
+
+class MillisecondFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        dt = datetime.fromtimestamp(record.created)
+
+        result = dt.strftime(datefmt)
+
+        # convert microseconds to milliseconds
+        if datefmt[-2:] == "%f":
+            result = result[:-3]
+
+        return result
+
+
+LOG_TIMESTAMP_FORMAT = "%Y-%m-%d~%H:%M:%S.%f"
+
 # Formatter
-formatter = logging.Formatter(
-    "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+formatter = MillisecondFormatter(
+    "%(asctime)s [%(levelname)-8s] %(name)-16s | %(message)s",
+    datefmt=LOG_TIMESTAMP_FORMAT,
 )
 
 # Console handler (INFO+)

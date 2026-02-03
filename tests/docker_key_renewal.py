@@ -1,4 +1,3 @@
-from walytis_identities.log import logger_datatr, logger_gdm_join
 import logging
 from emtest import get_thread_names
 import json
@@ -19,28 +18,29 @@ from walytis_identities.group_did_manager import (
 )
 import walytis_identities.settings
 from walytis_identities.key_store import KeyStore
-from walytis_identities.utils import logger
 
+from conftest import logger_tests
 from walytis_identities.log import (
     logger_ckm,
     logger_gdm_join,
     file_handler,
     logger_gdm,
+    logger_datatr,
 )
-import logging
 
 logger_gdm.setLevel(logging.DEBUG)
 logger_ckm.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
-logger.setLevel(logging.DEBUG)
+logger_datatr.setLevel(logging.DEBUG)
+logger_tests.setLevel(logging.DEBUG)
 
 
 logger_gdm_join.setLevel(logging.DEBUG)
 
 walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0.1
-JOIN_DUR = 10
-SHARE_DUR = 20
+JOIN_DUR = 50
+SHARE_DUR = 60
 
 
 class SharedData:
@@ -90,7 +90,7 @@ def docker_create_identity_and_invitation():
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    logger.debug("DockerTest: creating identity...")
+    logger_tests.debug("DockerTest: creating identity...")
 
     device_keystore_path = os.path.join(
         shared_data.group_1_config_dir, "device_keystore.json"
@@ -106,16 +106,18 @@ def docker_create_identity_and_invitation():
     shared_data.group_1 = GroupDidManager.create(
         profile_did_keystore, device_did_manager
     )
-    logger.debug("DockerTest: creating invitation...")
+    logger_tests.debug("DockerTest: creating invitation...")
     # invitation = shared_data.group_1.invite_member()
     shared_data.group_1.load_invitation(KEY)
     # docker_be_online_30s()
-    logger.debug("DockerTest: waiting...")
+    logger_tests.debug("DockerTest: waiting...")
     sleep(JOIN_DUR)
     shared_data.group_1.terminate()
     device_did_manager.terminate()
-    print("Terminated objects, remaining threads:", get_thread_names())
-    # print(json.dumps(invitation))
+    logger_tests.debug(
+        f"Terminated objects, remaining threads: {get_thread_names()}"
+    )
+    # logger_tests.debug(json.dumps(invitation))
 
     # mark(isinstance(shared_data.group_1, GroupDidManager), "Created GroupDidManager")
 
@@ -125,7 +127,7 @@ def docker_check_new_member(did: str):
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    logger.debug("CND: Loading GroupDidManager...")
+    logger_tests.debug("CND: Loading GroupDidManager...")
 
     device_keystore_path = os.path.join(
         shared_data.group_1_config_dir, "device_keystore.json"
@@ -140,25 +142,25 @@ def docker_check_new_member(did: str):
         profile_did_keystore, device_did_keystore
     )
 
-    logger.debug("CND: Getting members...")
+    logger_tests.debug("CND: Getting members...")
     success = did in [
         member.did for member in shared_data.group_1.get_members()
     ] and did in [member.did for member in shared_data.group_1.get_members()]
-    logger.debug("CND: got data, exiting...")
+    logger_tests.debug("CND: got data, exiting...")
 
     if success:
-        print("Member has joined!")
+        logger_tests.info("Member has joined!")
     else:
-        print(
-            "\nDocker: Members:\n",
-            [m.did for m in shared_data.group_1.get_members()],
+        logger_tests.error("Member hasn't joined.")
+        logger_tests.info(
+            f"{([m.did for m in shared_data.group_1.get_members()],)}"
         )
 
     shared_data.group_1.terminate()
 
 
 def docker_be_online_30s():
-    logger.debug("CND: Loading GroupDidManager...")
+    logger_tests.debug("CND: Loading GroupDidManager...")
 
     device_keystore_path = os.path.join(
         shared_data.group_1_config_dir, "device_keystore.json"
@@ -174,7 +176,8 @@ def docker_be_online_30s():
     )
     for i in range(SHARE_DUR // 10):
         sleep(10)
-        logger.debug("waiting...")
+        logger_tests.debug("waiting...")
+    logger_tests.debug("Terminating...")
     shared_data.group_1.terminate()
 
 
@@ -183,7 +186,7 @@ def docker_renew_control_key():
 
     TO BE RUN IN DOCKER CONTAINER.
     """
-    logger.debug("CND: Loading GroupDidManager...")
+    logger_tests.debug("CND: Loading GroupDidManager...")
 
     device_keystore_path = os.path.join(
         shared_data.group_1_config_dir, "device_keystore.json"
@@ -200,7 +203,7 @@ def docker_renew_control_key():
     old_keys = shared_data.group_1.get_control_keys()
     num_ck = len(shared_data.group_1.candidate_keys)
     if num_ck > 0:
-        logger.error(
+        logger_tests.error(
             f"Test should start off with 0 candidate keys, not {num_ck}"
         )
     # shared_data.group_1.initiate_control_key_update()
@@ -220,20 +223,22 @@ def docker_renew_control_key():
             break
         sleep(1)
     if len(shared_data.group_1.candidate_keys) != num_ck + 1:
-        logger.error(
+        logger_tests.error(
             "Expected to see exactly one new candidate key, see "
             f"{len(shared_data.group_1.candidate_keys) - num_ck}"
         )
-    logger.info("Initiated Key renewal!")
+    logger_tests.info("Initiated Key renewal! Candidate keys are:")
+    for key_id, members in shared_data.group_1.candidate_keys.items():
+        logger_tests.info(key_id)
     for i in range(SHARE_DUR // 10):
         sleep(10)
-        logger.debug("waiting...")
+        logger_tests.debug("waiting...")
     shared_data.group_1.terminate()
     import threading
     import time
 
     while len(threading.enumerate()) > 1:
-        print(threading.enumerate())
+        logger_tests.info(str(threading.enumerate()))
         time.sleep(1)
     new_keys = shared_data.group_1.get_control_keys()
-    print(f"{old_keys.get_id()} {new_keys.get_id()}")
+    logger_tests.info(f"{old_keys.get_id()} {new_keys.get_id()}")

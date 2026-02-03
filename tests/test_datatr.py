@@ -1,4 +1,5 @@
 import _auto_run_with_pytest  # noqa
+from testing_utils import cleanup_logs
 import pytest
 from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
 from emtest import get_pytest_report_dirs
@@ -51,6 +52,7 @@ logger.info("Initialised shared_data.")
 
 
 def test_preparations():
+    cleanup_logs()
     logger.info("Deleting old docker containers...")
     delete_containers(image="local/walid_testing")
 

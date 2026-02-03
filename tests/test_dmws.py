@@ -1,4 +1,5 @@
 from emtest import await_thread_cleanup
+from testing_utils import cleanup_logs
 import _auto_run_with_pytest  # noqa
 from conftest import cleanup_walytis_ipfs
 from walytis_identities.key_store import KeyStore
@@ -41,6 +42,7 @@ def setup_and_teardown() -> None:
 
 
 def prepare():
+    cleanup_logs()
     if os.path.exists(dm_config_dir):
         shutil.rmtree(dm_config_dir)
     os.makedirs(dm_config_dir)

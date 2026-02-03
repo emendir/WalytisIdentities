@@ -1,4 +1,5 @@
 import _auto_run_with_pytest  # noqa
+from testing_utils import cleanup_logs
 from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
 from emtest import get_pytest_report_dirs
 import json
@@ -123,6 +124,7 @@ def setup_and_teardown(request: pytest.FixtureRequest) -> None:
 
 
 def prepare():
+    cleanup_logs()
     if not os.path.exists(dm_config_dir):
         os.makedirs(dm_config_dir)
     if are_we_in_docker():

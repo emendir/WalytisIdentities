@@ -1,9 +1,10 @@
+import _auto_run_with_pytest  # noqa
 import json
 import os
 import shutil
 import tempfile
 
-import _auto_run_with_pytest  # noqa
+from testing_utils import cleanup_logs
 from conftest import cleanup_walytis_ipfs
 import pytest
 import walytis_beta_api
@@ -34,6 +35,10 @@ class SharedData:
 
 
 shared_data = SharedData()
+
+
+def test_preparations() -> None:
+    cleanup_logs()
 
 
 def test_create_person_identity() -> None:

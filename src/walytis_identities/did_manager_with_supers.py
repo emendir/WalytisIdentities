@@ -742,7 +742,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 if conv:
                     conv.terminate()
                 logger.stop_recording("JOIN_SUPER_REQUEST")
-        logger.debug(
+        logger.warning(
             f"RJS: Failed to join super for {did} after asking {count} peers"
         )
         return None

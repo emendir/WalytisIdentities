@@ -1,8 +1,9 @@
+import _auto_run_with_pytest  # noqa
 import os
+from testing_utils import cleanup_logs
 import shutil
 import tempfile
 
-import _auto_run_with_pytest  # noqa
 from emtest import await_thread_cleanup
 from conftest import cleanup_walytis_ipfs
 from walytis_beta_api._experimental import generic_blockchain_testing
@@ -23,6 +24,7 @@ shared_data = SharedData()
 
 def test_preparations():
     """Setup resources in preparation for tests."""
+    cleanup_logs()
     # declare 'global' variables
     shared_data.person_config_dir = tempfile.mkdtemp()
     shared_data.person_config_dir2 = tempfile.mkdtemp()

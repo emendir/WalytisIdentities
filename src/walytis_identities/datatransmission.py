@@ -55,7 +55,7 @@ def listen_for_conversations(
                 case "passed":
                     pass
                 case "failed":
-                    logger.debug("DataTr: received conversation denied")
+                    logger.warning("DataTr: received conversation denied")
                     conv.close()
                     return
                 case _:
@@ -67,6 +67,10 @@ def listen_for_conversations(
 
             if not verify_challenge(gdm, message, our_challenge_data):
                 conv.say(json.dumps({"challenge_result": "failed"}).encode())
+                error_message = (
+                    "Conversation start: peer failed our challenge."
+                )
+                logger.warning(error_message)
                 conv.close()
                 return
 
@@ -164,8 +168,9 @@ def start_conversation(
         if not verify_challenge(gdm, salutation_join, our_challenge_data):
             conv.say(json.dumps({"challenge_result": "failed"}).encode())
             conv.close()
-            logger.debug("Challenge verification failed.")
-            raise ChallengeFailedError()
+            error_message = "Conversation start: peer failed our challenge."
+            logger.warning(error_message)
+            raise ChallengeFailedError(error_message)
 
         message = handle_challenge(gdm, salutation_join["challenge_data"])
         message.update({"challenge_result": "passed"})
@@ -175,9 +180,10 @@ def start_conversation(
             case "passed":
                 pass
             case "failed":
-                logger.debug("DataTr: received conversation denied")
                 conv.close()
-                raise ChallengeFailedError()
+                error_message = "DataTr: received conversation denied"
+                logger.warning(error_message)
+                raise ChallengeFailedError(error_message)
             case _:
                 logger.debug(f"DataTr: received unexpected reply: {message}")
                 conv.close()
@@ -288,7 +294,7 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
     group_key = group_key_proof.get_key()
     member_key = member_key_proof.get_key()
     if not gdm.is_control_key_active(group_key.get_id()):
-        logger.debug("Group key not validated.")
+        logger.warning("Group key not validated.")
         return False
     logger.debug("Group key validated.")
 
@@ -296,25 +302,25 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
     logger.debug(gdm.get_members_dict())
     member = gdm.get_members_dict().get(member_did)
     if not member:
-        logger.debug("Member DID not validated.")
+        logger.warning("Member DID not validated.")
         return False
 
     # logger.debug(member_key_proof.public_key.hex())
     logger.debug(member._get_control_key_age(member_key.get_id()))
     logger.debug(member.is_control_key_active(member_key.get_id()))
     if not member.is_control_key_active(member_key.get_id()):
-        logger.debug("Member key not validated.")
+        logger.warning("Member key not validated.")
         return False
 
     logger.debug("Member key validated.")
 
     if not group_key_proof.verify_signature(challenge):
-        logger.debug("Group Key Proof not Validated")
+        logger.warning("Group Key Proof not Validated")
         return False
     logger.debug("Group key proof validated.")
 
     if not member_key_proof.verify_signature(challenge):
-        logger.debug("Member Key Proof not Validated")
+        logger.warning("Member Key Proof not Validated")
         return False
     logger.debug("Verified challenge.")
 

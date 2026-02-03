@@ -1,4 +1,5 @@
 pytest
+pytest-dependency
 brenthy_docker>=0.3.8
 toml
 emtest>=0.0.8

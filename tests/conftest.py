@@ -3,6 +3,7 @@
 Runs automatically when pytest runs a test before loading the test module.
 """
 
+from datetime import datetime
 import logging
 import os
 import sys
@@ -15,7 +16,7 @@ from emtest import (
     configure_pytest_reporter,
     set_env_var,
 )
-from loguru import logger
+from emtest.log_utils import get_app_log_dir
 
 PRINT_ERRORS = (
     True  # whether or not to print error messages after failed tests
@@ -31,13 +32,24 @@ os.chdir(WORKDIR)
 add_path_to_python(SRC_DIR)
 
 
+logger_tests = logging.getLogger("WalIdTests")
+logger_tests.setLevel(logging.DEBUG)
+logger_pytest = logging.getLogger("Pytest")
+logger_pytest.setLevel(logging.DEBUG)
+
+
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
     """Make changes to pytest's behaviour."""
-    configure_pytest_reporter(config, print_errors=PRINT_ERRORS)
+    configure_pytest_reporter(
+        config, print_errors=PRINT_ERRORS, logger=logger_pytest
+    )
     terminal = config.pluginmanager.get_plugin("terminalreporter")
     if terminal:
         terminal.write_line(f"Python {sys.version.split(' ')[0]}")
+
+
+pytest_start_time = datetime.now()
 
 
 if True:
@@ -49,12 +61,13 @@ if True:
         "WALYTIS_BETA_API_TYPE", "WALYTIS_BETA_BRENTHY_API", override=False
     )
 
-    set_env_var(
-        "WALYTIS_BETA_LOG_PATH",
-        os.path.join(os.getcwd(), "Walytis.log"),
-        override=True,
-    )
+    # set_env_var(
+    #     "WALYTIS_BETA_LOG_PATH",
+    #     os.path.join(os.getcwd(), "Walytis.log"),
+    #     override=True,
+    # )
     print("IPFS_TK_MODE", os.environ.get("IPFS_TK_MODE"))
+    set_env_var("WALY_LOG_DIR", "/opt/log", override=False)
     import walytis_beta_api
     import walytis_beta_embedded
     from brenthy_tools_beta import BrenthyNotRunningError, brenthy_api
@@ -70,15 +83,14 @@ if True:
         walytis_beta_api.walytis_beta_interface.get_walytis_beta_api_type()
         == walytis_beta_api.walytis_beta_interface.WalytisBetaApiTypes.WALYTIS_BETA_BRENTHY_API
     )
-    logger.info(f"USING BRENTHY: {USING_BRENTHY}")
     if USING_BRENTHY:
         while True:
             try:
                 assert_brenthy_online()
                 break
             except BrenthyNotRunningError as e:
-                logger.error(e)
-                logger.info("Retrying to connect to brenthy...")
+                print(e)
+                print("Retrying to connect to brenthy...")
     else:
         walytis_beta_embedded.set_appdata_dir("./.blockchains")
         walytis_beta_embedded.run_blockchains()
@@ -89,14 +101,53 @@ if True:
 
     if not are_we_in_docker():
         assert_is_loaded_from_source(SRC_DIR, walytis_identities)
+
     from walytis_identities.log import (
         file_handler,
         console_handler,
+        formatter,
     )
-    import logging
+
+    plain_console_handler = logging.StreamHandler()
+    plain_console_handler.setLevel(logging.DEBUG)
+
+    file_handler_tests = logging.handlers.RotatingFileHandler(
+        os.path.join(get_app_log_dir("WalId_Tests", "Waly"), "WalIdTests.log"),
+        maxBytes=4 * 1024 * 1024,
+        backupCount=4,
+    )
+    file_handler_tests.setLevel(logging.DEBUG)
+    file_handler_tests.setFormatter(formatter)
+    logger_tests.addHandler(file_handler_tests)
+    logger_tests.addHandler(plain_console_handler)
+
+    logger_pytest.addHandler(plain_console_handler)
+    logger_pytest.addHandler(file_handler_tests)
 
     file_handler.setLevel(logging.DEBUG)
     console_handler.setLevel(logging.DEBUG)
+
+    # add logging for IPFS-Toolkit
+    from ipfs_tk_transmission.log import logger_transm, logger_conv
+    from emtest.log_utils import get_app_log_dir
+
+    file_handler_ipfs = logging.handlers.RotatingFileHandler(
+        os.path.join(get_app_log_dir("IPFS_TK", "Waly"), "IPFS_TK.log"),
+        maxBytes=5 * 1024 * 1024,
+        backupCount=5,
+    )
+    file_handler_ipfs.setLevel(logging.DEBUG)
+    file_handler_ipfs.setFormatter(formatter)
+
+    logger_transm.addHandler(file_handler_ipfs)
+    logger_conv.addHandler(file_handler_ipfs)
+    logger_conv.setLevel(logging.DEBUG)
+    logger_transm.setLevel(logging.DEBUG)
+
+    disabled_loggers = ["urllib3.connectionpool"]
+    for logger_name in disabled_loggers:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.WARNING)
 
 
 def cleanup_walytis_ipfs():

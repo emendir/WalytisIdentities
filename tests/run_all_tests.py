@@ -5,7 +5,7 @@ from time import sleep
 import os
 import sys
 
-from emtest import set_env_var, env_vars
+from emtest import set_env_var, env_vars, ensure_dir_exists
 
 WORKDIR = os.path.dirname(__file__)
 
@@ -13,17 +13,23 @@ pytest_args = sys.argv[1:]
 
 
 TEST_FUNC_TIMEOUT_SEC = 300
-REPORTS_DIR_PREF = env_vars.str("TESTS_REPORTS_DIR_PREF", default="report")
+REPORTS_DIR_PREF = env_vars.str(
+    "TESTS_REPORTS_DIR_PREF", default=os.path.join("reports", "report-")
+)
 
 
 def run_tests() -> None:
     """Run each test file with pytest."""
     pytest_args = sys.argv[1:]
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+    html_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.html")
+    json_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.json")
+    ensure_dir_exists(os.path.dirname(html_path))
+    ensure_dir_exists(os.path.dirname(json_path))
     os.system(
         f"{sys.executable} -m pytest {WORKDIR} "
-        f"--html={REPORTS_DIR_PREF}-{timestamp}/report.html "
-        f"--json={REPORTS_DIR_PREF}-{timestamp}/report.json "
+        f"--html={html_path} "
+        f"--json={json_path} "
         f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
         f"{' '.join(pytest_args)}"
     )
