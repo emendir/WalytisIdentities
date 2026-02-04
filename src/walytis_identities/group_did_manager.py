@@ -1164,7 +1164,7 @@ class GroupDidManager(_GroupDidManager):
         if self.candidate_keys:
             # try get the private keys of any candidate keys we don't yet own
             for key_id, members in list(self.candidate_keys.items()):
-                if key_id not in self.key_store.keys.keys():
+                if not self.key_store.has_key(key_id):
                     for member in members:
                         if self._terminate:
                             return True

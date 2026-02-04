@@ -95,6 +95,20 @@ class KeyStore:
     def get_all_keys(self) -> list[Key]:
         return self.keys.values()
 
+    def has_key(self, key: Key | KeyGroup | str) -> bool:
+        """Check if the given key is in this keystore.
+
+        WARNING: The key in the keystore may be locked.
+        """
+        if isinstance(key, str):
+            key_ids = [key_id for key_id in key.split("|") if key_id]
+        elif isinstance(key, KeyGroup):
+            key_ids = key.get_ids()
+        else:
+            key_ids = [key.get_id()]
+        current_key_ids = list(self.keys.keys())
+        return all(key_id in current_key_ids for key_id in key_ids)
+
     def get_custom_metadata(self):
         return self._custom_metadata
 
