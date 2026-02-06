@@ -39,8 +39,8 @@ logger_tests.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 
 walytis_identities.settings.CTRL_KEY_MGMT_PERIOD = 0.1
-JOIN_DUR = 50
-SHARE_DUR = 60
+JOIN_DUR = 30
+SHARE_DUR = 40
 
 
 class SharedData:
@@ -112,6 +112,7 @@ def docker_create_identity_and_invitation():
     # docker_be_online_30s()
     logger_tests.debug("DockerTest: waiting...")
     sleep(JOIN_DUR)
+    logger_tests.debug("Shutting down...")
     shared_data.group_1.terminate()
     device_did_manager.terminate()
     logger_tests.debug(
@@ -218,6 +219,7 @@ def docker_renew_control_key():
     # walytis_identities.group_did_manager.CTRL_KEY_MAX_RENEWAL_DUR_HR = 0
     walytis_identities.group_did_manager.CTRL_KEY_MGMT_PERIOD = 1
     shared_data.group_1.CTRL_KEY_RENEWAL_RANDOMISER = 0
+    logger_tests.debug("Renewing keys...")
     for i in range(SHARE_DUR):
         if len(shared_data.group_1.candidate_keys) > num_ck:
             break
@@ -231,8 +233,8 @@ def docker_renew_control_key():
     for key_id, members in shared_data.group_1.candidate_keys.items():
         logger_tests.info(key_id)
     for i in range(SHARE_DUR // 10):
-        sleep(10)
         logger_tests.debug("waiting...")
+        sleep(10)
     shared_data.group_1.terminate()
     import threading
     import time

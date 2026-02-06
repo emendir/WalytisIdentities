@@ -1,4 +1,7 @@
 import _auto_run_with_pytest  # noqa
+from testing_utils import cleanup_logs, collect_all_test_logs
+from datetime import datetime
+from time import sleep
 from testing_utils import cleanup_logs
 from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
 from emtest import get_pytest_report_dirs
@@ -100,6 +103,25 @@ class SharedData:
             threads.append(thread)
         for thread in threads:
             thread.join()
+
+        # ensure IPFS nodes in all containers connect to each other
+        for i in range(N_DOCKER_CONTAINERS):
+            for j in range(N_DOCKER_CONTAINERS):
+                if j == i:
+                    continue
+
+                # wait for IPFS nodes to initialise
+                self.containers[i].await_ipfs()
+                self.containers[j].await_ipfs()
+
+                peer_id = self.containers[j].ipfs_id
+                for multiaddr in self.containers[j].get_multi_addrs():
+                    result = self.containers[i].run_bash_code(
+                        f"ipfs swarm connect {multiaddr}/p2p/{peer_id}"
+                    )
+                    if f"connect {peer_id} success" in result:
+                        break
+                    print(result)
         print("Set up docker containers.")
 
 
@@ -124,7 +146,6 @@ def setup_and_teardown(request: pytest.FixtureRequest) -> None:
 
 
 def prepare():
-    cleanup_logs()
     if not os.path.exists(dm_config_dir):
         os.makedirs(dm_config_dir)
     if are_we_in_docker():
@@ -159,7 +180,7 @@ def setup_dm(docker_container: WalytisIdentitiesDocker):
     except DockerShellError as e:
         print(e)
         output_lines = []
-        breakpoint()
+        # breakpoint()
     except DockerShellTimeoutError as e:
         print(f"Docker shell timeout reached after {e.timeout}s")
         output_lines = e.output.split("\n")
@@ -207,7 +228,7 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
     except DockerShellError as e:
         print(e)
         output_lines = []
-        breakpoint()
+        # breakpoint()
     except DockerShellTimeoutError as e:
         print(f"Docker shell timeout reached after {e.timeout}s")
         output_lines = e.output.split("\n")
@@ -240,6 +261,7 @@ def add_sub(
     docker_container_new: WalytisIdentitiesDocker,
     docker_container_old: WalytisIdentitiesDocker,
     invitation: dict,
+    task_name: str,
 ) -> None:
     """Join an existing Endra dm on a new docker container.
 
@@ -256,6 +278,7 @@ def add_sub(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"logger.info('Running {task_name} - OLD')",
             "docker_dmws_sync.docker_load_dm()",
             "logger.info('Waiting to allow new device to join...')",
             f"sleep({PROFILE_JOIN_TIMEOUT_S})",
@@ -274,11 +297,13 @@ def add_sub(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"logger.info('Running {task_name} - NEW')",
             f"docker_dmws_sync.docker_join_dm('{invit_json}')",
             "shared_data.dm.terminate()",
         ]
     )
     try:
+        sleep(2)  # give docker_container_old a chance to load longer
         output_lines = docker_container_new.run_python_code(
             python_code,
             timeout=PROFILE_JOIN_TIMEOUT_S + 5,
@@ -288,7 +313,7 @@ def add_sub(
     except DockerShellError as e:
         print(e)
         output_lines = []
-        breakpoint()
+        # breakpoint()
     except DockerShellTimeoutError as e:
         print(f"Docker shell timeout reached after {e.timeout}s")
         output_lines = e.output.split("\n")
@@ -327,7 +352,7 @@ def create_super(docker_container: WalytisIdentitiesDocker) -> dict | None:
     except DockerShellError as e:
         print(e)
         output_lines = []
-        breakpoint()
+        # breakpoint()
     except DockerShellTimeoutError as e:
         print(f"Docker shell timeout reached after {e.timeout}s")
         output_lines = e.output.split("\n")
@@ -358,11 +383,13 @@ def join_super(
     docker_container_old: WalytisIdentitiesDocker,
     docker_container_new: WalytisIdentitiesDocker,
     invitation: dict,
+    task_name: str,
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code_1 = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"logger.info('Running {task_name} - OLD')",
             "docker_dmws_sync.docker_load_dm()",
             "logger.info('join_super: Waiting to allow conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
@@ -377,6 +404,7 @@ def join_super(
     python_code_2 = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"logger.info('Running {task_name} - NEW')",
             "docker_dmws_sync.docker_load_dm()",
             f"super = docker_dmws_sync.docker_join_super('{invit_json}')",
             "print('DOCKER: ', super.did)",
@@ -395,7 +423,7 @@ def join_super(
     except DockerShellError as e:
         print(e)
         output_lines = []
-        breakpoint()
+        # breakpoint()
     except DockerShellTimeoutError as e:
         print(f"Docker shell timeout reached after {e.timeout}s")
         output_lines = e.output.split("\n")
@@ -420,11 +448,13 @@ def auto_join_super(
     docker_container_old: WalytisIdentitiesDocker,
     docker_container_new: WalytisIdentitiesDocker,
     superondence_id: str,
+    task_name: str,
 ) -> None:
     print(coloured(f"\n\nRunning {function_name()}", "blue"))
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"logger.info('Running {task_name} - OLD')",
             "docker_dmws_sync.docker_load_dm()",
             "logger.info('Waiting to allow auto conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
@@ -440,15 +470,19 @@ def auto_join_super(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
+            f"logger.info('Running {task_name} - NEW')",
             "docker_dmws_sync.docker_load_dm()",
+            "logger.info('Waiting to allow auto conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
             "print('GroupDidManager DIDs:')",
+            "logger.info('Finished waiting, terminating...')",
             "for c in shared_data.dm.get_active_supers():",
             "    print(c)",
             "shared_data.dm.terminate()",
         ]
     )
     try:
+        sleep(2)  # give docker_container_old a chance to load longer
         output = docker_container_new.run_python_code(
             python_code,
             timeout=CORRESP_JOIN_TIMEOUT_S + 15,
@@ -458,7 +492,7 @@ def auto_join_super(
     except DockerShellError as e:
         print(e)
         output = ""
-        breakpoint()
+        # breakpoint()
     except DockerShellTimeoutError as e:
         print(f"Docker shell timeout reached after {e.timeout}s")
         output = e.output
@@ -472,16 +506,16 @@ def auto_join_super(
     assert superondence_id in c_ids, function_name()
 
 
-def test_setup_dm():
+def test_setup_dm_1():
     # create first dm with multiple devices
     setup_dm(shared_data.containers[0])
 
 
-def test_load_dm0():
+def test_load_dm_0():
     shared_data.invitation = load_dm(shared_data.containers[0])
 
 
-def test_add_sub():
+def test_add_sub_1():
     if not shared_data.invitation:
         shared_data.abort = True
     if shared_data.abort:
@@ -490,10 +524,11 @@ def test_add_sub():
         shared_data.containers[1],
         shared_data.containers[0],
         shared_data.invitation,
+        task_name="AddSub-1",
     )
 
 
-def test_load_dm():
+def test_load_dm_1():
     if shared_data.abort:
         pytest.skip("Test aborted due to failures.")
     load_dm(shared_data.containers[1])
@@ -519,6 +554,7 @@ def test_add_sub2():
         shared_data.containers[3],
         shared_data.containers[2],
         shared_data.invitation2,
+        task_name="AddSub-2",
     )
 
 
@@ -546,6 +582,7 @@ def test_auto_join_super_1():
         shared_data.containers[0],
         shared_data.containers[1],
         shared_data.super_id,
+        task_name="AutoJoinSuper-1",
     )
 
 
@@ -557,6 +594,7 @@ def test_join_super_1():
         shared_data.containers[0],
         shared_data.containers[2],
         shared_data.invitation3,
+        task_name="JoinSuper-1",
     )
 
 
@@ -569,26 +607,28 @@ def test_auto_join_super_2():
         shared_data.containers[2],
         shared_data.containers[3],
         shared_data.super_id,
+        task_name="AutoJoinSuper-2",
     )
     # create second dm with multiple devices
+
+
+start_time = datetime.now()
+test_name = os.path.basename(__file__).split(".")[0]
 
 
 def test_cleanup(request: pytest.FixtureRequest) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
-    get_logs_and_delete_dockers(
-        shared_data.containers,
-        DOCKER_LOG_FILES,
-        get_pytest_report_dirs(request.config),
-    )
 
     if os.path.exists(dm_config_dir):
         shutil.rmtree(dm_config_dir)
-    shared_data.containers = []
     if shared_data.super:
         shared_data.super.delete()
     if shared_data.dm:
         shared_data.dm.delete()
+    collect_all_test_logs(
+        test_name, shared_data.containers, request.config, start_time
+    )
     cleanup_walytis_ipfs()
 
 

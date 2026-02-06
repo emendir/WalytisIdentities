@@ -1,7 +1,7 @@
 import _auto_run_with_pytest  # noqa
 from datetime import datetime
 from emtest.func_utils import get_function_name
-from testing_utils import cleanup_logs, collect_all_test_logs
+from testing_utils import collect_all_test_logs
 from testing_utils import (
     get_logs_and_delete_dockers,
     DOCKER_LOG_FILES,
@@ -122,7 +122,7 @@ def test_create_docker_containers():
 
 
 @pytest.mark.dependency(depends=["test_create_docker_containers"])
-def test_create_identity_and_invitation():
+def test_member_joined():
     logger_tests.debug(get_function_name())
     print("Creating identity and invitation on docker...")
     python_code = "\n".join(
@@ -136,17 +136,17 @@ def test_create_identity_and_invitation():
     # breakpoint()
     def run_on_docker():
         shared_data.containers[0].run_python_code(
-            python_code, print_output=True, background=False, timeout=JOIN_DUR
+            python_code,
+            print_output=True,
+            background=False,
+            timeout=JOIN_DUR + 10,
         )
 
     Thread(
         target=run_on_docker, name="docker_create_identity_and_invitation"
     ).start()
+    sleep(10)  # wait for GDMs to load in docker
 
-
-@pytest.mark.dependency(depends=["test_create_identity_and_invitation"])
-def test_member_joined():
-    """Test that a new member can be added to an existing group DID manager."""
     logger_tests.debug(get_function_name())
     peer_id = shared_data.containers[0].ipfs_id
     multi_addrs = shared_data.containers[0].get_multi_addrs()
@@ -173,6 +173,7 @@ def test_member_joined():
     shared_data.group_2_did = shared_data.group_2.member_did_manager.did
 
     # wait a short amount to allow the docker container to learn of the new member
+    logger_tests.debug("Waiting for new membership to sync to docker...")
     polite_wait(JOIN_DUR)
 
     sleep(5)  # wait for GDMs terminate in docker
@@ -246,19 +247,19 @@ def test_renew_control_key():
     Thread(target=docker_renew_keys, name="docker_renew_keys").start()
 
     success = False
-    while not success:
-        print("Waiting for key sharing...")
-        polite_wait(SHARE_DUR // 3)
-        new_keys = shared_data.group_2.get_control_keys()
+    logger_tests.debug("Waiting for key sharing...")
+    polite_wait(SHARE_DUR)
+    new_keys = shared_data.group_2.get_control_keys()
 
-        key_renewed = new_keys.get_id() != old_keys.get_id()
-        key_unlocked = new_keys.is_unlocked()
-        success = key_renewed and key_unlocked
+    key_renewed = new_keys.get_id() != old_keys.get_id()
+    key_unlocked = new_keys.is_unlocked()
+    success = key_renewed and key_unlocked
 
-        if not key_renewed:
-            logger_tests.debug("Key not renewed.")
-        if not key_unlocked:
-            logger_tests.debug("New key is locked.")
+    if not key_renewed:
+        logger_tests.debug("Key not renewed.")
+    if not key_unlocked:
+        logger_tests.debug("New key is locked.")
+
     if not key_renewed:
         logger_tests.error("Key not renewed.")
     if not key_unlocked:

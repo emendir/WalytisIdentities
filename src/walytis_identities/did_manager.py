@@ -343,7 +343,8 @@ class DidManager(GenericDidManager):
     def _dm_on_block_received(self, block: Block) -> None:
         if block.topics == ["genesis"]:
             return
-        # logger.debug(f"DM: Received block with topics: {block.topics}")
+
+        logger.info(f"DM: Received block with topics: {block.topics}")
         if WALYTIS_BLOCK_TOPIC in block.topics:
             block_type = get_block_type(block.topics)
             match block_type:

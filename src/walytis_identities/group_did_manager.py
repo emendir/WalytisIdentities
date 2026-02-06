@@ -269,6 +269,7 @@ class _GroupDidManager(DidManager):
                     | did_manager_blocks.MemberUpdateBlock
                     | did_manager_blocks.MemberLeavingBlock
                 ):
+                    logger.debug("Received Membership changes block!")
                     self.get_members(no_cache=True)
                 case did_manager_blocks.KeyOwnershipBlock:
                     self.check_control_key()
@@ -753,18 +754,18 @@ class GroupDidManager(_GroupDidManager):
     def assert_ownership(self) -> None:
         """If we don't yet own the control key, get it."""
         control_key = self.get_control_keys()
-        # logger.debug(self.get_control_keys())
-        # logger.debug(
+        # logger_ckm.debug(self.get_control_keys())
+        # logger_ckm.debug(
         #     get_latest_control_key(self.blockchain).get_id()
         # )
-        # logger.debug(self.blockchain._terminate)
+        # logger_ckm.debug(self.blockchain._terminate)
         if control_key.is_unlocked():
-            # logger.debug(f"GDM: Already control key owner {self.did}")
+            # logger_ckm.debug(f"GDM: Already control key owner {self.did}")
             return
 
-        # logger.debug(f"GDM: Not yet control key owner: {self.did}")
+        # logger_ckm.debug(f"GDM: Not yet control key owner: {self.did}")
         while not self._terminate:
-            # logger.debug(
+            # logger_ckm.debug(
             #     f"Num Members: {len(self.get_members(no_cache=True))} "
             #     f"{self.get_members()} {self.did}"
             # )
@@ -774,32 +775,36 @@ class GroupDidManager(_GroupDidManager):
                 did = member.did
                 # if did == self.member_did_manager.did:
                 #     continue
-                logger.debug(f"Requesting control key from {did}")
+                logger_ckm.debug(f"Requesting control key from {did}")
                 key = None
                 try:
                     key = self.request_key(control_key.get_id(), did)
                 except IncompletePeerInfoError as e:
-                    logger.debug(e)
+                    logger_ckm.debug(e)
                     continue
                 except Exception as e:
-                    logger.error(e)
-                if key:
+                    logger_ckm.error(e)
+                if not key:
+                    logger_ckm.warning(
+                        "Failed to get private key for current control key."
+                    )
+                else:
                     self.key_store.add_key(key)
                     if self.get_control_keys().is_unlocked():
                         self.update_did_doc(self.generate_did_doc())
                         return
                     else:
-                        logger.warning(
+                        logger_ckm.warning(
                             "Strange, Control key hasn't unlocked after key reception."
                         )
-                logger.warning(
+                logger_ckm.warning(
                     f"GDM: Request for control key failed. {self.did}"
                 )
             if not sleep(0.5):
                 return
 
     def manage_control_key(self):
-        # logger.debug(f"Starting Control key manager for {self.did}")
+        # logger_ckm.debug(f"Starting Control key manager for {self.did}")
         while not self._terminate:
             try:
                 self.assert_ownership()
@@ -1138,6 +1143,7 @@ class GroupDidManager(_GroupDidManager):
                 if key_id in candidate_keys.keys():
                     candidate_keys[key_id].append(owner)
                 else:
+                    # logger_ckm.debug("Learned of new candidate key.")
                     candidate_keys.update({key_id: [owner]})
         self.candidate_keys = candidate_keys
         return candidate_keys
@@ -1170,7 +1176,9 @@ class GroupDidManager(_GroupDidManager):
                             return True
                         logger_ckm.debug(f"Requesting candidate key: {key_id}")
                         key = self.request_key(key_id, member)
-                        if key:
+                        if not key:
+                            logger_ckm.debug("Failed to get candidate key.")
+                        else:
                             self.candidate_keys[key_id].append(
                                 self.member_did_manager.did
                             )
@@ -1214,10 +1222,10 @@ class GroupDidManager(_GroupDidManager):
         Renews our DidManager's control key if the new key has already been shared
         with all peers or the current keys have reached a critical age.
         """
-        logger_ckm.debug(
-            "Checking control key update application: "
-            f"{len(self.candidate_keys)}"
-        )
+        # logger_ckm.debug(
+        #     "Checking control key update application: "
+        #     f"{len(self.candidate_keys)}"
+        # )
         if not self.candidate_keys:
             return False
 

@@ -24,7 +24,8 @@ from brenthy_docker.utils import get_logs_and_delete_dockers  # noqa
 
 DOCKER_LOG_FILES = [
     "/opt/Brenthy/Brenthy.log",
-    "/opt/Brenthy/Walytis_Beta.log",
+    "/opt/Brenthy/Brenthy_Walytis.log",
+    "/opt/log/Walytis_Beta/Walytis_Beta.log",
     "/opt/log/WalytisIdentities/WalytisIdentities.log",
     "/opt/log/WalytisOffchain/WalytisOffchain.log",
     "/opt/log/WalytisMutability/WalytisMutability.log",
@@ -33,6 +34,9 @@ DOCKER_LOG_FILES = [
     "/opt/log/IpfsPeersLogger/ipfs_peers_logger.log",
 ]
 HOST_LOG_FILES = [
+    "/opt/Brenthy/Brenthy.log",
+    "/opt/Brenthy/Brenthy_Walytis.log",
+    "/opt/log/Walytis_Beta/Walytis_Beta.log",
     "/opt/log/WalytisIdentities/WalytisIdentities.log",
     "/opt/log/WalytisOffchain/WalytisOffchain.log",
     "/opt/log/WalytisMutability/WalytisMutability.log",
@@ -54,8 +58,8 @@ dm_config_dir = "/tmp/wali_test_dmws_synchronisation"
 
 # used for creation, first loading test, and invitation creation
 PROFILE_CREATE_TIMEOUT_S = 20
-PROFILE_JOIN_TIMEOUT_S = 50
-CORRESP_JOIN_TIMEOUT_S = 50
+PROFILE_JOIN_TIMEOUT_S = 60
+CORRESP_JOIN_TIMEOUT_S = 60
 
 
 def cleanup_logs():
