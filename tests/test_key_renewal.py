@@ -55,7 +55,6 @@ logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
 
-start_time = datetime.now()
 test_name = os.path.basename(__file__).split(".")[0]
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
@@ -83,6 +82,7 @@ from docker_key_renewal import logger_tests
 @pytest.mark.dependency()
 def test_preparations(delete_files: bool = False):
     logger_tests.debug(get_function_name())
+    shared_data.start_time = datetime.now()
     if DELETE_ALL_BRENTHY_DOCKERS:
         delete_containers(image="local/walid_testing")
 
@@ -269,37 +269,8 @@ def test_renew_control_key():
 
 
 def test_cleanup(request: pytest.FixtureRequest) -> None:
-    logger_tests.debug(get_function_name())
     """Ensure all resources used by tests are cleaned up."""
-
-    # # get logs from, then delete containers
-    # get_logs_and_delete_dockers(
-    #     shared_data.containers,
-    #     DOCKER_LOG_FILES,
-    #     [
-    #         os.path.join(d, test_name)
-    #         for d in get_pytest_report_dirs(request.config)
-    #     ],
-    # )
-    #
-    # for report_dir in get_pytest_report_dirs(request.config):
-    #     target_dir = ensure_dir_exists(os.path.join(report_dir, test_name))
-    #
-    #     for log_file in HOST_LOG_FILES:
-    #         if not os.path.exists(log_file):
-    #             print(f"Log file not found: {log_file}")
-    #             continue
-    #         target_path = os.path.join(
-    #             target_dir, f"host-{os.path.basename(log_file)}"
-    #         )
-    #         copy_logs_from_starttime(
-    #             log_file,
-    #             target_path,
-    #             start_time,
-    #             LOG_TIMESTAMP_FORMAT,
-    #             " ",
-    #         )
-
+    logger_tests.debug(get_function_name())
     if shared_data.group_2:
         shared_data.group_2.delete()
         # shared_data.group_2.member_did_manager.delete()
@@ -320,7 +291,10 @@ def test_cleanup(request: pytest.FixtureRequest) -> None:
     shutil.rmtree(os.path.dirname(shared_data.member_3_keystore_file))
     shutil.rmtree(os.path.dirname(shared_data.member_4_keystore_file))
     collect_all_test_logs(
-        test_name, shared_data.containers, request.config, start_time
+        test_name,
+        shared_data.containers,
+        request.config,
+        shared_data.start_time,
     )
     cleanup_walytis_ipfs()
 

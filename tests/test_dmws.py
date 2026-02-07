@@ -1,6 +1,8 @@
+import _auto_run_with_pytest  # noqa
+from testing_utils import collect_all_test_logs
+from datetime import datetime
 from emtest import await_thread_cleanup
 from testing_utils import cleanup_logs
-import _auto_run_with_pytest  # noqa
 from conftest import cleanup_walytis_ipfs
 from walytis_identities.key_store import KeyStore
 from walytis_identities.did_manager import DidManager
@@ -21,6 +23,7 @@ class SharedData:
     pass
 
 
+test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
@@ -42,7 +45,7 @@ def setup_and_teardown() -> None:
 
 
 def prepare():
-    cleanup_logs()
+    shared_data.start_time = datetime.now()
     if os.path.exists(dm_config_dir):
         shutil.rmtree(dm_config_dir)
     os.makedirs(dm_config_dir)
@@ -165,7 +168,10 @@ def test_delete_dm():
     ), "Deleted DidManagerWithSupers."
 
 
-def test_threads_cleanup() -> None:
+def test_threads_cleanup(request: pytest.FixtureRequest) -> None:
     """Test that no threads are left running."""
     cleanup()
+    collect_all_test_logs(
+        test_name, [], request.config, shared_data.start_time
+    )
     assert await_thread_cleanup(timeout=10)

@@ -1,3 +1,6 @@
+import pytest
+from testing_utils import collect_all_test_logs
+from datetime import datetime
 import _auto_run_with_pytest  # noqa
 import os
 from testing_utils import cleanup_logs
@@ -19,13 +22,15 @@ class SharedData:
     group_1: GroupDidManager
 
 
+test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
 def test_preparations():
     """Setup resources in preparation for tests."""
-    cleanup_logs()
+
     # declare 'global' variables
+    shared_data.start_time = datetime.now()
     shared_data.person_config_dir = tempfile.mkdtemp()
     shared_data.person_config_dir2 = tempfile.mkdtemp()
     shared_data.key_store_path = os.path.join(
@@ -87,7 +92,10 @@ def test_group():
     blockchain.terminate()
 
 
-def test_threads_cleanup() -> None:
+def test_threads_cleanup(request: pytest.FixtureRequest) -> None:
     """Test that no threads are left running."""
+    collect_all_test_logs(
+        test_name, [], request.config, shared_data.start_time
+    )
     cleanup()
     assert await_thread_cleanup(timeout=10)

@@ -1,5 +1,6 @@
+from datetime import datetime
 import _auto_run_with_pytest  # noqa
-from testing_utils import cleanup_logs
+from testing_utils import collect_all_test_logs
 import pytest
 from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
 from emtest import get_pytest_report_dirs
@@ -47,12 +48,13 @@ class SharedData:
     pass
 
 
+test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 logger.info("Initialised shared_data.")
 
 
 def test_preparations():
-    cleanup_logs()
+    shared_data.start_time = datetime.now()
     logger.info("Deleting old docker containers...")
     delete_containers(image="local/walid_testing")
 
@@ -150,10 +152,11 @@ def test_datatransmission():
 def test_cleanup(request: pytest.FixtureRequest) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
-    get_logs_and_delete_dockers(
+    collect_all_test_logs(
+        test_name,
         shared_data.containers,
-        DOCKER_LOG_FILES,
-        get_pytest_report_dirs(request.config),
+        request.config,
+        shared_data.start_time,
     )
 
     shared_data.group_did_manager.terminate()

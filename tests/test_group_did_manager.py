@@ -1,3 +1,5 @@
+from testing_utils import collect_all_test_logs
+from datetime import datetime
 import _auto_run_with_pytest  # noqa
 import json
 import os
@@ -34,11 +36,12 @@ class SharedData:
         self.KEY = Key.create(self.CRYPTO_FAMILY)
 
 
+test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
 def test_preparations() -> None:
-    cleanup_logs()
+    shared_data.start_time = datetime.now()
 
 
 def test_create_person_identity() -> None:
@@ -207,7 +210,10 @@ def cleanup() -> None:
     cleanup_walytis_ipfs()
 
 
-def test_threads_cleanup() -> None:
+def test_threads_cleanup(request: pytest.FixtureRequest) -> None:
     """Test that no threads are left running."""
     cleanup()
+    collect_all_test_logs(
+        test_name, [], request.config, shared_data.start_time
+    )
     assert await_thread_cleanup(timeout=10)

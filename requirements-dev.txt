@@ -1,4 +1,7 @@
 pytest
+pytest-timeout
+pytest-html
+pytest-json
 pytest-dependency
 brenthy_docker>=0.3.8
 toml

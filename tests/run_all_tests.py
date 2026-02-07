@@ -14,7 +14,7 @@ pytest_args = sys.argv[1:]
 
 TEST_FUNC_TIMEOUT_SEC = 300
 REPORTS_DIR_PREF = env_vars.str(
-    "TESTS_REPORTS_DIR_PREF", default=os.path.join("reports", "report-")
+    "WALY_TEST_REPORTS_DIR", default=os.path.join("reports", "report-")
 )
 
 
