@@ -142,12 +142,6 @@ def test_member_joined():
             timeout=JOIN_DUR + 10,
         )
 
-    Thread(
-        target=run_on_docker, name="docker_create_identity_and_invitation"
-    ).start()
-    sleep(10)  # wait for GDMs to load in docker
-
-    logger_tests.debug(get_function_name())
     peer_id = shared_data.containers[0].ipfs_id
     multi_addrs = shared_data.containers[0].get_multi_addrs()
 
@@ -165,6 +159,15 @@ def test_member_joined():
     )
     logger_tests.debug("Creating member...")
     member = DidManager.create(shared_data.group_2_config_dir)
+
+    # Creating the member above can take a lot of time, sometimes,
+    # so it's best to do it before running the docker process
+    logger_tests.debug("Created member, starting process in docker...")
+    Thread(
+        target=run_on_docker, name="docker_create_identity_and_invitation"
+    ).start()
+    sleep(5)  # wait for GDMs to load in docker
+
     logger_tests.debug("Member joining GDM...")
     shared_data.group_2 = GroupDidManager.join(
         invitation, group_keystore, member

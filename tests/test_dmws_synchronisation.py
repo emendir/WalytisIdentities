@@ -10,7 +10,7 @@ import os
 import shutil
 from threading import Thread
 
-from conftest import cleanup_walytis_ipfs
+from conftest import cleanup_walytis_ipfs, logger_tests
 import pytest
 from brenthy_docker import DockerShellError, DockerShellTimeoutError
 from brenthy_tools_beta.utils import function_name
@@ -31,7 +31,7 @@ from walid_docker.walid_docker import (
 )
 
 from walytis_identities.log import (
-    logger_dmws as logger,
+    logger_dmws,
     file_handler,
     console_handler,
     logger_gdm_join,
@@ -41,7 +41,7 @@ import logging
 file_handler.setLevel(logging.DEBUG)
 console_handler.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
-logger.setLevel(logging.DEBUG)
+logger_tests.setLevel(logging.DEBUG)
 
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
@@ -60,11 +60,11 @@ import conftest # configure Walytis API & logging
 import docker_dmws_sync
 from docker_dmws_sync import shared_data
 import pytest
-from docker_dmws_sync import logger
-logger.info('DOCKER: Preparing tests...')
+from docker_dmws_sync import logger_tests
+logger_tests.info('DOCKER: Preparing tests...')
 docker_dmws_sync.REBUILD_DOCKER=False
 docker_dmws_sync.DELETE_ALL_BRENTHY_DOCKERS=False
-logger.info('DOCKER: Ready to test!')
+logger_tests.info('DOCKER: Ready to test!')
 """
 DOCKER_PYTHON_FINISH_TESTING_CODE = """
 """
@@ -108,6 +108,7 @@ class SharedData:
 
         # ensure IPFS nodes in all containers connect to each other
         for i in range(N_DOCKER_CONTAINERS):
+            peer_conn_info = []
             for j in range(N_DOCKER_CONTAINERS):
                 if j == i:
                     continue
@@ -117,13 +118,25 @@ class SharedData:
                 self.containers[j].await_ipfs()
 
                 peer_id = self.containers[j].ipfs_id
-                for multiaddr in self.containers[j].get_multi_addrs():
+                multiaddrs = self.containers[j].get_multi_addrs()
+                for multiaddr in multiaddrs:
                     result = self.containers[i].run_bash_code(
                         f"ipfs swarm connect {multiaddr}/p2p/{peer_id}"
                     )
                     if f"connect {peer_id} success" in result:
                         break
                     print(result)
+
+                multiaddr_info = ", ".join(
+                    [f'"{multiaddr}"' for multiaddr in multiaddrs]
+                )
+                peer_conn_info.append(
+                    f'{{"ID": "{peer_id}", "Addrs": [{multiaddr_info}]}}'
+                )
+            _peer_conn_info = ",".join(peer_conn_info)
+            self.containers[i].run_bash_code(
+                f"ipfs config --json Peering.Peers '[{_peer_conn_info}]'"
+            )
         print("Set up docker containers.")
 
 
@@ -250,7 +263,7 @@ def load_dm(docker_container: WalytisIdentitiesDocker) -> dict | None:
     try:
         invitation = json.loads(docker_lines[-2].strip().replace("'", '"'))
     except json.decoder.JSONDecodeError:
-        logger.warning(f"Error getting invitation: {docker_lines[-2]}")
+        logger_tests.warning(f"Error getting invitation: {docker_lines[-2]}")
         invitation = None
     assert (
         last_line
@@ -281,13 +294,13 @@ def add_sub(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"logger.info('Running {task_name} - OLD')",
+            f"logger_tests.info('Running {task_name} - OLD')",
             "docker_dmws_sync.docker_load_dm()",
-            "logger.info('Waiting to allow new device to join...')",
+            "logger_tests.info('Waiting to allow new device to join...')",
             f"sleep({PROFILE_JOIN_TIMEOUT_S})",
-            "logger.info('Finished waiting, terminating...')",
+            "logger_tests.info('Finished waiting, terminating...')",
             "shared_data.dm.terminate()",
-            "logger.info('Exiting after waiting.')",
+            "logger_tests.info('Exiting after waiting.')",
         ]
     )
     docker_container_old.run_python_code(
@@ -300,7 +313,7 @@ def add_sub(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"logger.info('Running {task_name} - NEW')",
+            f"logger_tests.info('Running {task_name} - NEW')",
             f"docker_dmws_sync.docker_join_dm('{invit_json}')",
             "shared_data.dm.terminate()",
         ]
@@ -392,13 +405,13 @@ def join_super(
     python_code_1 = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"logger.info('Running {task_name} - OLD')",
+            f"logger_tests.info('Running {task_name} - OLD')",
             "docker_dmws_sync.docker_load_dm()",
-            "logger.info('join_super: Waiting to allow conversation join...')",
+            "logger_tests.info('join_super: Waiting to allow conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
-            "logger.info('Finished waiting, terminating...')",
+            "logger_tests.info('Finished waiting, terminating...')",
             "shared_data.dm.terminate()",
-            "logger.info('Exiting after waiting.')",
+            "logger_tests.info('Exiting after waiting.')",
         ]
     )
     docker_container_old.run_python_code(python_code_1, background=True)
@@ -407,7 +420,7 @@ def join_super(
     python_code_2 = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"logger.info('Running {task_name} - NEW')",
+            f"logger_tests.info('Running {task_name} - NEW')",
             "docker_dmws_sync.docker_load_dm()",
             f"super = docker_dmws_sync.docker_join_super('{invit_json}')",
             "print('DOCKER: ', super.did)",
@@ -457,13 +470,13 @@ def auto_join_super(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"logger.info('Running {task_name} - OLD')",
+            f"logger_tests.info('Running {task_name} - OLD')",
             "docker_dmws_sync.docker_load_dm()",
-            "logger.info('Waiting to allow auto conversation join...')",
+            "logger_tests.info('Waiting to allow auto conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
-            "logger.info('Finished waiting, terminating...')",
+            "logger_tests.info('Finished waiting, terminating...')",
             "shared_data.dm.terminate()",
-            "logger.info('Exiting after waiting.')",
+            "logger_tests.info('Exiting after waiting.')",
         ]
     )
 
@@ -473,12 +486,12 @@ def auto_join_super(
     python_code = "\n".join(
         [
             DOCKER_PYTHON_LOAD_TESTING_CODE,
-            f"logger.info('Running {task_name} - NEW')",
+            f"logger_tests.info('Running {task_name} - NEW')",
             "docker_dmws_sync.docker_load_dm()",
-            "logger.info('Waiting to allow auto conversation join...')",
+            "logger_tests.info('Waiting to allow auto conversation join...')",
             f"sleep({CORRESP_JOIN_TIMEOUT_S})",
             "print('GroupDidManager DIDs:')",
-            "logger.info('Finished waiting, terminating...')",
+            "logger_tests.info('Finished waiting, terminating...')",
             "for c in shared_data.dm.get_active_supers():",
             "    print(c)",
             "shared_data.dm.terminate()",
