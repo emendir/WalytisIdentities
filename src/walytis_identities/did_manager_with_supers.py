@@ -361,6 +361,7 @@ class DidManagerWithSupers(DidManagerWrapper):
         assert isinstance(self.org_did_manager, GroupDidManager), (
             "org_did_manager must be GroupDidManager for joining already-joined DID-Mananger"
         )
+        logger.debug("JAJ: Joining already joined super...")
         correspondence_id = registration.correspondence_id
         super_keys = self.request_join_super(correspondence_id)
         if not super_keys:

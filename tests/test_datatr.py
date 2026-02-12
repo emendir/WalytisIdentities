@@ -1,5 +1,5 @@
-from datetime import datetime
 import _auto_run_with_pytest  # noqa
+from datetime import datetime
 from testing_utils import collect_all_test_logs
 import pytest
 from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
@@ -21,7 +21,9 @@ from prebuilt_group_did_managers import (
     load_did_manager,
 )
 from termcolor import colored as coloured
-from walytis_identities.group_did_manager import logger, GroupDidManager
+
+from conftest import logger_tests
+from walytis_identities.group_did_manager import GroupDidManager
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
     delete_containers,
@@ -50,12 +52,13 @@ class SharedData:
 
 test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
-logger.info("Initialised shared_data.")
+logger_tests.info("Initialised shared_data.")
 
 
+@pytest.mark.dependency()
 def test_preparations():
     shared_data.start_time = datetime.now()
-    logger.info("Deleting old docker containers...")
+    logger_tests.info("Deleting old docker containers...")
     delete_containers(image="local/walid_testing")
 
     if REBUILD_DOCKER:
@@ -66,8 +69,9 @@ def test_preparations():
     shared_data.containers: list[WalytisIdentitiesDocker] = []
 
 
+@pytest.mark.dependency(depends=["test_preparations"])
 def test_create_docker_containers():
-    logger.info("Creating docker containers...")
+    logger_tests.info("Creating docker containers...")
     for i in range(1):
         shared_data.containers.append(
             WalytisIdentitiesDocker(container_name=f"{DOCKER_NAME}0{i}")
@@ -85,18 +89,20 @@ def test_create_docker_containers():
     from threading import Thread
 
     Thread(target=run_py).start()
-    logger.debug("Continuing...")
+    sleep(5)  # give docker container a longer chance to start loading
+    logger_tests.debug("Continuing...")
 
 
+@pytest.mark.dependency(depends=["test_create_docker_containers"])
 def test_load_blockchain():
     """Test that we can load the prebuilt GroupDidManager."""
-    logger.info("Loading GDMs from tar files...")
+    logger_tests.info("Loading GDMs from tar files...")
     # choose which group_did_manager to load
     tarfile = "group_did_manager_2.tar"
     shared_data.group_did_manager = load_did_manager(
         os.path.join(os.path.dirname(__file__), tarfile)
     )
-    logger.debug("Loaded prebuilt GDM!")
+    logger_tests.debug("Loaded prebuilt GDM!")
     assert isinstance(shared_data.group_did_manager, GroupDidManager), (
         "Load prebuilt GDM"
     )
@@ -121,25 +127,26 @@ docker_datatr.docker_part()
 """
 
 
+@pytest.mark.dependency(depends=["test_load_blockchain"])
 def test_datatransmission():
     """Test that the previously created block is available in the container."""
 
     # give docker container more time to initialise
     sleep(10)
-    logger.debug("Starting datatransmission...")
+    logger_tests.debug("Starting datatransmission...")
     conv = start_conversation(
         shared_data.group_did_manager,
         CONV_NAME,
         shared_data.containers[0].ipfs_id,
         CONV_NAME,
     )
-    logger.debug("Sending message...")
+    logger_tests.debug("Sending message...")
     conv.say(HELLO_THERE)
-    logger.debug("Awaiting response...")
+    logger_tests.debug("Awaiting response...")
     reply = conv.listen(COMMS_TIMEOUT_S)
     assert conv and reply == HI, "Datatransmission failed"
 
-    logger.debug("Got response!")
+    logger_tests.debug("Got response!")
     file_transmission = conv.listen_for_file()
 
     assert file_transmission["metadata"] == FILE_METADATA
@@ -159,7 +166,6 @@ def test_cleanup(request: pytest.FixtureRequest) -> None:
         shared_data.start_time,
     )
 
-    shared_data.group_did_manager.terminate()
     if shared_data.group_did_manager:
         shared_data.group_did_manager.delete()
     cleanup_walytis_ipfs()
