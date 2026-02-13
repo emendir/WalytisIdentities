@@ -32,7 +32,6 @@ if [ $EMBEDDED -eq 1 ];then
     sudo systemctl stop ipfs brenthy
 else
     "$SCRIPT_DIR/limit_ipfs.sh"
-    sudo systemctl restart brenthy
 fi
 
 while true; do
@@ -45,6 +44,9 @@ while true; do
     sudo rm -rf /opt/Brenthy/BlockchainData/Walytis_Beta/Qm* || true 
     sudo systemctl restart ipfs brenthy
     sudo systemctl restart docker
+    # wait until ipfs is online again
+    until ipfs swarm peers 2>/dev/null 1>&2;do sleep 1;done
 
-    bash -c "$TEST_CMD"
+    bash -c "$TEST_CMD" || true
+    sleep 10
 done

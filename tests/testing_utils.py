@@ -98,7 +98,6 @@ def copy_logs_from_starttime(
                 # Try to parse timestamp only until we find the first match
                 try:
                     timestamp_str = line.split(timestamp_next_char)[0]
-                    print(timestamp_str)
                     timestamp = datetime.strptime(
                         timestamp_str,
                         timestamp_format,

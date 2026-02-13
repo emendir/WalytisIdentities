@@ -3,6 +3,8 @@
 Runs automatically when pytest runs a test before loading the test module.
 """
 
+from ipfs_remote import IpfsRemote
+from ipfs_node import IpfsNode
 from datetime import datetime
 import logging
 import os
@@ -154,4 +156,9 @@ def cleanup_walytis_ipfs():
     if not USING_BRENTHY:
         print("Terminating Walytis...")
         walytis_beta_embedded.terminate()
+
+    if isinstance(ipfs, IpfsNode):
         ipfs.terminate()
+    else:
+        # remove connections to old docker containers
+        ipfs.peers.disconnect(ipfs.peers.list_peers())
