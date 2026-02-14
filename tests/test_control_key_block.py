@@ -1,3 +1,7 @@
+import os
+from datetime import datetime
+import pytest
+from testing_utils import collect_all_test_logs
 import _auto_run_with_pytest  # noqa
 from conftest import cleanup_walytis_ipfs
 from emtest import await_thread_cleanup, env_vars
@@ -16,6 +20,18 @@ new_keys = [Key.create(CRYPTO_FAMILY) for i in range(2)]
 ckb = ControlKeyBlock.new(KeyGroup(old_keys), KeyGroup(new_keys))
 
 sig_data = bytes.decode(ckb.get_signature_data())
+
+
+class SharedData:
+    pass
+
+
+test_name = os.path.basename(__file__).split(".")[0]
+shared_data = SharedData()
+
+
+def test_preparations():
+    shared_data.start_time = datetime.now()
 
 
 def test_key_ids():
@@ -39,7 +55,13 @@ def test_signing():
     assert ckb.verify_signature()
 
 
-def test_threads_cleanup() -> None:
+def test_threads_cleanup(request: pytest.FixtureRequest) -> None:
     """Test that no threads are left running."""
     cleanup_walytis_ipfs()
+    collect_all_test_logs(
+        test_name,
+        [],
+        request.config,
+        shared_data.start_time,
+    )
     assert await_thread_cleanup(timeout=10)

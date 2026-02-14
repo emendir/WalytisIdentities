@@ -2,12 +2,6 @@ import _auto_run_with_pytest  # noqa
 from datetime import datetime
 from emtest.func_utils import get_function_name
 from testing_utils import collect_all_test_logs
-from testing_utils import (
-    get_logs_and_delete_dockers,
-    DOCKER_LOG_FILES,
-    HOST_LOG_FILES,
-    copy_logs_from_starttime,
-)
 from threading import Thread
 import pytest
 import json

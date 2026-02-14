@@ -3,6 +3,7 @@ pytest-timeout
 pytest-html
 pytest-json
 pytest-dependency
+pytest-forked
 brenthy_docker>=0.3.8
 toml
 emtest>=0.0.8

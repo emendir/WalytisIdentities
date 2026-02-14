@@ -3,6 +3,9 @@
 Runs automatically when pytest runs a test before loading the test module.
 """
 
+from time import sleep
+import threading
+import time
 from ipfs_remote import IpfsRemote
 from ipfs_node import IpfsNode
 from datetime import datetime
@@ -49,6 +52,14 @@ def pytest_configure(config):
     terminal = config.pluginmanager.get_plugin("terminalreporter")
     if terminal:
         terminal.write_line(f"Python {sys.version.split(' ')[0]}")
+
+
+def pytest_sessionfinish(
+    session: pytest.Session,
+    exitstatus: pytest.ExitCode,
+) -> None:
+    """Clean up after pytest has finished."""
+    os._exit(int(exitstatus))  # force close terminating dangling threads
 
 
 pytest_start_time = datetime.now()

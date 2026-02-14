@@ -26,13 +26,21 @@ def run_tests() -> None:
     json_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.json")
     ensure_dir_exists(os.path.dirname(html_path))
     ensure_dir_exists(os.path.dirname(json_path))
-    os.system(
-        f"{sys.executable} -m pytest {WORKDIR} "
-        f"--html={html_path} "
-        f"--json={json_path} "
-        f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
-        f"{' '.join(pytest_args)}"
-    )
+
+    test_files = [
+        os.path.join(WORKDIR, file)
+        for file in os.listdir(WORKDIR)
+        if (file.startswith("test_") and file.endswith(".py"))
+    ]
+    test_files.sort()
+    for test_file in test_files:
+        os.system(
+            f"{sys.executable} -m pytest {test_file} "
+            f"--html={html_path} "
+            f"--json={json_path} "
+            f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
+            f"{' '.join(pytest_args)} "
+        )
 
 
 print("Starting Brenthy...")
