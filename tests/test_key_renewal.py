@@ -49,7 +49,6 @@ logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 file_handler.setLevel(logging.DEBUG)
 
-test_name = os.path.basename(__file__).split(".")[0]
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
 
@@ -76,7 +75,6 @@ from docker_key_renewal import logger_tests
 @pytest.mark.dependency()
 def test_preparations(delete_files: bool = False):
     logger_tests.debug(get_function_name())
-    shared_data.start_time = datetime.now()
     if DELETE_ALL_BRENTHY_DOCKERS:
         delete_containers(image="local/walid_testing")
 
@@ -265,7 +263,7 @@ def test_renew_control_key():
     assert success
 
 
-def test_cleanup(request: pytest.FixtureRequest) -> None:
+def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
     """Ensure all resources used by tests are cleaned up."""
     logger_tests.debug(get_function_name())
     if shared_data.group_2:
@@ -290,8 +288,8 @@ def test_cleanup(request: pytest.FixtureRequest) -> None:
     collect_all_test_logs(
         test_name,
         shared_data.containers,
-        request.config,
-        shared_data.start_time,
+        test_report_dirs,
+        test_module_start_time,
     )
     cleanup_walytis_ipfs()
 

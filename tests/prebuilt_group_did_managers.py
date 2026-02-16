@@ -1,5 +1,6 @@
 import conftest  # noqa
 
+from conftest import cleanup_walytis_ipfs
 from threading import Thread
 import os
 import shutil
@@ -255,3 +256,4 @@ def load_did_manager(tarfile: str):
 
 if __name__ == "__main__":
     create_did_managers()
+    cleanup_walytis_ipfs()

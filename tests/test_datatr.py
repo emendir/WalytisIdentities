@@ -50,14 +50,12 @@ class SharedData:
     pass
 
 
-test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 logger_tests.info("Initialised shared_data.")
 
 
 @pytest.mark.dependency()
 def test_preparations():
-    shared_data.start_time = datetime.now()
     logger_tests.info("Deleting old docker containers...")
     delete_containers(image="local/walid_testing")
 
@@ -156,14 +154,14 @@ def test_datatransmission():
         conv.terminate()
 
 
-def test_cleanup(request: pytest.FixtureRequest) -> None:
+def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
     collect_all_test_logs(
         test_name,
         shared_data.containers,
-        request.config,
-        shared_data.start_time,
+        test_report_dirs,
+        test_module_start_time,
     )
 
     if shared_data.group_did_manager:

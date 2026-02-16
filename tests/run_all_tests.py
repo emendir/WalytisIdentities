@@ -13,9 +13,11 @@ pytest_args = sys.argv[1:]
 
 
 TEST_FUNC_TIMEOUT_SEC = 300
-REPORTS_DIR_PREF = env_vars.str(
-    "WALY_TEST_REPORTS_DIR", default=os.path.join("reports", "report-")
+
+WALY_TEST_REPORTS_DIR = env_vars.str(
+    "WALY_TEST_REPORTS_DIR", default=os.path.join("reports")
 )
+REPORTS_DIR_PREF = os.path.join(WALY_TEST_REPORTS_DIR, "report-")
 
 
 def run_tests() -> None:
@@ -44,7 +46,7 @@ def run_tests() -> None:
 
 
 print("Starting Brenthy...")
-os.system("sudo systemctl start ipfs brenthy")
+os.system("sudo systemctl restart ipfs brenthy")
 sleep(5)
 
 if True:

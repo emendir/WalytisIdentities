@@ -26,12 +26,11 @@ class SharedData:
     pass
 
 
-test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
 def test_preparations():
-    shared_data.start_time = datetime.now()
+    pass
 
 
 def test_key_ids():
@@ -55,13 +54,15 @@ def test_signing():
     assert ckb.verify_signature()
 
 
-def test_threads_cleanup(request: pytest.FixtureRequest) -> None:
+def test_threads_cleanup(
+    test_name, test_module_start_time, test_report_dirs
+) -> None:
     """Test that no threads are left running."""
     cleanup_walytis_ipfs()
     collect_all_test_logs(
         test_name,
         [],
-        request.config,
-        shared_data.start_time,
+        test_report_dirs,
+        test_module_start_time,
     )
     assert await_thread_cleanup(timeout=10)

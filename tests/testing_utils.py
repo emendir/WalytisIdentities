@@ -27,7 +27,7 @@ DOCKER_LOG_FILES = [
     "/opt/log/WalytisOffchain/WalytisOffchain.log",
     "/opt/log/WalytisMutability/WalytisMutability.log",
     "/opt/log/IPFS_TK/IPFS_TK.log",
-    "/opt/log/WalId_Tests/WalIdTests.log",
+    "/opt/log/WalId_Tests/Tests-WalId.log",
     "/opt/log/IpfsPeersLogger/ipfs_peers_logger.log",
 ]
 HOST_LOG_FILES = [
@@ -38,7 +38,7 @@ HOST_LOG_FILES = [
     "/opt/log/WalytisOffchain/WalytisOffchain.log",
     "/opt/log/WalytisMutability/WalytisMutability.log",
     "/opt/log/IPFS_TK/IPFS_TK.log",
-    "/opt/log/WalId_Tests/WalIdTests.log",
+    "/opt/log/WalId_Tests/Tests-WalId.log",
     "/opt/log/IpfsPeersLogger/ipfs_peers_logger.log",
 ]
 console_handler.setLevel(logging.DEBUG)
@@ -71,7 +71,7 @@ def cleanup_logs():
 def collect_all_test_logs(
     test_name: str,
     docker_containers: list[WalytisIdentitiesDocker],
-    pytest_data: pytest.Config,
+    test_report_dirs: list[str],
     test_start_time: datetime,
 ):
     """Gather logs from host and docker containers.
@@ -79,9 +79,7 @@ def collect_all_test_logs(
     WARNING: deletes the given docker containers.
     Copies logs to all report directories registered in pytest.
     """
-    report_dirs = [
-        os.path.join(d, test_name) for d in get_pytest_report_dirs(pytest_data)
-    ]
+    report_dirs = [os.path.join(d, test_name) for d in test_report_dirs]
     # get logs from, then delete containers
     get_logs_and_delete_dockers(
         docker_containers,

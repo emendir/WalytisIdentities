@@ -23,7 +23,6 @@ class SharedData:
     pass
 
 
-test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
@@ -45,7 +44,6 @@ def setup_and_teardown() -> None:
 
 
 def prepare():
-    shared_data.start_time = datetime.now()
     if os.path.exists(dm_config_dir):
         shutil.rmtree(dm_config_dir)
     os.makedirs(dm_config_dir)
@@ -168,10 +166,15 @@ def test_delete_dm():
     ), "Deleted DidManagerWithSupers."
 
 
-def test_threads_cleanup(request: pytest.FixtureRequest) -> None:
+def test_threads_cleanup(
+    test_name, test_module_start_time, test_report_dirs
+) -> None:
     """Test that no threads are left running."""
     cleanup()
     collect_all_test_logs(
-        test_name, [], request.config, shared_data.start_time
+        test_name,
+        [],
+        test_report_dirs,
+        test_module_start_time,
     )
     assert await_thread_cleanup(timeout=10)

@@ -21,23 +21,26 @@ from emtest import (
     configure_pytest_reporter,
     set_env_var,
 )
+
+from emtest import (
+    get_pytest_report_dirs,
+)
 from emtest.log_utils import get_app_log_dir
 
 PRINT_ERRORS = (
     True  # whether or not to print error messages after failed tests
 )
-
-WORKDIR = os.path.dirname(os.path.abspath(__file__))
-PROJ_DIR = os.path.dirname(WORKDIR)
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJ_DIR = os.path.dirname(TESTS_DIR)
 SRC_DIR = os.path.join(PROJ_DIR, "src")
 
-os.chdir(WORKDIR)
+os.chdir(TESTS_DIR)
 
 # add source code paths to python's search paths
 add_path_to_python(SRC_DIR)
 
 
-logger_tests = logging.getLogger("WalIdTests")
+logger_tests = logging.getLogger("Tests-WalId")
 logger_tests.setLevel(logging.DEBUG)
 logger_pytest = logging.getLogger("Pytest")
 logger_pytest.setLevel(logging.DEBUG)
@@ -62,7 +65,26 @@ def pytest_sessionfinish(
     os._exit(int(exitstatus))  # force close terminating dangling threads
 
 
-pytest_start_time = datetime.now()
+@pytest.fixture(scope="module")
+def test_name(request: pytest.FixtureRequest):
+    module = request.module
+    module_name = module.__name__
+    print(module_name)
+    return module_name
+
+
+@pytest.fixture(scope="session")
+def test_report_dirs(
+    pytestconfig: pytest.Config,
+):
+    return get_pytest_report_dirs(pytestconfig)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def test_module_start_time(
+    pytestconfig: pytest.Config,
+):
+    return datetime.now()
 
 
 if True:
@@ -125,7 +147,9 @@ if True:
     plain_console_handler.setLevel(logging.DEBUG)
 
     file_handler_tests = logging.handlers.RotatingFileHandler(
-        os.path.join(get_app_log_dir("WalId_Tests", "Waly"), "WalIdTests.log"),
+        os.path.join(
+            get_app_log_dir("WalId_Tests", "Waly"), "Tests-WalId.log"
+        ),
         maxBytes=4 * 1024 * 1024,
         backupCount=4,
     )
@@ -142,7 +166,6 @@ if True:
 
     # add logging for IPFS-Toolkit
     from ipfs_tk_transmission.log import logger_transm, logger_conv
-    from emtest.log_utils import get_app_log_dir
 
     file_handler_ipfs = logging.handlers.RotatingFileHandler(
         os.path.join(get_app_log_dir("IPFS_TK", "Waly"), "IPFS_TK.log"),

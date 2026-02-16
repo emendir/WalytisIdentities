@@ -23,12 +23,11 @@ class SharedData:
         self.KEY = Key.create(self.CRYPTO_FAMILY)
 
 
-test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
 def test_preparations():
-    shared_data.start_time = datetime.now()
+    pass
 
 
 def test_key_serialisation():
@@ -145,12 +144,15 @@ def test_keygroup():
         assert reloaded_kg.keys[i].private_key == key.private_key
 
 
-def test_cleanup(request: pytest.FixtureRequest) -> None:
+def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
     """Test that no threads are left running."""
     cleanup_walytis_ipfs()
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
     collect_all_test_logs(
-        test_name, [], request.config, shared_data.start_time
+        test_name,
+        [],
+        test_report_dirs,
+        test_module_start_time,
     )
     assert await_thread_cleanup(timeout=10)

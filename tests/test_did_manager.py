@@ -18,12 +18,11 @@ class SharedData:
     pass
 
 
-test_name = os.path.basename(__file__).split(".")[0]
 shared_data = SharedData()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_and_teardown(request: pytest.FixtureRequest) -> None:
+def setup_and_teardown() -> None:
     """Wrap around tests, running preparations and cleaning up afterwards.
 
     A module-level fixture that runs once for all tests in this file.
@@ -36,11 +35,9 @@ def setup_and_teardown(request: pytest.FixtureRequest) -> None:
 
     # Teardown: code here runs after the tests
     print(f"\nFinished tests for {__name__}\n")
-    cleanup(request)
 
 
 def prepare():
-    shared_data.start_time = datetime.now()
     shared_data.tempdir = tempfile.mkdtemp()
     shared_data.key_store_path = os.path.join(
         shared_data.tempdir, "keystore.json"
@@ -51,12 +48,15 @@ def prepare():
     shared_data.CRYPT = Key.create(shared_data.CRYPTO_FAMILY)
 
 
-def cleanup(request: pytest.FixtureRequest):
+def cleanup(test_name, test_module_start_time, test_report_dirs):
     """Clean up resources used during tests."""
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
     collect_all_test_logs(
-        test_name, [], request.config, shared_data.start_time
+        test_name,
+        [],
+        test_report_dirs,
+        test_module_start_time,
     )
     cleanup_walytis_ipfs()
 
@@ -140,7 +140,7 @@ def test_signing():
     ), "Signature verification across key renewal works"
 
 
-def test_delete_did_manager(request: pytest.FixtureRequest):
+def test_delete_did_manager():
     blockchain_id = shared_data.did_manager.blockchain.blockchain_id
 
     shared_data.did_manager.delete()
@@ -149,8 +149,11 @@ def test_delete_did_manager(request: pytest.FixtureRequest):
         "Delete DidManager"
     )
 
-    def test_threads_cleanup() -> None:
-        """Test that no threads are left running."""
 
-    cleanup(request)
+def test_threads_cleanup(
+    test_name, test_module_start_time, test_report_dirs
+) -> None:
+    """Test that no threads are left running."""
+
+    cleanup(test_name, test_module_start_time, test_report_dirs)
     assert await_thread_cleanup(timeout=10)

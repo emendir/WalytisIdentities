@@ -71,8 +71,6 @@ DOCKER_PYTHON_FINISH_TESTING_CODE = """
 
 N_DOCKER_CONTAINERS = 4
 
-test_name = os.path.basename(__file__).split(".")[0]
-
 
 class SharedData:
     def __init__(self):
@@ -161,7 +159,6 @@ def setup_and_teardown(request: pytest.FixtureRequest) -> None:
 
 
 def prepare():
-    shared_data.start_time = datetime.now()
     if not os.path.exists(dm_config_dir):
         os.makedirs(dm_config_dir)
     if are_we_in_docker():
@@ -628,7 +625,7 @@ def test_auto_join_super_2():
     # create second dm with multiple devices
 
 
-def test_cleanup(request: pytest.FixtureRequest) -> None:
+def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
 
@@ -641,8 +638,8 @@ def test_cleanup(request: pytest.FixtureRequest) -> None:
     collect_all_test_logs(
         test_name,
         shared_data.containers,
-        request.config,
-        shared_data.start_time,
+        test_report_dirs,
+        test_module_start_time,
     )
     cleanup_walytis_ipfs()
 
