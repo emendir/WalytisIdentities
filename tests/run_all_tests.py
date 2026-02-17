@@ -15,7 +15,7 @@ pytest_args = sys.argv[1:]
 TEST_FUNC_TIMEOUT_SEC = 300
 
 WALY_TEST_REPORTS_DIR = env_vars.str(
-    "WALY_TEST_REPORTS_DIR", default=os.path.join("reports")
+    "WALY_TEST_REPORTS_DIR", default=os.path.join(WORKDIR, "reports")
 )
 REPORTS_DIR_PREF = os.path.join(WALY_TEST_REPORTS_DIR, "report-")
 
@@ -24,18 +24,22 @@ def run_tests() -> None:
     """Run each test file with pytest."""
     pytest_args = sys.argv[1:]
     timestamp = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    html_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.html")
-    json_path = os.path.join(REPORTS_DIR_PREF + timestamp, "report.json")
-    ensure_dir_exists(os.path.dirname(html_path))
-    ensure_dir_exists(os.path.dirname(json_path))
 
     test_files = [
-        os.path.join(WORKDIR, file)
+        (file.strip(".py"), os.path.join(WORKDIR, file))
         for file in os.listdir(WORKDIR)
         if (file.startswith("test_") and file.endswith(".py"))
     ]
     test_files.sort()
-    for test_file in test_files:
+    for test_name, test_file in test_files:
+        html_path = os.path.join(
+            REPORTS_DIR_PREF + timestamp, test_name, "report.html"
+        )
+        json_path = os.path.join(
+            REPORTS_DIR_PREF + timestamp, test_name, "report.json"
+        )
+        ensure_dir_exists(os.path.dirname(html_path))
+        ensure_dir_exists(os.path.dirname(json_path))
         os.system(
             f"{sys.executable} -m pytest {test_file} "
             f"--html={html_path} "
