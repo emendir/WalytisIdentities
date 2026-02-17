@@ -2,7 +2,6 @@ import _auto_run_with_pytest  # noqa
 from testing_utils import collect_all_test_logs
 from datetime import datetime
 from emtest import await_thread_cleanup
-from testing_utils import cleanup_logs
 from conftest import cleanup_walytis_ipfs
 from walytis_identities.key_store import KeyStore
 from walytis_identities.did_manager import DidManager

@@ -1,8 +1,7 @@
 import _auto_run_with_pytest  # noqa
-from testing_utils import cleanup_logs, collect_all_test_logs
+from testing_utils import collect_all_test_logs
 from datetime import datetime
 from time import sleep
-from testing_utils import cleanup_logs
 from testing_utils import get_logs_and_delete_dockers, DOCKER_LOG_FILES
 from emtest import get_pytest_report_dirs
 import json
@@ -625,7 +624,9 @@ def test_auto_join_super_2():
     # create second dm with multiple devices
 
 
-def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(
+    test_module_name, test_module_start_time, test_report_dirs
+) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
 

@@ -6,7 +6,6 @@ import os
 import shutil
 import tempfile
 
-from testing_utils import cleanup_logs
 from conftest import cleanup_walytis_ipfs
 import pytest
 import walytis_beta_api
@@ -209,7 +208,9 @@ def cleanup() -> None:
     cleanup_walytis_ipfs()
 
 
-def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(
+    test_module_name, test_module_start_time, test_report_dirs
+) -> None:
     """Test that no threads are left running."""
     cleanup()
     collect_all_test_logs(

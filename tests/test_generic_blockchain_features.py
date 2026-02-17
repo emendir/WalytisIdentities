@@ -3,7 +3,6 @@ from testing_utils import collect_all_test_logs
 from datetime import datetime
 import _auto_run_with_pytest  # noqa
 import os
-from testing_utils import cleanup_logs
 import shutil
 import tempfile
 

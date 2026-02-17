@@ -59,21 +59,12 @@ PROFILE_JOIN_TIMEOUT_S = 60
 CORRESP_JOIN_TIMEOUT_S = 60
 
 
-def cleanup_logs():
-    for log_file in HOST_LOG_FILES:
-        if os.path.exists(log_file):
-            print("Removing log file", log_file)
-            os.remove(log_file)
-        else:
-            print("Log file not found", log_file)
-
-
 def collect_all_test_logs(
     test_module_name: str,
     docker_containers: list[WalytisIdentitiesDocker],
     test_report_dirs: list[str],
     test_start_time: datetime,
-):
+) -> None:
     """Gather logs from host and docker containers.
 
     WARNING: deletes the given docker containers.
