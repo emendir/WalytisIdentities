@@ -47,7 +47,7 @@ logger_pytest.setLevel(logging.DEBUG)
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     """Make changes to pytest's behaviour."""
     configure_pytest_reporter(
         config, print_errors=PRINT_ERRORS, logger=logger_pytest
@@ -66,7 +66,8 @@ def pytest_sessionfinish(
 
 
 @pytest.fixture(scope="module")
-def test_module_name(request: pytest.FixtureRequest):
+def test_module_name(request: pytest.FixtureRequest) -> None:
+    """Get the name of the currently running test module."""
     module = request.module
     module_name = module.__name__
     print(module_name)
@@ -76,14 +77,16 @@ def test_module_name(request: pytest.FixtureRequest):
 @pytest.fixture(scope="session")
 def test_report_dirs(
     pytestconfig: pytest.Config,
-):
+) -> None:
+    """Get the directories pytest is configured to write reports to."""
     return get_pytest_report_dirs(pytestconfig)
 
 
 @pytest.fixture(scope="module", autouse=True)
 def test_module_start_time(
     pytestconfig: pytest.Config,
-):
+) -> None:
+    """Get the time the currently running test module started."""
     return datetime.now()
 
 
