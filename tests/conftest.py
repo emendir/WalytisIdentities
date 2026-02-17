@@ -66,7 +66,7 @@ def pytest_sessionfinish(
 
 
 @pytest.fixture(scope="module")
-def test_name(request: pytest.FixtureRequest):
+def test_module_name(request: pytest.FixtureRequest):
     module = request.module
     module_name = module.__name__
     print(module_name)

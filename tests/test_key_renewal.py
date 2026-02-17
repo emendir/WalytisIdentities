@@ -263,7 +263,7 @@ def test_renew_control_key():
     assert success
 
 
-def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
     """Ensure all resources used by tests are cleaned up."""
     logger_tests.debug(get_function_name())
     if shared_data.group_2:
@@ -286,7 +286,7 @@ def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
     shutil.rmtree(os.path.dirname(shared_data.member_3_keystore_file))
     shutil.rmtree(os.path.dirname(shared_data.member_4_keystore_file))
     collect_all_test_logs(
-        test_name,
+        test_module_name,
         shared_data.containers,
         test_report_dirs,
         test_module_start_time,

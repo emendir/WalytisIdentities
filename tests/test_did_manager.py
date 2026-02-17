@@ -48,12 +48,12 @@ def prepare():
     shared_data.CRYPT = Key.create(shared_data.CRYPTO_FAMILY)
 
 
-def cleanup(test_name, test_module_start_time, test_report_dirs):
+def cleanup(test_module_name, test_module_start_time, test_report_dirs):
     """Clean up resources used during tests."""
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
     collect_all_test_logs(
-        test_name,
+        test_module_name,
         [],
         test_report_dirs,
         test_module_start_time,
@@ -151,9 +151,9 @@ def test_delete_did_manager():
 
 
 def test_threads_cleanup(
-    test_name, test_module_start_time, test_report_dirs
+    test_module_name, test_module_start_time, test_report_dirs
 ) -> None:
     """Test that no threads are left running."""
 
-    cleanup(test_name, test_module_start_time, test_report_dirs)
+    cleanup(test_module_name, test_module_start_time, test_report_dirs)
     assert await_thread_cleanup(timeout=10)

@@ -625,7 +625,7 @@ def test_auto_join_super_2():
     # create second dm with multiple devices
 
 
-def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
 
@@ -636,7 +636,7 @@ def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
     if shared_data.dm:
         shared_data.dm.delete()
     collect_all_test_logs(
-        test_name,
+        test_module_name,
         shared_data.containers,
         test_report_dirs,
         test_module_start_time,

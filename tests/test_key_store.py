@@ -144,13 +144,13 @@ def test_keygroup():
         assert reloaded_kg.keys[i].private_key == key.private_key
 
 
-def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
     """Test that no threads are left running."""
     cleanup_walytis_ipfs()
     if os.path.exists(shared_data.tempdir):
         shutil.rmtree(shared_data.tempdir)
     collect_all_test_logs(
-        test_name,
+        test_module_name,
         [],
         test_report_dirs,
         test_module_start_time,

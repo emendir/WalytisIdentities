@@ -69,7 +69,7 @@ def cleanup_logs():
 
 
 def collect_all_test_logs(
-    test_name: str,
+    test_module_name: str,
     docker_containers: list[WalytisIdentitiesDocker],
     test_report_dirs: list[str],
     test_start_time: datetime,
@@ -79,7 +79,7 @@ def collect_all_test_logs(
     WARNING: deletes the given docker containers.
     Copies logs to all report directories registered in pytest.
     """
-    report_dirs = [os.path.join(d, test_name) for d in test_report_dirs]
+    report_dirs = [os.path.join(d, test_module_name) for d in test_report_dirs]
     # get logs from, then delete containers
     get_logs_and_delete_dockers(
         docker_containers,

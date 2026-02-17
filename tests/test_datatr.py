@@ -154,11 +154,11 @@ def test_datatransmission():
         conv.terminate()
 
 
-def test_cleanup(test_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
     collect_all_test_logs(
-        test_name,
+        test_module_name,
         shared_data.containers,
         test_report_dirs,
         test_module_start_time,

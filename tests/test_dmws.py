@@ -167,12 +167,12 @@ def test_delete_dm():
 
 
 def test_threads_cleanup(
-    test_name, test_module_start_time, test_report_dirs
+    test_module_name, test_module_start_time, test_report_dirs
 ) -> None:
     """Test that no threads are left running."""
     cleanup()
     collect_all_test_logs(
-        test_name,
+        test_module_name,
         [],
         test_report_dirs,
         test_module_start_time,
