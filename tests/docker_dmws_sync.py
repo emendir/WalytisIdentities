@@ -18,19 +18,10 @@ from walytis_identities.key_store import KeyStore
 import logging
 from walytis_identities.log import (
     logger_dmws,
-    file_handler,
-    console_handler,
     logger_gdm_join,
 )
 from conftest import logger_tests
 
-# ipfs_tk_conv_logger = logging.getLogger("IPFS-TK-Conversations")
-# ipfs_tk_conv_logger.addHandler(file_handler)
-# ipfs_tk_conv_logger.addHandler(console_handler)
-# ipfs_tk_conv_logger.setLevel(logging.DEBUG)
-
-file_handler.setLevel(logging.DEBUG)
-console_handler.setLevel(logging.DEBUG)
 logger_tests.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 

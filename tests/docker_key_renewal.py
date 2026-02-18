@@ -23,7 +23,6 @@ from conftest import logger_tests
 from walytis_identities.log import (
     logger_ckm,
     logger_gdm_join,
-    file_handler,
     logger_gdm,
     logger_datatr,
 )
@@ -31,7 +30,6 @@ from walytis_identities.log import (
 logger_gdm.setLevel(logging.DEBUG)
 logger_ckm.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
-file_handler.setLevel(logging.DEBUG)
 logger_datatr.setLevel(logging.DEBUG)
 logger_tests.setLevel(logging.DEBUG)
 

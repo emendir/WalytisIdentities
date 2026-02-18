@@ -31,14 +31,10 @@ from walid_docker.walid_docker import (
 
 from walytis_identities.log import (
     logger_dmws,
-    file_handler,
-    console_handler,
     logger_gdm_join,
 )
 import logging
 
-file_handler.setLevel(logging.DEBUG)
-console_handler.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 logger_tests.setLevel(logging.DEBUG)
 

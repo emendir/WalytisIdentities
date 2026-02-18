@@ -22,7 +22,7 @@ from walid_docker.walid_docker import (
 )
 from conftest import logger_tests
 
-from walytis_identities.log import logger_datatr, file_handler, console_handler
+from walytis_identities.log import logger_datatr
 
 logger_datatr.setLevel(logging.DEBUG)
 logger_tests.setLevel(logging.DEBUG)

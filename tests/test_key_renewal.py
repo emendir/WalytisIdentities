@@ -35,7 +35,6 @@ from walytis_identities.key_store import KeyStore
 from walytis_identities.log import (
     logger_dm,
     logger_gdm_join,
-    file_handler,
     logger_gdm,
     LOG_TIMESTAMP_FORMAT,
 )
@@ -47,7 +46,6 @@ logger_gdm.setLevel(logging.DEBUG)
 logger_dm.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
 logger_gdm_join.setLevel(logging.DEBUG)
-file_handler.setLevel(logging.DEBUG)
 
 REBUILD_DOCKER = True
 REBUILD_DOCKER = env_vars.bool("TESTS_REBUILD_DOCKER", default=REBUILD_DOCKER)
@@ -263,7 +261,9 @@ def test_renew_control_key():
     assert success
 
 
-def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(
+    test_module_name, test_module_start_time, test_report_dirs
+) -> None:
     """Ensure all resources used by tests are cleaned up."""
     logger_tests.debug(get_function_name())
     if shared_data.group_2:
