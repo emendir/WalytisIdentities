@@ -146,40 +146,45 @@ if True:
         formatter,
     )
 
+    if file_handler:
+        file_handler.setLevel(logging.DEBUG)
+
     plain_console_handler = logging.StreamHandler()
     plain_console_handler.setLevel(logging.DEBUG)
 
-    file_handler_tests = logging.handlers.RotatingFileHandler(
-        os.path.join(
-            get_app_log_dir("WalId_Tests", "Waly"), "Tests-WalId.log"
-        ),
-        maxBytes=4 * 1024 * 1024,
-        backupCount=4,
-    )
-    file_handler_tests.setLevel(logging.DEBUG)
-    file_handler_tests.setFormatter(formatter)
-    logger_tests.addHandler(file_handler_tests)
-    logger_tests.addHandler(plain_console_handler)
+    LOG_DIR = get_app_log_dir("WalId_Tests", "Waly")
+    if LOG_DIR:
+        file_handler_tests = logging.handlers.RotatingFileHandler(
+            os.path.join(LOG_DIR, "Tests-WalId.log"),
+            maxBytes=4 * 1024 * 1024,
+            backupCount=4,
+        )
 
-    logger_pytest.addHandler(plain_console_handler)
-    logger_pytest.addHandler(file_handler_tests)
+        file_handler_tests.setLevel(logging.DEBUG)
+        file_handler_tests.setFormatter(formatter)
 
-    file_handler.setLevel(logging.DEBUG)
+        logger_tests.addHandler(file_handler_tests)
+        logger_pytest.addHandler(file_handler_tests)
     console_handler.setLevel(logging.DEBUG)
+    logger_tests.addHandler(plain_console_handler)
+    logger_pytest.addHandler(plain_console_handler)
 
     # add logging for IPFS-Toolkit
     from ipfs_tk_transmission.log import logger_transm, logger_conv
 
-    file_handler_ipfs = logging.handlers.RotatingFileHandler(
-        os.path.join(get_app_log_dir("IPFS_TK", "Waly"), "IPFS_TK.log"),
-        maxBytes=5 * 1024 * 1024,
-        backupCount=5,
-    )
-    file_handler_ipfs.setLevel(logging.DEBUG)
-    file_handler_ipfs.setFormatter(formatter)
+    LOG_DIR = get_app_log_dir("IPFS_TK", "Waly")
+    if LOG_DIR:
+        file_handler_ipfs = logging.handlers.RotatingFileHandler(
+            os.path.join(LOG_DIR, "IPFS_TK.log"),
+            maxBytes=5 * 1024 * 1024,
+            backupCount=5,
+        )
+        file_handler_ipfs.setLevel(logging.DEBUG)
+        file_handler_ipfs.setFormatter(formatter)
 
-    logger_transm.addHandler(file_handler_ipfs)
-    logger_conv.addHandler(file_handler_ipfs)
+        logger_transm.addHandler(file_handler_ipfs)
+        logger_conv.addHandler(file_handler_ipfs)
+
     logger_conv.setLevel(logging.DEBUG)
     logger_transm.setLevel(logging.DEBUG)
 

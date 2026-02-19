@@ -1,3 +1,4 @@
+from walytis_beta_tools.log import LOG_TIMESTAMP_FORMAT
 from datetime import datetime
 import logging
 import os
@@ -7,10 +8,6 @@ from logging.handlers import RotatingFileHandler
 import emtest.log_recording  # noqa
 
 from emtest.log_utils import get_app_log_dir
-
-LOG_PATH = os.path.join(
-    get_app_log_dir("WalytisIdentities", "Waly"), "WalytisIdentities.log"
-)
 
 
 class MillisecondFormatter(logging.Formatter):
@@ -25,8 +22,6 @@ class MillisecondFormatter(logging.Formatter):
 
         return result
 
-
-LOG_TIMESTAMP_FORMAT = "%Y-%m-%d~%H:%M:%S.%f"
 
 # Formatter
 formatter = MillisecondFormatter(
@@ -73,9 +68,11 @@ logger_keys.setLevel(logging.INFO)
 logger_keys.addHandler(console_handler)
 
 file_handler = None
-if LOG_PATH is None:
+LOG_DIR = get_app_log_dir("WalytisIdentities", "Waly")
+if LOG_DIR is None:
     logger_walid.info("Logging to files is disabled.")
 else:
+    LOG_PATH = os.path.join(LOG_DIR, "WalytisIdentities.log")
     logger_walid.info(f"Logging to {os.path.abspath(LOG_PATH)}")
 
     file_handler = RotatingFileHandler(

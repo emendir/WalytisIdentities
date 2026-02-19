@@ -1,6 +1,6 @@
 rfc3987
-walytis_beta_api>=2.4.16
-walytis_beta_embedded>=0.0.15
+walytis_beta_api>=2.4.18
+walytis_beta_embedded>=0.0.16
 decorate_all
 py_strict_typing
 loguru

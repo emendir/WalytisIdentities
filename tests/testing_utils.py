@@ -1,4 +1,4 @@
-from walytis_identities.log import LOG_TIMESTAMP_FORMAT
+from walytis_beta_tools.log import LOG_TIMESTAMP_FORMAT
 import pytest
 from walid_docker.walid_docker import (
     WalytisIdentitiesDocker,
