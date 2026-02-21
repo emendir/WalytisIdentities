@@ -1,7 +1,7 @@
 ## Next Steps:
-
-- [ ] triple-layer encryption for key sharing: GroupDidManager, Member & spontaneous ephemeral keys
-- [ ] multi-algorithm multi-layer cryptography: multiple simultaneous current-control-keys in different algorithms
+- [x] implement conftest.get_test_report_dirs
+- [x] triple-layer encryption for key sharing: GroupDidManager, Member & spontaneous ephemeral keys
+- [x] multi-algorithm multi-layer cryptography: multiple simultaneous current-control-keys in different algorithms
 - [ ] write a test to verify that private keys are stored encrypted
 - Walytis Invitations:
   - ensure latest invitations are always published on DidManager

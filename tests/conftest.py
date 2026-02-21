@@ -22,9 +22,7 @@ from emtest import (
     set_env_var,
 )
 
-from emtest import (
-    get_pytest_report_dirs,
-)
+from emtest import get_pytest_report_dirs
 from emtest.log_utils import get_app_log_dir
 
 PRINT_ERRORS = (
