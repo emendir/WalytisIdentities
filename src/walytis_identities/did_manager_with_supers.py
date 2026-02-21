@@ -586,7 +586,9 @@ class DidManagerWithSupers(DidManagerWrapper):
             if self._terminate_dmws:
                 return
             logger.debug("SJRH: Joined conversation.")
-            assert conv.say("Hello there!".encode())
+            said = conv.say("Hello there!".encode())
+            if not said:
+                raise Exception("Failed to communicate with peer.")
             if self._terminate_dmws:
                 return
 
@@ -611,15 +613,20 @@ class DidManagerWithSupers(DidManagerWrapper):
                 for key in super.key_store.get_all_keys()
             ]
             logger.debug("SJRH: Transmitting keys...")
-            assert conv.say(str.encode(json.dumps({"keys": keys})))
+            said = conv.say(str.encode(json.dumps({"keys": keys})))
+
+            if not said:
+                raise Exception("Failed to communicate with peer.")
             logger.debug("SJRH: Getting blockchain data...")
             blockchain_data = super.blockchain.get_blockchain_data()
             # logger.debug(conv.ipfs_client.tunnels.get_tunnels())
             logger.debug("SJRH: Sending blockchain data...")
-            assert conv.transmit_file(
+            transmitted = conv.transmit_file(
                 blockchain_data,
                 metadata=super.blockchain.blockchain_id.encode(),
             )
+            if not transmitted:
+                raise Exception("Failed to communicate with peer.")
             logger.debug("SJRH: Finished sending all data!")
 
         except ConvListenTimeout:
@@ -681,10 +688,14 @@ class DidManagerWithSupers(DidManagerWrapper):
 
                 # receive salutation
                 salute = conv.listen(timeout=COMMS_TIMEOUT_S)
-                assert salute == "Hello there!".encode()
+                if salute != "Hello there!".encode():
+                    raise Exception("Failed to communicate with peer.")
                 if self._terminate_dmws:
                     return
-                assert conv.say(super_join_request_message)
+                said = conv.say(super_join_request_message)
+
+                if not said:
+                    raise Exception("Failed to communicate with peer.")
                 if self._terminate_dmws:
                     return
                 logger.debug("RJS: awaiting keys...")

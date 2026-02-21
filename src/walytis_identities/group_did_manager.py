@@ -920,7 +920,9 @@ class GroupDidManager(_GroupDidManager):
             if self._terminate:
                 return
             logger_ckm.debug("KRH: Joined conversation.")
-            assert conv.say("Hello there!".encode())
+            saluted = conv.say("Hello there!".encode())
+            if not saluted:
+                raise Exception("Failed to salute peer.")
             if self._terminate:
                 return
 
@@ -939,7 +941,7 @@ class GroupDidManager(_GroupDidManager):
 
             if not (key and key.is_unlocked()):
                 logger_ckm.debug("KRH: Sending DontOwnKey")
-                assert conv.say(
+                said = conv.say(
                     json.dumps(
                         {
                             "error": "I don't own this key.",
@@ -947,15 +949,19 @@ class GroupDidManager(_GroupDidManager):
                         }
                     ).encode()
                 )
+                if not said:
+                    raise Exception("Failed to communicate with peer")
                 logger_ckm.warning(
                     f"KRH: Don't have requested key: {key_id[:30]}"
                 )
                 return
 
             logger_ckm.debug("KRH: Sending key!")
-            assert conv.say(
+            said = conv.say(
                 json.dumps({"key": key.serialise_private()}).encode()
             )
+            if not said:
+                raise Exception("Failed to communicate with peer.")
             logger_ckm.debug(f"KRH: Shared key!: {key.get_id()[:30]}")
 
         except ConvListenTimeout:
@@ -1047,14 +1053,17 @@ class GroupDidManager(_GroupDidManager):
 
                 # receive salutation
                 salute = conv.listen(timeout=COMMS_TIMEOUT_S)
-                assert salute == "Hello there!".encode()
+                if salute != "Hello there!".encode():
+                    raise Exception("Reveived unexpected salute.")
 
                 if self._terminate:
                     return
                 logger_ckm.debug("RK: requesting key...")
-                assert conv.say(
+                said = conv.say(
                     json.dumps(key_request_message).encode(),
                 )
+                if not said:
+                    raise Exception("Failed to communicate with peer.")
                 if self._terminate:
                     return
                 logger_ckm.debug("RK: awaiting response...")
