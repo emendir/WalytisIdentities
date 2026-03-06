@@ -24,3 +24,7 @@ tests/walid_docker/python_packages.txt
 tests/walid_docker/python_packages
 # <<< CLEANUP
 .obsidian
+
+_hanuki
+hanuki.toml
+index.html
