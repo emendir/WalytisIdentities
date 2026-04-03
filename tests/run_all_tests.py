@@ -7,12 +7,14 @@ import sys
 
 from emtest import set_env_var, env_vars, ensure_dir_exists
 
+TEST_FUNC_TIMEOUT_SEC = 300
+
 WORKDIR = os.path.dirname(__file__)
 
 pytest_args = sys.argv[1:]
+# minimum python version for using extra pytest features
+ADV_PYTEST_PY_VER = (3, 12)
 
-
-TEST_FUNC_TIMEOUT_SEC = 300
 
 WALY_TEST_REPORTS_DIR = env_vars.str(
     "WALY_TEST_REPORTS_DIR", default=os.path.join(WORKDIR, "reports")
@@ -40,13 +42,17 @@ def run_tests() -> None:
         )
         ensure_dir_exists(os.path.dirname(html_path))
         ensure_dir_exists(os.path.dirname(json_path))
-        os.system(
-            f"{sys.executable} -m pytest {test_file} "
-            f"--html={html_path} "
-            f"--json={json_path} "
-            f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
-            f"{' '.join(pytest_args)} "
+
+        command = (
+            f"{sys.executable} -m pytest {test_file} {' '.join(pytest_args)} "
         )
+        if sys.version_info.minor > ADV_PYTEST_PY_VER[1]:
+            command += (
+                f"--html={html_path} "
+                f"--json={json_path} "
+                f"--timeout={TEST_FUNC_TIMEOUT_SEC} "
+            )
+        os.system(command)
 
 
 print("Starting Brenthy...")
