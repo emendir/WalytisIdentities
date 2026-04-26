@@ -33,6 +33,8 @@ def test_create_keygroup():
     shared_data.keygroup = KeyGroup.create(KEY_FAMILIES)
     for i, family in enumerate(KEY_FAMILIES):
         assert shared_data.keygroup.get_keys()[i].family == family
+    for key in shared_data.keygroup.get_keys():
+        print(key.private_key)
 
 
 def test_id():

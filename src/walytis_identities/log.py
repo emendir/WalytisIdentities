@@ -1,27 +1,16 @@
-from walytis_beta_tools.log import LOG_TIMESTAMP_FORMAT
-from datetime import datetime
+"""Logging machinery."""
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
 
 # extra in-memory recording functionality for logging.Logger objects
-import emtest.log_recording  # noqa
-
-from emtest.log_utils import get_app_log_dir
-
-
-class MillisecondFormatter(logging.Formatter):
-    def formatTime(self, record, datefmt=None):
-        dt = datetime.fromtimestamp(record.created)
-
-        result = dt.strftime(datefmt)
-
-        # convert microseconds to milliseconds
-        if datefmt[-2:] == "%f":
-            result = result[:-3]
-
-        return result
-
+import emtest.log_recording  # type: ignore # noqa
+from emtest.log_utils import get_app_log_dir  # type: ignore
+from walytis_beta_tools.log import (  # type: ignore
+    LOG_TIMESTAMP_FORMAT,
+    MillisecondFormatter,
+)
 
 # Formatter
 formatter = MillisecondFormatter(

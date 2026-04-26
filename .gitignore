@@ -22,6 +22,7 @@ tests/.blockchains
 tests/.ipfs_repo
 tests/walid_docker/python_packages.txt
 tests/walid_docker/python_packages
+.ipfs_repo
 # <<< CLEANUP
 .obsidian
 

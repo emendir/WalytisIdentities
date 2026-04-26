@@ -1,66 +1,66 @@
-from walytis_beta_api import (
-    Block,
-    BlockchainAlreadyExistsError,
-    JoinFailureError,
-    join_blockchain,
-)
-from walytis_beta_api.exceptions import BlockNotFoundError
-from .key_store import KeyStore, UnknownKeyError
-import traceback
-from walytis_beta_embedded import ipfs
-from ipfs_tk_transmission import Conversation
-import ipfs_tk_transmission
-from ipfs_tk_transmission.errors import CommunicationTimeout, ConvListenTimeout
+"""Machinery for DID-Managers with super GDMs.
+
+A GroupDidManager is a DidManager that manages a set of controlling members.
+With DidManagerWithSupers, a DidManager can keep track of and manage
+multiple GroupDidManagers which it is a member of.
+"""
+
 import json
-from . import datatransmission
 import os
-from .datatransmission import COMMS_TIMEOUT_S
+import traceback
 from collections.abc import Generator
 from threading import Lock, Thread
 from time import sleep
 from typing import Callable, Type
 
-from multi_crypt import Crypt
-from walytis_beta_api import Blockchain, join_blockchain_from_zip
-from walytis_beta_api import (
+from ipfs_tk_transmission import Conversation  # type: ignore
+from ipfs_tk_transmission.errors import ConvListenTimeout  # type: ignore
+from walytis_beta_api import (  # type: ignore
     Block,
     BlockchainAlreadyExistsError,
-    JoinFailureError,
-    join_blockchain,
+    join_blockchain_from_zip,
 )
-from walytis_beta_api.exceptions import BlockNotFoundError
-from walytis_beta_tools._experimental.block_lazy_loading import (
+from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore
+    GenericBlockchain,  # type: ignore
+)
+from walytis_beta_api.exceptions import BlockNotFoundError  # type: ignore
+from walytis_beta_embedded import ipfs  # type: ignore
+from walytis_beta_tools._experimental.block_lazy_loading import (  # type: ignore
     BlockLazilyLoaded,
     BlocksList,
 )
-from walytis_beta_tools._experimental.generic_block import GenericBlock
-
-from walytis_identities import DidManager
-from walytis_identities.did_manager import (
-    blockchain_id_from_did,
-    did_from_blockchain_id,
+from walytis_beta_tools._experimental.generic_block import (  # type: ignore
+    GenericBlock,  # type: ignore
 )
+
 from walytis_identities.did_manager_blocks import (
     SuperRegistrationBlock,
     get_info_blocks,
 )
-from walytis_identities.key_objects import Key, KeyGroup
-from walytis_identities.group_did_manager import GroupDidManager
-from walytis_identities.key_store import KeyStore
 
+from . import datatransmission
+from .datatransmission import COMMS_TIMEOUT_S
+from .did_manager import (
+    DidManager,
+    blockchain_id_from_did,
+)
 from .generics import DidManagerWrapper, GroupDidManagerWrapper
-from .group_did_manager import GenericDidManager
+from .group_did_manager import GenericDidManager, GroupDidManager
+from .key_objects import Key, KeyGroup
+from .key_store import KeyStore
 from .log import logger_dmws as logger
 
 CRYPTO_FAMILY = "EC-secp256k1"
 
 
 class SuperExistsError(Exception):
+    """When an error is caused by a super already being assigned to a GDM."""
+
     pass
 
 
 class DidManagerWithSupers(DidManagerWrapper):
-    """Manages a collection of correspondences, managing adding archiving them."""
+    """GMD managing multiple super-GDMs, managing adding archiving them."""
 
     def __init__(
         self,
@@ -91,7 +91,9 @@ class DidManagerWithSupers(DidManagerWrapper):
 
         # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
-        self.correspondences: dict[str, GroupDidManager] = dict()
+        self.correspondences: dict[
+            str, GroupDidManager | GroupDidManagerWrapper
+        ] = dict()
         self.correspondences_to_join: dict[
             str, SuperRegistrationBlock | None
         ] = {}
@@ -114,7 +116,8 @@ class DidManagerWithSupers(DidManagerWrapper):
         if auto_load_missed_blocks:
             self.load_missed_blocks()
 
-    def _init_blocks(self):
+    def _init_blocks(self) -> None:
+        """Process blockchain blocks for initialisation of this object."""
         # present to other programs all blocks not created by this DidManager
         blocks = [
             block
@@ -124,15 +127,22 @@ class DidManagerWithSupers(DidManagerWrapper):
         self._blocks = BlocksList.from_blocks(blocks, BlockLazilyLoaded)
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+        """Get all blocks that aren't part of DMWS machinery."""
         return self._blocks.get_blocks(reverse=reverse)
 
     def get_block_ids(self) -> list[bytes]:
+        """Get the IDs of all blocks that aren't part of DMWS machinery."""
         return self._blocks.get_long_ids()
 
     def get_num_blocks(self) -> int:
+        """Get the number of blocks that aren't part of DMWS machinery."""
         return self._blocks.get_num_blocks()
 
     def get_block(self, block_id: bytes) -> GenericBlock:
+        """Get a block given its ID.
+
+        Only for blocks that aren't part of DMWS machinery.
+        """
         # if index is passed instead of block_id, get block_id from index
         if isinstance(block_id, int):
             try:
@@ -164,18 +174,19 @@ class DidManagerWithSupers(DidManagerWrapper):
             return block
         except KeyError:
             error = BlockNotFoundError(
-                "This block isn't recorded (by brenthy_api.Blockchain) as being "
-                "part of this blockchain."
+                "This block isn't recorded (by brenthy_api.Blockchain) as "
+                "being part of this blockchain."
             )
             raise error
 
-    def load_missed_blocks(self):
+    def load_missed_blocks(self) -> None:
+        """Process new blocks after/while initialising this object."""
         self._did_manager.load_missed_blocks()
         # start joining new correspondeces only after loading missed blocks
         if not self._correspondences_finder_thr.is_alive():
             self._correspondences_finder_thr.start()
 
-    def _join_correspondences(self):
+    def _join_correspondences(self) -> None:
         while not self._terminate_dmws:
             self._process_invitations()
             sleep(1)
@@ -185,7 +196,9 @@ class DidManagerWithSupers(DidManagerWrapper):
         #     f"Processing invitations: {len(self.correspondences_to_join)}"
         # )
         _supers_to_join: dict[str, SuperRegistrationBlock | None] = {}
-        joined_correspondences: dict[str, GroupDidManager] = {}
+        joined_correspondences: dict[
+            str, GroupDidManager | GroupDidManagerWrapper
+        ] = {}
         for correspondence_id in self.correspondences_to_join.keys():
             if self._terminate_dmws:
                 return
@@ -227,27 +240,18 @@ class DidManagerWithSupers(DidManagerWrapper):
                 _supers_to_join.update({correspondence_id: registration})
         for correspondence_id in joined_correspondences.keys():
             self.correspondences_to_join.pop(correspondence_id)
-        # self.correspondences_to_join = _supers_to_join
-        # with self.lock:
-        # for correspondence_id, correspondence in joined_correspondences.items():
-        #     # if correspondence was archived in the meantime
-        #     if correspondence_id in self._archived_corresp_ids:
-        #         correspondence.terminate()
-        #     else:
-        #         self.correspondences.update(
-        #             {correspondence_id: correspondence}
-        #         )
 
         self.__process_invitations = True
 
     def create_super(self) -> GroupDidManager:
+        """Create a new GDM as a super for this object."""
         if self._terminate_dmws:
             raise Exception("DidManagerWithSupers.add: we're shutting down")
         with self.lock:
-            # the GroupDidManager keystore file is located in self.key_store_dir
-            # and named according to the created GroupDidManager's blockchain ID
-            # and its KeyStore's key is automatically added to
-            # self.key_store
+            # the GroupDidManager keystore file is located in
+            # self.key_store_dir and named according to the created
+            # GroupDidManager's blockchain ID and its KeyStore's key is
+            # automatically added to self.key_store
             logger.debug("DMWS: Creating Super...")
             correspondence = self.super_type.create(
                 self.key_store_dir, member=self._did_manager
@@ -275,10 +279,7 @@ class DidManagerWithSupers(DidManagerWrapper):
         self,
         invitation: dict | str,
     ) -> GroupDidManager:
-        """Args:
-        register: whether or not the new correspondence still needs to be
-                    registered on our DidManagerWithSupers's blockchain
-        """
+        """Become a member of an existing GDM."""
         logger.debug("Joining super...")
         with self.lock:
             if self._terminate_dmws:
@@ -295,10 +296,10 @@ class DidManagerWithSupers(DidManagerWrapper):
             #     invitation_d["blockchain_invitation"]["blockchain_id"]
             # )
 
-            # the GroupDidManager keystore file is located in self.key_store_dir
-            # and named according to the created GroupDidManager's blockchain ID
-            # and its KeyStore's key is automatically added to
-            # self.key_store
+            # the GroupDidManager keystore file is located in
+            # self.key_store_dir and named according to the created
+            # GroupDidManager's blockchain ID and its KeyStore's key is
+            # automatically added to self.key_store
             correspondence = self.super_type.join(
                 invitation=invitation_d,
                 group_key_store=self.key_store_dir,
@@ -324,7 +325,10 @@ class DidManagerWithSupers(DidManagerWrapper):
 
             return correspondence
 
-    def archive_super(self, correspondence_id: str, register: bool = True):
+    def archive_super(
+        self, correspondence_id: str, register: bool = True
+    ) -> None:
+        """Cancel our membership of the specified super."""
         with self.lock:
             if correspondence_id in self.correspondences_to_join:
                 self.correspondences_to_join.pop(correspondence_id)
@@ -345,21 +349,27 @@ class DidManagerWithSupers(DidManagerWrapper):
             self._archived_corresp_ids.add(correspondence_id)
 
     def get_active_supers(self) -> set[str]:
+        """Get a list of super GDMs that we are still members of."""
         # logger.debug(f"DMWS: Active supers: {len(self.correspondences)}")
         return set(self.correspondences.keys())
 
     def get_archived_supers(self) -> set[str]:
+        """Get a list of super GDMs that we were once a member of."""
         return self._archived_corresp_ids
 
-    def get_super(self, corresp_id: str) -> GroupDidManager:
+    def get_super(
+        self, corresp_id: str
+    ) -> GroupDidManager | GroupDidManagerWrapper:
+        """Get the GDM object of the given Super ID."""
         return self.correspondences[corresp_id]
 
     def _join_already_joined_super(
         self, registration: SuperRegistrationBlock
-    ) -> GroupDidManager | None:
-        """Join a Coresp. which our DidManagerWithSupers has joined but member hasn't."""
+    ) -> GroupDidManager | GroupDidManagerWrapper | None:
+        """Join a Super which our DMWS has joined this member hasn't."""
         assert isinstance(self.org_did_manager, GroupDidManager), (
-            "org_did_manager must be GroupDidManager for joining already-joined DID-Mananger"
+            "org_did_manager must be GroupDidManager for joining "
+            "already-joined DID-Mananger"
         )
         logger.debug("JAJ: Joining already joined super...")
         correspondence_id = registration.correspondence_id
@@ -389,7 +399,7 @@ class DidManagerWithSupers(DidManagerWrapper):
 
             # logger.info("Loading correspondence...")
             if issubclass(self.super_type, GroupDidManagerWrapper):
-                correspondence = self.super_type(
+                correspondence = self.super_type(  # type: ignore
                     GroupDidManager(group_key_store=key_store, member=self)
                 )
             elif issubclass(self.super_type, GroupDidManager):
@@ -408,12 +418,14 @@ class DidManagerWithSupers(DidManagerWrapper):
 
     def _register_super(
         self, correspondence_id: str, active: bool, invitation: dict | None
-    ):
+    ) -> None:
         """Update a correspondence' registration, activating or archiving it.
 
         Args:
             correspondence_id: the ID of the correspondence to register
             active: whether the correspondence is being activated or archived
+            invitation: invitation to super's blockchain. Leave None when
+                        `active == False`
         """
         correspondence_registration = SuperRegistrationBlock.create(
             correspondence_id, active, invitation
@@ -488,7 +500,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 # load the correspondence' KeyStore
                 key_store = KeyStore(key_store_path, key_store_key)
                 if issubclass(self.super_type, GroupDidManagerWrapper):
-                    correspondence = self.super_type(
+                    correspondence = self.super_type(  # type: ignore
                         GroupDidManager(group_key_store=key_store, member=self)
                     )
                 elif issubclass(self.super_type, GroupDidManager):
@@ -497,8 +509,8 @@ class DidManagerWithSupers(DidManagerWrapper):
                     )
                 else:
                     raise Exception(
-                        "self.super_type must be a subclass of GroupDidManager or "
-                        "GroupDidManagerWrapper"
+                        "self.super_type must be a subclass of "
+                        "GroupDidManager or GroupDidManagerWrapper"
                     )
                 correspondences.append(correspondence)
             self.correspondences = dict(
@@ -512,10 +524,13 @@ class DidManagerWithSupers(DidManagerWrapper):
             self.correspondences_to_join = dict(
                 [(cid, None) for cid in new_supers]
             )
-            # logger.debug(f"DMWS: Correspondences: {len(self.correspondences)} {
-            #              len(self._archived_corresp_ids)} {len(self.correspondences_to_join)}")
+            # logger.debug(
+            # f"DMWS: Correspondences: {len(self.correspondences)} "
+            # f"{ len(self._archived_corresp_ids)} "
+            # f"{len(self.correspondences_to_join)}"
+            # )
 
-    def _on_super_registration_received(self, block: Block):
+    def _on_super_registration_received(self, block: Block) -> None:
         if self._terminate_dmws:
             return
         crsp_registration = SuperRegistrationBlock.load_from_block_content(
@@ -530,11 +545,10 @@ class DidManagerWithSupers(DidManagerWrapper):
         try:
             if crsp_registration.active:
                 if not self.__process_invitations:
-                    self.correspondences_to_join.update(
-                        {
-                            crsp_registration.correspondence_id: crsp_registration
-                        }
-                    )
+                    entry = {
+                        crsp_registration.correspondence_id: crsp_registration
+                    }
+                    self.correspondences_to_join.update(entry)
                     logger.info(
                         "DidManagerWithSupers: not yet joining GroupDidManager"
                     )
@@ -554,7 +568,7 @@ class DidManagerWithSupers(DidManagerWrapper):
             )
             pass
 
-    def _on_block_received_dmws(self, block: Block):
+    def _on_block_received_dmws(self, block: Block) -> None:
         logger.debug("DMWS: received new block")
         if self.virtual_layer_name in block.topics[0]:
             match block.topics[1]:
@@ -565,8 +579,8 @@ class DidManagerWithSupers(DidManagerWrapper):
                     ).start()
                 case _:
                     logger.warning(
-                        "DMWS DidManagerWithSupers: Received unhandled block with topics: "
-                        f"{block.topics}"
+                        "DMWS DidManagerWithSupers: Received unhandled block "
+                        f"with topics: {block.topics}"
                     )
         else:
             self._blocks.add_block(BlockLazilyLoaded.from_block(block))
@@ -575,13 +589,13 @@ class DidManagerWithSupers(DidManagerWrapper):
                 self._dmws_other_blocks_handler(block)
 
     def super_join_requests_handler(self, conv: Conversation) -> None:
-        """Handle requests from other members to join an already joined Super"""
-        logger.debug(f"SJRH: Getting key request!")
+        """Handle join requests for Super from other members of this GDM."""
+        logger.debug("SJRH: Getting key request!")
         # double-check communications are encrypted
         assert conv._encryption_callback is not None
         assert conv._decryption_callback is not None
 
-        logger.start_recording("SUPER_JOIN_REQUESTS_HANDLER")
+        logger.start_recording("SUPER_JOIN_REQUESTS_HANDLER")  # type: ignore
         try:
             if self._terminate_dmws:
                 return
@@ -630,21 +644,20 @@ class DidManagerWithSupers(DidManagerWrapper):
             logger.debug("SJRH: Finished sending all data!")
 
         except ConvListenTimeout:
-            logger.warning(
-                "SJRH: Timeout in key request handler."
-                f"\n{logger.get_recording('SUPER_JOIN_REQUESTS_HANDLER')}"
-            )
+            log = logger.get_recording("SUPER_JOIN_REQUESTS_HANDLER")  # type: ignore
+            logger.warning(f"SJRH: Timeout in key request handler.\n{log}")
 
         except Exception as error:
+            log = logger.get_recording("SUPER_JOIN_REQUESTS_HANDLER")  # type: ignore
             logger.error(
-                f"\n{logger.get_recording('SUPER_JOIN_REQUESTS_HANDLER')}"
+                f"\n{log}"
                 f"\n{traceback.format_exc()}"
                 f"SJRH: Error in request_key: {type(error)} {error}"
             )
         finally:
             if conv:
                 conv.terminate()
-            logger.stop_recording("SUPER_JOIN_REQUESTS_HANDLER")
+            logger.stop_recording("SUPER_JOIN_REQUESTS_HANDLER")  # type: ignore
 
     def request_join_super(
         self,
@@ -668,7 +681,7 @@ class DidManagerWithSupers(DidManagerWrapper):
             )
 
             # collect debug logs in case we encounter error
-            logger.start_recording("JOIN_SUPER_REQUEST")
+            logger.start_recording("JOIN_SUPER_REQUEST")  # type: ignore
 
             conv = None
             try:
@@ -683,7 +696,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 assert conv._decryption_callback is not None
 
                 if self._terminate_dmws:
-                    return
+                    return None
                 logger.debug("RJS: started conversation")
 
                 # receive salutation
@@ -691,18 +704,18 @@ class DidManagerWithSupers(DidManagerWrapper):
                 if salute != "Hello there!".encode():
                     raise Exception("Failed to communicate with peer.")
                 if self._terminate_dmws:
-                    return
+                    return None
                 said = conv.say(super_join_request_message)
 
                 if not said:
                     raise Exception("Failed to communicate with peer.")
                 if self._terminate_dmws:
-                    return
+                    return None
                 logger.debug("RJS: awaiting keys...")
                 keys_response = conv.listen(timeout=COMMS_TIMEOUT_S)
                 keys_data = json.loads(bytes.decode(keys_response))
                 if self._terminate_dmws:
-                    return
+                    return None
                 if "error" in keys_data:
                     logger.warning(keys_response)
                     continue
@@ -733,19 +746,21 @@ class DidManagerWithSupers(DidManagerWrapper):
                 return keys
 
             except ConvListenTimeout:
+                log = logger.get_recording("JOIN_SUPER_REQUEST")  # type: ignore
                 logger.warning(
                     "RJS: Timeout in super join request."
                     f"SuperJoinRequest-{did}, "
                     f"{peer_id}, {did}-SuperJoinRequests"
                     f"\nRequested key for {did} "
                     f"from {peer_id}"
-                    f"\n{logger.get_recording('JOIN_SUPER_REQUEST')}"
+                    f"\n{log}"
                 )
 
                 continue
             except Exception as error:
+                log = logger.get_recording("JOIN_SUPER_REQUEST")  # type: ignore
                 logger.error(
-                    f"\n{logger.get_recording('JOIN_SUPER_REQUEST')}"
+                    f"\n{log}"
                     f"\n{traceback.format_exc()}"
                     f"RJS: Error in request_key: {type(error)} {error}"
                 )
@@ -753,13 +768,14 @@ class DidManagerWithSupers(DidManagerWrapper):
             finally:
                 if conv:
                     conv.terminate()
-                logger.stop_recording("JOIN_SUPER_REQUEST")
+                logger.stop_recording("JOIN_SUPER_REQUEST")  # type: ignore
         logger.warning(
             f"RJS: Failed to join super for {did} after asking {count} peers"
         )
         return None
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """Clean up all resources."""
         if self._terminate_dmws:
             return
         self._terminate_dmws = True
@@ -772,7 +788,8 @@ class DidManagerWithSupers(DidManagerWrapper):
             self.super_join_req_listener.terminate()
         self._did_manager.terminate()
 
-    def delete(self):
+    def delete(self) -> None:
+        """Delete this DMWS."""
         self.terminate()
         with self.lock:
             self._terminate_dmws = True
@@ -781,66 +798,42 @@ class DidManagerWithSupers(DidManagerWrapper):
         self._did_manager.delete()
 
     def __del__(self):
+        """Termintate this DMWS object."""
         self.terminate()
 
     @property
-    def blockchain(self):
+    def blockchain(self) -> GenericBlockchain:  # noqa
         return self._did_manager.blockchain
 
     @property
-    def blockchain_id(self) -> str:
+    def blockchain_id(self) -> str:  # noqa: D102
         return self._did_manager.blockchain_id
 
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
+        """Add an application level block to this blockchain."""
         return self._did_manager.add_block(content=content, topics=topics)
 
-    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
-        """Encrypt the provided data using the specified public key.
-
-        Args:
-            data_to_encrypt(bytes): the data to encrypt
-            encryption_options(str): specification code for which
-                                    encryption / decryption protocol should be used
-        Returns:
-            bytes: the encrypted data
-        """
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:  # noqa: D102
         return self._did_manager.encrypt(
             data=data,
             encryption_options=encryption_options,
         )
 
-    def decrypt(
+    def decrypt(  # noqa: D102
         self,
         data: bytes,
     ) -> bytes:
-        """Decrypt the provided data using the specified private key.
-
-        Args:
-            data (bytes): the data to decrypt
-        Returns:
-            bytes: the decrypted data
-        """
         return self._did_manager.decrypt(data=data)
 
-    def sign(self, data: bytes, signature_options: str = "") -> bytes:
-        """Sign the provided data using the specified private key.
-
-        Args:
-            data(bytes): the data to sign
-            private_key(bytes): the private key to be used for the signing
-            signature_options(str): specification code for which
-                                signature / verification protocol should be used
-        Returns:
-            bytes: the signature
-        """
+    def sign(self, data: bytes, signature_options: str = "") -> bytes:  # noqa: D102
         return self._did_manager.sign(
             data=data,
             signature_options=signature_options,
         )
 
-    def verify_signature(
+    def verify_signature(  # noqa: D102
         self,
         signature: bytes,
         data: bytes,
@@ -850,52 +843,56 @@ class DidManagerWithSupers(DidManagerWrapper):
             data=data,
         )
 
-    def get_control_keys(self) -> Key:
+    def get_control_keys(self) -> KeyGroup:  # noqa: D102
         return self._did_manager.get_control_keys()
 
-    def get_peers(self) -> list[str]:
+    def get_peers(self) -> list[str]:  # noqa: D102
         return self._did_manager.get_peers()
 
     @property
-    def did(self) -> str:
+    def did(self) -> str:  # noqa: D102
         return self._did_manager.did
 
     @property
-    def did_doc(self):
+    def did_doc(self) -> dict:  # noqa: D102
         return self._did_manager.did_doc
 
     @property
     def block_received_handler(self) -> Callable[[Block], None] | None:
+        """The event handler for blocks not used by the DMWS machinery."""
         return self._dmws_other_blocks_handler
 
     @block_received_handler.setter
     def block_received_handler(
-        self, block_received_handler: Callable[Block, None]
+        self, block_received_handler: Callable[[Block], None]
     ) -> None:
         if self._dmws_other_blocks_handler is not None:
             raise Exception(
                 "`block_received_handler` is already set!\n"
-                "If you want to replace it, call `clear_block_received_handler()` first."
+                "If you want to replace it, call "
+                "`clear_block_received_handler()` first."
             )
         self._dmws_other_blocks_handler = block_received_handler
 
     def clear_block_received_handler(self) -> None:
+        """Remove any currently configured block received handler."""
         self._dmws_other_blocks_handler = None
 
     @property
-    def did_manager(self) -> GenericDidManager:
+    def did_manager(self) -> GenericDidManager:  # noqa: D102
         return self._did_manager
 
     @property
-    def org_did_manager(self) -> GenericDidManager:
+    def org_did_manager(self) -> DidManager | GroupDidManager:  # noqa: D102
         return self._org_did_manager
 
     @property
-    def key_store(self) -> KeyStore:
+    def key_store(self) -> KeyStore:  # noqa: D102
         return self._did_manager.key_store
 
-    def renew_control_key(self, new_ctrl_key: KeyGroup | None = None) -> None:
-        return self._did_manager.renew_control_key(KeyGroup)
+    def renew_control_key(self, new_ctrl_key: KeyGroup | None = None) -> None:  # noqa: D102
+        return self._did_manager.renew_control_key(new_ctrl_key)
 
-    def update_did_doc(self, did_doc: dict) -> None:
+    def update_did_doc(self, did_doc: dict) -> None:  # noqa: D102
+        """Set a new DID-Document for this DidManager."""
         return self.update_did_doc(did_doc)

@@ -1,30 +1,38 @@
+"""Various utility functions."""
+
 import secrets
 import string
+from abc import ABCMeta
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 
-import rfc3987
+import rfc3987  # type: ignore
+from brenthy_tools_beta.utils import (  # type: ignore # noqa
+    string_to_time,
+    time_to_string,
+)
+from docstring_inheritance._internal import (
+    GoogleDocstringInheritanceMeta,  # type: ignore
+)
 
 from .log import logger_walid as logger  # noqa
-from brenthy_tools_beta.utils import time_to_string, string_to_time  # noqa
 
 # GroupDidManager Settings
 NUM_NEW_CONTROL_KEYS = 1
 NUM_ACTIVE_CONTROL_KEYS = NUM_NEW_CONTROL_KEYS * 1
 
 
-def is_valid_uri(uri):
+def is_valid_uri(uri: str) -> bool:
+    """Check if the given URI is valid according to RFC3987."""
     try:
         # Use the parse function to validate the URI
-        result = rfc3987.parse(uri, rule="URI")
+        _ = rfc3987.parse(uri, rule="URI")
         return True
     except ValueError:
         return False
 
 
-def validate_did_doc(did_doc: dict):
-    """Ensures the passed dictionary fulfils the specifications of a DID
-    document, raisng an expetion if not
-    """
+def validate_did_doc(did_doc: dict) -> None:
+    """Ensure the given DID-Document fulfills the specifications."""
     try:
         rfc3987.parse(did_doc["id"], rule="URI")
         for key in did_doc.get("verificationMethod", []):
@@ -40,12 +48,11 @@ def validate_did_doc(did_doc: dict):
 def bytes_to_string(
     data: bytes | bytearray, variable_name: str = "Value"
 ) -> str:
-    """Convert the input data from bytes or bytearray to string if it isn't
-    already, raising an error if it has an incompatible type.
+    """Convert bytes to string with Base64.
 
-    Parameters:
-        data (bytearay): the data to convert
-        variable_name (str): for error message
+    Args:
+        data: the data to convert
+        variable_name: for error message
     """
     if isinstance(data, (bytearray, bytes)):
         # first perform base 64 encoding, then convert to string
@@ -59,13 +66,11 @@ def bytes_to_string(
 
 
 def bytes_from_string(data: str, variable_name: str = "Value") -> bytes:
-    """Reverse of bytes_to_string, converting such encoded strings back to
-    bytes (if they the data isn't already),
-     raising an error if it has an incompatible type.
+    """Convert string to bytes with Base64.
 
-    Parameters:
-        data (str): the data to convert
-        variable_name (str): for error message
+    Args:
+        data: the data to convert
+        variable_name: for error message
     """
     if isinstance(data, str):
         # first perform base 64 encoding, then convert to string
@@ -75,10 +80,17 @@ def bytes_from_string(data: str, variable_name: str = "Value") -> bytes:
     )
 
 
-def generate_random_string(num_chars: int):
+def generate_random_string(num_chars: int) -> str:
+    """Generate a random string of the given length."""
     # Define the alphabet you want to use
     alphabet = string.ascii_letters + string.digits + string.punctuation
 
     # Generate a 200-character secure random string
     secure_string = "".join(secrets.choice(alphabet) for _ in range(num_chars))
     return secure_string
+
+
+class AbstractClassMeta(GoogleDocstringInheritanceMeta, ABCMeta):
+    """Metaclass for abstract classes with docstring inheritance."""
+
+    pass

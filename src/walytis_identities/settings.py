@@ -1,3 +1,5 @@
+"""Configuration Settings."""
+
 CTRL_KEY_RENEWAL_AGE_HR = 3000
 CTRL_KEY_MAX_RENEWAL_DUR_HR = 100
 

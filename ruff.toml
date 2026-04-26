@@ -1,3 +1,4 @@
+
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -29,27 +30,28 @@ exclude = [
     "site-packages",
     "venv",
     "WebPublish",
-    "WebSite"
+    "WebSite",
+    "__init__.py"
+
 ]
 line-length = 79
 [lint]
 select = ["PL","E", "W", "D", "F", "ANN", "INP", "I", "RSE", "FA"]
 ignore = [
-"FA100", # Missing `from __future__ import annotations`, but uses `typing.Type`
 "FA102",  # Missing `from __future__ import annotations`, but uses PEP 604 union
-"ANN101",  # annotation for self method
 "ANN204", # Missing return type annotation for special method `__init__`
+"ANN401", # dynamicaly typed expressions (typing.Any) are disallowed in `**kwargs`
 "PLW0603", # Using the global statement to update `update_blockchain_blocks_listener` is discouraged
 "RSE102", # Unnecessary parentheses on raised exception
-"D107", # Missing docstring in `__init__`
+"D107", # undocumented-public-init
 "D406", # Section name should end with a newline ("Returns")
 "D407", # Missing dashed underline after section ("Args")
 "D413", #Missing blank line after last section ("Returns")
 "INP001", # add __init__.py
-# "PLR0911",# Too many return statements
-# "PLR0912",# Too many branches
-# "PLR0913", # Too many arguments in function definition (8 > 5)
-# "PLR0915",# Too many statements
+"PLR0911",# Too many return statements
+"PLR0912",# Too many branches
+"PLR0913", # Too many arguments in function definition (8 > 5)
+"PLR0915",# Too many statements
 # "E722",# Do not use bare `except`
 ]
 # Allow fix for all enabled rules (when `--fix`) is provided.

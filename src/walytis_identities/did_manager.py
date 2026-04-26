@@ -3,21 +3,23 @@
 Doesn't include machinery for managing other members.
 """
 
-from hashlib import sha256
 import os
+import tempfile
 from collections.abc import Generator
-from typing import Callable, TypeVar
+from hashlib import sha256
+from typing import Callable, Self, TypeVar
 
-from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
-import walytis_beta_api as waly
-from brenthy_tools_beta.utils import bytes_to_string
-from multi_crypt import Crypt
-from walytis_beta_api import Block, Blockchain, create_blockchain
-from walytis_beta_api._experimental.generic_blockchain import (
+import walytis_beta_api as waly  # type: ignore
+from walytis_beta_api import (  # type: ignore
+    Block,
+    Blockchain,
+    create_blockchain,
+)
+from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore
     GenericBlock,
 )
-from walytis_beta_api.exceptions import BlockNotFoundError
-from walytis_beta_tools._experimental.block_lazy_loading import (
+from walytis_beta_api.exceptions import BlockNotFoundError  # type: ignore
+from walytis_beta_tools._experimental.block_lazy_loading import (  # type: ignore
     BlockLazilyLoaded,
     BlocksList,
 )
@@ -28,21 +30,22 @@ from .did_manager_blocks import (
     DidDocBlock,
     InfoBlock,
     get_block_type,
-    get_latest_control_key,
-    get_control_keys_history,
     get_control_key_age,
+    get_control_keys_history,
+    get_latest_control_key,
     get_latest_did_doc,
 )
-from .key_objects import Key, KeyGroup
-from .exceptions import NotValidDidBlockchainError
+from .exceptions import NotInitialisedError, NotValidDidBlockchainError
 from .generic_did_manager import GenericDidManager
+from .key_objects import Key, KeyGroup, KeyLockedError
 from .key_store import CodePackage, KeyStore
 from .log import logger_dm as logger
+from .utils import NUM_ACTIVE_CONTROL_KEYS
 
 DID_METHOD_NAME = "walytisidentities"
 
 CRYPTO_FAMILY = "EC-secp256k1"
-CTRL_KEY_FAMILIES = ["EC-secp256k1", "PQ-ML-KEM-1024-ML-DSA-87"]
+CTRL_KEY_FAMILIES = ["EC-secp256k1", "PQ-ML-KEM-768-ML-DSA-65"]
 
 _DidManager = TypeVar("_DidManager", bound="DidManager")
 KEYSTORE_DID = "owner_did"  # DID field name in KeyStore's custom metadata
@@ -79,7 +82,9 @@ class DidManager(GenericDidManager):
             blockchain: the blockchain on which this DID-Manager's data is
             key_store: the KeyStore object in which to store this DID's keys
             other_blocks_handler: eventhandler for blocks published on
-                `blockchain` that aren't related to this DID-Manager work
+                `blockchain` that aren't related to DID-Manager work
+            auto_load_missed_blocks: whether or not to immediately process
+                new blocks
         """
         if not isinstance(key_store, KeyStore):
             raise TypeError(
@@ -89,7 +94,8 @@ class DidManager(GenericDidManager):
         logger.debug("Loading DID-Manager...")
         self._key_store = key_store
         # assert that the key_store is unlocked
-        key_store.key.get_private_key()
+        if not key_store.key.is_unlocked():
+            raise KeyLockedError()
 
         keystore_did = self.get_keystore_did(key_store)
         blockchain_id = blockchain_id_from_did(keystore_did)
@@ -121,7 +127,8 @@ class DidManager(GenericDidManager):
 
         logger.debug("DM: Built DID-Manager object!")
 
-    def load_missed_blocks(self):
+    def load_missed_blocks(self) -> None:
+        """Process new blocks."""
         logger.debug("Loading missed blocks...")
         self._blockchain.load_missed_blocks(
             waly.blockchain_model.N_STARTUP_BLOCKS
@@ -133,7 +140,8 @@ class DidManager(GenericDidManager):
             raise NotValidDidBlockchainError()
 
     @property
-    def did_doc(self):
+    def did_doc(self) -> dict:
+        """The DID-Document of this DidManager."""
         if not self._did_doc:
             raise NotInitialisedError()
         return self._did_doc
@@ -143,13 +151,15 @@ class DidManager(GenericDidManager):
         cls,
         key_store: KeyStore | str,
         other_blocks_handler: Callable[[Block], None] | None = None,
-    ):
+    ) -> Self:
         """Create a new DID-Manager.
 
         Args:
             key_store: KeyStore for this DidManager to store private keys.
                     If a directory is passed, a KeyStore is created in there
                     named after the blockchain ID of the created DidManager.
+            other_blocks_handler: eventhandler for blocks that aren't for
+                    of the machinery of the DidManager
         """
         logger.debug("DM: Creating DID-Manager...")
         # create crypto keys
@@ -211,14 +221,12 @@ class DidManager(GenericDidManager):
         return did_manager
 
     @classmethod
-    def from_blockchain_id(cls, blockchain_id: str):
+    def from_blockchain_id(cls, blockchain_id: str) -> Self:
         """Create an observing DidManager object given a blockchain ID.
 
         This object cannot control the DID for lack of keys.
         The KeyStore's file is in a temporary folder.
         """
-        import tempfile
-
         key = Key.create(CRYPTO_FAMILY)
         key_store_path = os.path.join(
             tempfile.mkdtemp(), blockchain_id + ".json"
@@ -237,6 +245,8 @@ class DidManager(GenericDidManager):
             key_store: KeyStore for this DidManager to store private keys.
                     If a directory is passed, a KeyStore is created in there
                     named after the blockchain ID of the created DidManager.
+            blockchain_id: the blockchain ID of the DidManager to assign
+                    the KeyStore to
         """
         if isinstance(key_store, str):
             if not os.path.isdir(key_store):
@@ -257,7 +267,7 @@ class DidManager(GenericDidManager):
 
     @property
     def did(self) -> str:
-        """Get this DID-Manager's DID."""
+        """DID (decentralised identifier)."""
         return did_from_blockchain_id(self._blockchain.blockchain_id)
 
     def renew_control_key(self, new_ctrl_keys: KeyGroup | None = None) -> None:
@@ -303,7 +313,7 @@ class DidManager(GenericDidManager):
             [WALYTIS_BLOCK_TOPIC, block.walytis_block_topic],
         )
 
-    def check_control_key(self) -> Key:
+    def check_control_key(self) -> KeyGroup:
         """Read the blockchain for the latest control key.
 
         Updates self._control_key_id, returns the control key object.
@@ -315,7 +325,7 @@ class DidManager(GenericDidManager):
         self._key_store.add_keygroup(control_key)
         return control_key
 
-    def get_control_keys(self) -> Key:
+    def get_control_keys(self) -> KeyGroup:
         """Get the current control key, with private key if possible."""
         if not self._control_key_id:
             # update self._control_key_id from the blockchain
@@ -325,12 +335,15 @@ class DidManager(GenericDidManager):
         return control_key
 
     def get_control_keys_history(self) -> list[KeyGroup]:
+        """Get chronological list of all keys ever used."""
         return get_control_keys_history(self._blockchain)
 
     def get_control_key_age(self, key_id: str) -> int:
+        """Return the age (in key count) of the specified key."""
         return get_control_key_age(self._blockchain, key_id)
 
     def is_control_key_active(self, key_id: str) -> bool:
+        """Check if the specified key is in current use."""
         return self.get_control_key_age(key_id) < NUM_ACTIVE_CONTROL_KEYS
 
     def update_did_doc(self, did_doc: dict) -> None:
@@ -368,7 +381,9 @@ class DidManager(GenericDidManager):
             self._blocks_list_dm.add_block(BlockLazilyLoaded.from_block(block))
             # if user defined an event-handler for non-DID blocks, call it
             if self._dm_other_blocks_handler:
-                # logger.debug(f"DM: passing on received block: {block.topics}")
+                # logger.debug(
+                # f"DM: passing on received block: {block.topics}"
+                # )
                 self._dm_other_blocks_handler(block)
         # logger.debug("DM: processed block")
 
@@ -378,9 +393,9 @@ class DidManager(GenericDidManager):
         """Encrypt the provided data using the specified public key.
 
         Args:
-            data_to_encrypt (bytes): the data to encrypt
+            data (bytes): the data to encrypt
             encryption_options (str): specification code for which
-                                    encryption/decryption protocol should be used
+                                encryption/decryption protocol should be used
         Returns:
             bytes: the encrypted data
         """
@@ -451,7 +466,7 @@ class DidManager(GenericDidManager):
             pass
 
     def terminate(self) -> None:
-        """Stop this DID-Manager, cleaning up resources."""
+        """Stop this object's functionality and clean up resources."""
         logger.debug("DM: terminating key store...")
         self._key_store.terminate()
         logger.debug("DM: terminating blockchain...")
@@ -464,34 +479,39 @@ class DidManager(GenericDidManager):
 
     @property
     def blockchain_id(self) -> str:
+        """The ID of this DidManager's underlying blockchain."""
         return self._blockchain.blockchain_id
 
     @property
     def block_received_handler(self) -> Callable[[Block], None] | None:
+        """The event handler for blocks not for the DidManager machinery."""
         return self._dm_other_blocks_handler
 
     @block_received_handler.setter
     def block_received_handler(
-        self, block_received_handler: Callable[Block, None]
+        self, block_received_handler: Callable[[Block], None]
     ) -> None:
         if self._dm_other_blocks_handler is not None:
             raise Exception(
                 "`block_received_handler` is already set!\n"
-                "If you want to replace it, call `clear_block_received_handler()` first."
+                "If you want to replace it, call "
+                "`clear_block_received_handler()` first."
             )
         self._dm_other_blocks_handler = block_received_handler
 
     def clear_block_received_handler(self) -> None:
+        """Remove the eventhandler for processing received blocks."""
         self._dm_other_blocks_handler = None
 
     def add_block(
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
+        """Add a block to this DID-Manager's underlying blockchain."""
         block = self._blockchain.add_block(content, topics)
         self._blocks_list_dm.add_block(BlockLazilyLoaded.from_block(block))
         return block
 
-    def _init_blocks_list_dm(self):
+    def _init_blocks_list_dm(self) -> None:
         # present to other programs all blocks not created by this DidManager
         blocks = [
             block
@@ -504,15 +524,19 @@ class DidManager(GenericDidManager):
         )
 
     def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+        """Iterate over the blocks stored on this DID's blockchain."""
         return self._blocks_list_dm.get_blocks(reverse=reverse)
 
     def get_block_ids(self) -> list[bytes]:
+        """Get the IDs of the blocks stored on this DID's blockchain."""
         return self._blocks_list_dm.get_long_ids()
 
     def get_num_blocks(self) -> int:
+        """Get the number of blocks stored on this DID's blockchain."""
         return self._blocks_list_dm.get_num_blocks()
 
     def get_block(self, block_id: bytes) -> GenericBlock:
+        """Get a block stored on this DID's blockchain."""
         # if index is passed instead of block_id, get block_id from index
         if isinstance(block_id, int):
             try:
@@ -544,24 +568,28 @@ class DidManager(GenericDidManager):
             return block
         except KeyError:
             error = BlockNotFoundError(
-                "This block isn't recorded (by brenthy_api.Blockchain) as being "
-                "part of this blockchain."
+                "This block isn't recorded (by brenthy_api.Blockchain) as "
+                "being part of this blockchain."
             )
             raise error
 
     def get_peers(self) -> list[str]:
+        """Get the IPFS IDs of this DidManager instance's online peers."""
         return self._blockchain.get_peers()
 
     @property
     def blockchain(self) -> Blockchain:
+        """The blockchain underlying this DidManager."""
         return self._blockchain
 
     @property
     def key_store(self) -> KeyStore:
+        """The KeyStore storing this DidManager's cryptography keys."""
         return self._key_store
 
     @staticmethod
     def get_blockchain_appdata_path(key_store: KeyStore) -> str:
+        """Get the appdata path of a DidManager's blockchain."""
         keystore_did = DidManager.get_keystore_did(key_store)
         blockchain_id = blockchain_id_from_did(keystore_did)
         appdata_path = os.path.join(
@@ -573,6 +601,7 @@ class DidManager(GenericDidManager):
 
     @staticmethod
     def get_keystore_did(key_store: KeyStore) -> str:
+        """Get the ID of the DidManager which a KeyStore is assigned to."""
         # load blockchain_id from the KeyStore's metadata
         keystore_did = key_store.get_custom_metadata().get(KEYSTORE_DID)
 
@@ -588,7 +617,7 @@ def blockchain_id_from_did(did: str) -> str:
     """Given a DID, get its Walytis blockchain's ID."""
     did_parts = did.split(":")
     if not (
-        len(did_parts) == 3
+        len(did_parts) == 3  # noqa
         and did_parts[0] == "did"
         and did_parts[1] == DID_METHOD_NAME
     ):

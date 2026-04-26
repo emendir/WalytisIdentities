@@ -1,31 +1,25 @@
-import json
-from multi_crypt import Crypt
-import os
-from dataclasses import dataclass
-from typing import Type, TypeVar
+"""Machinery for managing Keys, incl. file storage."""
 
-import portalocker
+import json
+import os
+from typing import TypeVar
+
+import portalocker  # type: ignore
 
 from .key_objects import (
+    CodePackage,
+    GenericKey,
     Key,
     KeyGroup,
-    CodePackage,
-    generate_key_id,
     decode_keygroup_id,
 )
-from .utils import (
-    bytes_from_string,
-    bytes_to_string,
-    time_to_string,
-    string_to_time,
-)
-from datetime import datetime
-
 
 _KeyStore = TypeVar("_KeyStore", bound="KeyStore")
 
 
 class KeyStore:
+    """Machinery for managing Keys, incl. file storage."""
+
     keys: dict[str, Key]  # key_id: Key object
 
     def __init__(
@@ -41,14 +35,14 @@ class KeyStore:
         self.key_store_path = key_store_path
         self.lock_file_path = key_store_path + ".lock"
         self.keys: dict[str, Key] = {}
-        self._custom_metadata = {}
+        self._custom_metadata: dict = {}
         self.app_lock = portalocker.Lock(self.lock_file_path)
         self._load_appdata(key)
         assert isinstance(self.key, Key) or isinstance(self.key, KeyGroup), (
             f"INITIALISED: KEY IS {type(key)}"
         )
 
-    def _load_appdata(self, _key: Key | _KeyStore):
+    def _load_appdata(self, _key: Key | KeyGroup | _KeyStore) -> None:
         if not os.path.exists(os.path.dirname(self.key_store_path)):
             raise FileNotFoundError(
                 "The directory of the keystore path doesn't exist:\n"
@@ -80,8 +74,7 @@ class KeyStore:
         if appdata_encryption_public_key != key.get_id():
             raise ValueError(
                 "Wrong cryptographic key for unlocking keystore.\n"
-                f"{appdata_encryption_public_key}\n"
-                f"{self.key.public_key.hex()}"
+                f"{appdata_encryption_public_key}"
             )
 
         keys = {}
@@ -93,7 +86,8 @@ class KeyStore:
         self._custom_metadata = data.get("custom_metadata", {})
 
     def get_all_keys(self) -> list[Key]:
-        return self.keys.values()
+        """Get a list of all key objects."""
+        return list(self.keys.values())
 
     def has_key(self, key: Key | KeyGroup | str) -> bool:
         """Check if the given key is in this keystore.
@@ -109,19 +103,22 @@ class KeyStore:
         current_key_ids = list(self.keys.keys())
         return all(key_id in current_key_ids for key_id in key_ids)
 
-    def get_custom_metadata(self):
+    def get_custom_metadata(self) -> dict:
+        """Get the application-specific metadata stored in this KeyStore."""
         return self._custom_metadata
 
-    def set_custom_metadata(self, data: dict):
+    def set_custom_metadata(self, data: dict) -> None:
+        """Set the application-specific metadata stored in this KeyStore."""
         self._custom_metadata = data
         self.save_appdata()
 
-    def update_custom_metadata(self, data: dict):
+    def update_custom_metadata(self, data: dict) -> None:
         """Add new/modify existing fieds to/in custom metadata."""
         self._custom_metadata.update(data)
         self.save_appdata()
 
-    def save_appdata(self):
+    def save_appdata(self) -> None:
+        """Write all data to appdata files."""
         encrypted_keys = []
         for key_id, key in list(self.keys.items()):
             assert isinstance(self.key, Key) or isinstance(
@@ -141,6 +138,7 @@ class KeyStore:
             file.write(json.dumps(data))
 
     def add_key(self, key: Key | KeyGroup) -> Key | KeyGroup:
+        """Add a Key or KeyGroup to this KeyStore."""
         if isinstance(key, KeyGroup):
             return self.add_keygroup(key)
 
@@ -154,11 +152,13 @@ class KeyStore:
         return key
 
     def add_keygroup(self, keygroup: KeyGroup) -> KeyGroup:
+        """Add a KeyGroup to this KeyStore."""
         for key in keygroup.keys:
             self.add_key(key)
         return keygroup
 
     def get_key(self, key_id: str) -> Key:
+        """Get a Key given its ID."""
         if "|" in key_id:
             raise Exception("It looks like this key_id belongs to a KeyGroup")
         key = self.keys.get(key_id, None)
@@ -166,7 +166,8 @@ class KeyStore:
             raise UnknownKeyError
         return key
 
-    def get_keygroup(self, keygroup_id: str):
+    def get_keygroup(self, keygroup_id: str) -> KeyGroup:
+        """Get a KeyGroup given its ID."""
         keys = [
             self.get_key(key_id) for key_id in decode_keygroup_id(keygroup_id)
         ]
@@ -174,6 +175,7 @@ class KeyStore:
         return KeyGroup(keys)
 
     def get_generic_key(self, key_id: str) -> Key | KeyGroup:
+        """Get a Key or KeyGroup given its ID."""
         if "|" in key_id:
             return self.get_keygroup(key_id)
         else:
@@ -182,6 +184,7 @@ class KeyStore:
     def get_key_from_public(
         self, public_key: str | bytes | bytearray, family: str
     ) -> Key:
+        """Get a Key given its public-key."""
         if isinstance(public_key, str):
             public_key = bytes.fromhex(public_key)
         for key in self.keys.values():
@@ -191,7 +194,7 @@ class KeyStore:
 
     @staticmethod
     def encrypt(
-        data: bytes, key: Key, encryption_options: str | None = None
+        data: bytes, key: GenericKey, encryption_options: str | None = None
     ) -> CodePackage:
         """Encrypt the provided data using the specified key.
 
@@ -205,7 +208,9 @@ class KeyStore:
                             crypto-family and encryption-options
         """
         return CodePackage.encrypt(
-            data=data, key=key, encryption_options=encryption_options
+            data_to_encrypt=data,
+            key=key,
+            encryption_options=encryption_options,
         )
 
     def decrypt(self, code_package: CodePackage) -> bytes:
@@ -228,7 +233,7 @@ class KeyStore:
 
     @staticmethod
     def sign(
-        data: bytes, key: Key, signature_options: str = ""
+        data: bytes, key: GenericKey, signature_options: str | None = None
     ) -> CodePackage:
         """Sign the provided data using the specified key.
 
@@ -275,21 +280,25 @@ class KeyStore:
         key_id = data["appdata_encryption_public_key"]
         return key_id
 
-    def terminate(self):
+    def terminate(self) -> None:
+        """Stop this object's functionality and clean up resources."""
         self.app_lock.release()
 
     def reload(self) -> "KeyStore":
+        """Reload from appdata files."""
         self._load_appdata(self.key)
         return self
 
     def clone(self, key_store_path: str, key: Key) -> "KeyStore":
+        """Create a new KeyStore with this KeyStore' stored keys."""
         key_store = KeyStore(key_store_path=key_store_path, key=key)
-        for key in self.get_all_keys():
-            key_store.add_key(key)
+        for stored_key in self.get_all_keys():
+            key_store.add_key(stored_key)
         key_store.set_custom_metadata(self.get_custom_metadata())
         return key_store
 
     def __del__(self):
+        """Stop this object's functionality and clean up resources."""
         self.terminate()
 
 

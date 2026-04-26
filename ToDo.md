@@ -1,18 +1,24 @@
 ## Next Steps:
+
 - [x] implement conftest.get_test_report_dirs
 - [x] triple-layer encryption for key sharing: GroupDidManager, Member & spontaneous ephemeral keys
 - [x] multi-algorithm multi-layer cryptography: multiple simultaneous current-control-keys in different algorithms
 - [ ] write a test to verify that private keys are stored encrypted
 - Walytis Invitations:
-  - ensure latest invitations are always published on DidManager
-  - ensure all peers add Walytis invitations published on DidManager
-  - ask all members of DidManager when joining with invitation
-  - Walytis: retry invitation requests in `join_blockchain` function
+    - ensure latest invitations are always published on DidManager
+    - ensure all peers add Walytis invitations published on DidManager
+    - ask all members of DidManager when joining with invitation
+    - Walytis: retry invitation requests in `join_blockchain` function
 - PeerMonitor for GroupDidManager members
-- make GroupDidManagerWrapper inherits from DidManagerWrapper
 - Blockchain invitation sharing across devices
 - auto renewal of device-keys
 - Check TODO marks in code
+
+## Refactor
+
+- GroupDidManager: don't inherit DidManager, compose instead, inherit GenericDidManager or DidManagerWrapper instead
+- [ ] rename correspondence to super
+- make GroupDidManagerWrapper inherit from DidManagerWrapper
 
 ## API
 
@@ -38,10 +44,10 @@
 - sign infoblocks using control key AND member author's key
 
 - How to make the same GroupDidManager accessible from multiple applications at once?
-  - Ideas:
-    - run a walytis_identities server in Brenthy
-    - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
-  - same solution for PrivateBlockchain?
+    - Ideas:
+        - run a walytis_identities server in Brenthy
+        - let each application use a separate member DID Manager, figure out how to solve ipfs_datatransmission
+    - same solution for PrivateBlockchain?
 - Proper caching (replace with thorough implementation of block handlers?)
 
 - GroupDidManagerWithSupers sometimes has to check whether self.super_type is a subclass of GroupDidManagerWrapper or GroupDidManager, because they have different constructors. Can we simplify this?
@@ -49,13 +55,13 @@
 - find better way of getting DidManager's peer ID than using blockchain invitation? see GroupDidManager.get_ipfs_ids
 - reduce probability of different GDM members renewing to different keys
 - separate control key from communications keys published as verificationMethod in DID-Docs
-  - ensure communication keys are read from DID-Docs, not ControlKeyBlocks
-  - renew communication keys separately from control keys
+    - ensure communication keys are read from DID-Docs, not ControlKeyBlocks
+    - renew communication keys separately from control keys
 
 ### Tests
 
 - DidManagerWithSupers
-  - test that the return type is suprt_type in all operations returning a super
+    - test that the return type is suprt_type in all operations returning a super
 - make `test_dmws_synchronisation` more reliable, currently it often fails at random
 
 ### Debug

@@ -1,11 +1,16 @@
+"""Base classes for various abstracted forms of DidManagers."""
+
 from abc import ABC, abstractmethod, abstractproperty
 from collections.abc import Generator
-from typing import Callable
+from typing import Callable, Self
 
-from walytis_beta_api import (
+from docstring_inheritance import (  # type: ignore
+    GoogleDocstringInheritanceMeta,
+)
+from walytis_beta_api import (  # type: ignore
     Block,
 )
-from walytis_beta_api._experimental.generic_blockchain import (
+from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore
     GenericBlock,
     GenericBlockchain,
 )
@@ -16,25 +21,32 @@ from .group_did_manager import GroupDidManager
 from .key_store import KeyStore
 
 
-class DidManagerWrapper(GenericDidManager, ABC):
+class DidManagerWrapper(
+    GenericDidManager, ABC, metaclass=GoogleDocstringInheritanceMeta
+):
+    """Base class for classes that wrap around a DidManager."""
+
     @abstractmethod
-    def __init__(self, did_manager: GroupDidManager):
+    def __init__(self, did_manager: DidManager):
         pass
 
     @abstractproperty
-    def did_manager(self) -> GroupDidManager:
+    def did_manager(self) -> GenericDidManager:
+        """The DidManager underlying this DMWS (including wrappers)."""
         pass
 
     @abstractproperty
-    def org_did_manager(self) -> GenericDidManager:
+    def org_did_manager(self) -> DidManager:
+        """The underlying DidManager without wrappers."""
         pass
 
     @property
-    def blockchain(self) -> GenericBlockchain:
+    def blockchain(self) -> GenericBlockchain:  # noqa: D102
         return self.org_did_manager.blockchain
 
     @property
     def key_store(self) -> KeyStore:
+        """The keystore of this DidManager."""
         return self.org_did_manager.key_store
 
     @classmethod
@@ -42,75 +54,50 @@ class DidManagerWrapper(GenericDidManager, ABC):
         cls,
         key_store: KeyStore | str,
         other_blocks_handler: Callable[[Block], None] | None = None,
-    ):
+    ) -> Self:
+        """Create a new instance of this object with a new DidManager."""
         did_manager = DidManager.create(
             key_store=key_store,
             other_blocks_handler=other_blocks_handler,
         )
         return cls(did_manager)
 
-    def add_block(
+    def add_block(  # noqa: D102
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
         return self.did_manager.add_block(content=content, topics=topics)
 
-    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:  # noqa: D102
         return self.did_manager.get_blocks(reverse=reverse)
 
-    def get_block_ids(self) -> list[bytes]:
+    def get_block_ids(self) -> list[bytes]:  # noqa: D102
         return self.did_manager.get_block_ids()
 
-    def get_num_blocks(self) -> int:
+    def get_num_blocks(self) -> int:  # noqa: D102
         return self.did_manager.get_num_blocks()
 
-    def get_block(self, block_id: bytes) -> GenericBlock:
+    def get_block(self, block_id: bytes) -> GenericBlock:  # noqa: D102
         return self.did_manager.get_block(block_id)
 
-    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
-        """Encrypt the provided data using the specified public key.
-
-        Args:
-            data_to_encrypt(bytes): the data to encrypt
-            encryption_options(str): specification code for which
-                                    encryption / decryption protocol should be used
-        Returns:
-            bytes: the encrypted data
-        """
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:  # noqa: D102
         return self.org_did_manager.encrypt(
             data=data,
             encryption_options=encryption_options,
         )
 
-    def decrypt(
+    def decrypt(  # noqa: D102
         self,
         data: bytes,
     ) -> bytes:
-        """Decrypt the provided data using the specified private key.
-
-        Args:
-            data (bytes): the data to decrypt
-        Returns:
-            bytes: the decrypted data
-        """
         return self.org_did_manager.decrypt(data=data)
 
-    def sign(self, data: bytes, signature_options: str = "") -> bytes:
-        """Sign the provided data using the specified private key.
-
-        Args:
-            data(bytes): the data to sign
-            private_key(bytes): the private key to be used for the signing
-            signature_options(str): specification code for which
-                                signature / verification protocol should be used
-        Returns:
-            bytes: the signature
-        """
+    def sign(self, data: bytes, signature_options: str = "") -> bytes:  # noqa: D102
         return self.org_did_manager.sign(
             data=data,
             signature_options=signature_options,
         )
 
-    def verify_signature(
+    def verify_signature(  # noqa: D102
         self,
         signature: bytes,
         data: bytes,
@@ -120,46 +107,52 @@ class DidManagerWrapper(GenericDidManager, ABC):
             data=data,
         )
 
-    def get_peers(self) -> list[str]:
+    def get_peers(self) -> list[str]:  # noqa: D102
         return self.org_did_manager.get_peers()
 
     @property
-    def did(self) -> str:
+    def did(self) -> str:  # noqa: D102
         return self.org_did_manager.did
 
     @property
-    def did_doc(self):
+    def did_doc(self) -> dict:  # noqa: D102
         return self.org_did_manager.did_doc
 
-    def terminate(self, terminate_member: bool = True):
-        self.did_manager.terminate(terminate_member=terminate_member)
+    def terminate(self) -> None:  # noqa: D102
+        self.did_manager.terminate()
 
-    def delete(self):
+    def delete(self) -> None:  # noqa: D102
         self.did_manager.delete()
 
-    def __del__(self):
+    def __del__(self) -> None:  # noqa: D105
         self.terminate()
 
 
-class GroupDidManagerWrapper(ABC):
+class GroupDidManagerWrapper(
+    GenericDidManager, ABC, metaclass=GoogleDocstringInheritanceMeta
+):
+    """Base class for classes that wrap around a DidManager."""
+
     @abstractmethod
     def __init__(self, did_manager: GroupDidManager):
         pass
 
     @abstractproperty
     def did_manager(self) -> GroupDidManager:
+        """The GroupDidManager underlying this DMWS (including wrappers)."""
         pass
 
     @abstractproperty
     def org_did_manager(self) -> GroupDidManager:
+        """The underlying GroupDidManager GroupDidManager without wrappers."""
         pass
 
     @property
-    def blockchain(self) -> GenericBlockchain:
+    def blockchain(self) -> GenericBlockchain:  # noqa: D102
         return self.org_did_manager.blockchain
 
     @property
-    def key_store(self) -> KeyStore:
+    def key_store(self) -> KeyStore:  # noqa: D102
         return self.org_did_manager.key_store
 
     @classmethod
@@ -168,7 +161,8 @@ class GroupDidManagerWrapper(ABC):
         group_key_store: KeyStore | str,
         member: GroupDidManager | KeyStore,
         other_blocks_handler: Callable[[Block], None] | None = None,
-    ):
+    ) -> Self:
+        """Create a new instance of this object with a new GroupDidManager."""
         did_manager = GroupDidManager.create(
             group_key_store=group_key_store,
             member=member,
@@ -183,7 +177,8 @@ class GroupDidManagerWrapper(ABC):
         group_key_store: KeyStore | str,
         member: GroupDidManager,
         other_blocks_handler: Callable[[Block], None] | None = None,
-    ):
+    ) -> Self:
+        """Join membership of an existing GroupDidManager."""
         did_manager = GroupDidManager.join(
             invitation=invitation,
             group_key_store=group_key_store,
@@ -193,70 +188,45 @@ class GroupDidManagerWrapper(ABC):
         return cls(did_manager)
 
     def invite_member(self) -> dict:
+        """Create an invitation for a new peer to join this GroupDidManager."""
         return self.org_did_manager.invite_member()
 
-    def add_block(
+    def add_block(  # noqa: D102
         self, content: bytes, topics: list[str] | str | None = None
     ) -> GenericBlock:
         return self.did_manager.add_block(content=content, topics=topics)
 
-    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:
+    def get_blocks(self, reverse: bool = False) -> Generator[GenericBlock]:  # noqa: D102
         return self.did_manager.get_blocks(reverse=reverse)
 
-    def get_block_ids(self) -> list[bytes]:
+    def get_block_ids(self) -> list[bytes]:  # noqa: D102
         return self.did_manager.get_block_ids()
 
-    def get_num_blocks(self) -> int:
+    def get_num_blocks(self) -> int:  # noqa: D102
         return self.did_manager.get_num_blocks()
 
-    def get_block(self, block_id: bytes) -> GenericBlock:
+    def get_block(self, block_id: bytes) -> GenericBlock:  # noqa: D102
         return self.did_manager.get_block(block_id)
 
-    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:
-        """Encrypt the provided data using the specified public key.
-
-        Args:
-            data_to_encrypt(bytes): the data to encrypt
-            encryption_options(str): specification code for which
-                                    encryption / decryption protocol should be used
-        Returns:
-            bytes: the encrypted data
-        """
+    def encrypt(self, data: bytes, encryption_options: str = "") -> bytes:  # noqa: D102
         return self.org_did_manager.encrypt(
             data=data,
             encryption_options=encryption_options,
         )
 
-    def decrypt(
+    def decrypt(  # noqa: D102
         self,
         data: bytes,
     ) -> bytes:
-        """Decrypt the provided data using the specified private key.
-
-        Args:
-            data (bytes): the data to decrypt
-        Returns:
-            bytes: the decrypted data
-        """
         return self.org_did_manager.decrypt(data=data)
 
-    def sign(self, data: bytes, signature_options: str = "") -> bytes:
-        """Sign the provided data using the specified private key.
-
-        Args:
-            data(bytes): the data to sign
-            private_key(bytes): the private key to be used for the signing
-            signature_options(str): specification code for which
-                                signature / verification protocol should be used
-        Returns:
-            bytes: the signature
-        """
+    def sign(self, data: bytes, signature_options: str = "") -> bytes:  # noqa: D102
         return self.org_did_manager.sign(
             data=data,
             signature_options=signature_options,
         )
 
-    def verify_signature(
+    def verify_signature(  # noqa: D102
         self,
         signature: bytes,
         data: bytes,
@@ -267,34 +237,35 @@ class GroupDidManagerWrapper(ABC):
         )
 
     @property
-    def block_received_handler(self) -> Callable[[Block], None] | None:
+    def block_received_handler(self) -> Callable[[Block], None] | None:  # noqa: D102
         return self.did_manager.block_received_handler
 
     @block_received_handler.setter
     def block_received_handler(
-        self, block_received_handler: Callable[Block, None]
+        self, block_received_handler: Callable[[Block], None]
     ) -> None:
         self.did_manager.block_received_handler = block_received_handler
 
     def clear_block_received_handler(self) -> None:
+        """Remove the eventhandler for processing received blocks."""
         self.did_manager.clear_block_received_handler()
 
-    def get_peers(self) -> list[str]:
+    def get_peers(self) -> list[str]:  # noqa: D102
         return self.org_did_manager.get_peers()
 
     @property
-    def did(self) -> str:
+    def did(self) -> str:  # noqa: D102
         return self.org_did_manager.did
 
     @property
-    def did_doc(self):
+    def did_doc(self) -> dict:  # noqa: D102
         return self.org_did_manager.did_doc
 
-    def terminate(self, terminate_member: bool = True):
+    def terminate(self, terminate_member: bool = True) -> None:  # noqa: D102
         self.did_manager.terminate(terminate_member=terminate_member)
 
-    def delete(self, terminate_member: bool = True):
+    def delete(self, terminate_member: bool = True) -> None:  # noqa: D102
         self.did_manager.delete(terminate_member=terminate_member)
 
-    def __del__(self):
+    def __del__(self):  # noqa: D105
         self.terminate()

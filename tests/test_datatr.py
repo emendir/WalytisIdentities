@@ -1,4 +1,5 @@
 import _auto_run_with_pytest  # noqa
+from threading import Thread
 from datetime import datetime
 from testing_utils import collect_all_test_logs
 import pytest
@@ -47,7 +48,10 @@ DOCKER_NAME = "walid_datatr_test"
 
 
 class SharedData:
-    pass
+    """"""
+
+    group_did_manager: GroupDidManager
+    containers: list[WalytisIdentitiesDocker]
 
 
 shared_data = SharedData()
@@ -64,7 +68,7 @@ def test_preparations():
 
         build_docker_image(verbose=False)
     shared_data.group_did_manager = None
-    shared_data.containers: list[WalytisIdentitiesDocker] = []
+    shared_data.containers = []
 
 
 @pytest.mark.dependency(depends=["test_preparations"])
@@ -83,8 +87,6 @@ def test_create_docker_containers():
         shared_data.containers[0].run_python_code(
             python_code, print_output=True, background=False
         )
-
-    from threading import Thread
 
     Thread(target=run_py).start()
     sleep(5)  # give docker container a longer chance to start loading
@@ -154,7 +156,9 @@ def test_datatransmission():
         conv.terminate()
 
 
-def test_cleanup(test_module_name, test_module_start_time, test_report_dirs) -> None:
+def test_cleanup(
+    test_module_name, test_module_start_time, test_report_dirs
+) -> None:
     """Ensure all resources used by tests are cleaned up."""
     # get logs from, then delete containers
     collect_all_test_logs(

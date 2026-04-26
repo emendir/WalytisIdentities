@@ -5,13 +5,11 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Type, TypeVar
 
-from brenthy_tools_beta.utils import string_to_time, time_to_string
-from multi_crypt import Crypt, verify_signature
-from strict_typing import strictly_typed
-from walytis_beta_api import Blockchain
+from strict_typing import strictly_typed  # type: ignore
+from walytis_beta_api import Blockchain  # type: ignore
 
-from .key_objects import Key, KeyGroup, GenericKey
 from .exceptions import NotValidDidBlockchainError
+from .key_objects import GenericKey, KeyGroup
 from .utils import bytes_from_string, bytes_to_string, logger
 
 PRIBLOCKS_VERSION = (0, 0, 1)  # TODO: What's this exactly?
@@ -218,7 +216,7 @@ class MemberUpdateBlock(InfoBlock):
 
 @dataclass
 class SuperRegistrationBlock(InfoBlock):
-    """Block in a DidManagerWithSupers's blockchain registering a GroupDidManager."""
+    """Block in a DidManagerWithSupers's blockchain registering a GDM."""
 
     walytis_block_topic = "endra_corresp_reg"
     info_content: dict
@@ -230,6 +228,7 @@ class SuperRegistrationBlock(InfoBlock):
         active: bool,
         invitation: dict | None,
     ) -> "SuperRegistrationBlock":
+        """Create a new SuperRegistrationBlock."""
         info_content = {
             "correspondence_id": correspondence_id,
             "active": active,
@@ -239,14 +238,17 @@ class SuperRegistrationBlock(InfoBlock):
 
     @property
     def correspondence_id(self) -> str:
+        """Get the ID of the Super-GDM."""
         return self.info_content["correspondence_id"]
 
     @property
     def active(self) -> bool:
+        """Whether or not this Super-GDM is in active use or archived."""
         return self.info_content["active"]
 
     @property
     def invitation(self) -> dict | None:
+        """The invitation used for joining this Super-GDM."""
         return self.info_content["invitation"]
 
 
@@ -281,7 +283,7 @@ def verify_control_key_update(
     )
 
 
-def get_control_keys_history(blockchain: Blockchain) -> list[Key]:
+def get_control_keys_history(blockchain: Blockchain) -> list[KeyGroup]:
     """Get all a DID-Managers control keys.
 
     All the control keys ever issued are listed in chronological order.
@@ -314,11 +316,11 @@ def get_control_keys_history(blockchain: Blockchain) -> list[Key]:
             last_key_block = ctrl_key_blocks[i]
         i += 1
 
-    control_key = last_key_block.get_new_keys()
+    _ = last_key_block.get_new_keys()
     return verified_keygroups
 
 
-def get_latest_control_key(blockchain: Blockchain) -> Key:
+def get_latest_control_key(blockchain: Blockchain) -> KeyGroup:
     """Get a DID-Manager's blockchain's newest control-key."""
     return get_control_keys_history(blockchain)[-1]
 
@@ -342,12 +344,11 @@ def get_info_blocks(
     Args:
         blockchain: the identity-control-blockchain of the
                                 identity whose DID-doc is to be retrieved
-        block_type: the type of blocks to search through
+        block_types: the type of blocks to search through
     Returns:
         dict: the currently valid DID-document of the identity
     """
     last_key_block = None
-    valid_member_invitations = {}
     if not isinstance(block_types, set):
         block_types = {block_types}
     valid_blocks = []
@@ -356,9 +357,9 @@ def get_info_blocks(
     for block in blockchain.get_blocks():
         block_type = get_block_type(block.topics)
         # logger.debug("WAB: Analysing block...")
-        # if this block is a control key update block
         if not block_type:
             pass
+        # if this block is a control key update block
         elif block_type == ControlKeyBlock:
             # load block content
             # logger.debug("WAB: Getting Control Key block...")
@@ -388,10 +389,14 @@ def get_info_blocks(
                 if ControlKeyBlock in block_types:
                     valid_blocks.append(block)
             else:
-                print("Found Control Key Block with invalid signature")
+                logger.warning(
+                    "Found Control Key Block with invalid signature"
+                )
         elif block_type == MemberJoiningBlock and block_type in block_types:
-            joining_block = block_type.load_from_block_content(block.content)
-            member = joining_block.get_member()
+            joining_block = MemberJoiningBlock.load_from_block_content(
+                block.content
+            )
+            _ = joining_block.get_member()
             # TODO: validate signature
             valid_blocks.append(joining_block)
 
@@ -402,7 +407,9 @@ def get_info_blocks(
             info_block = block_type.load_from_block_content(block.content)
             # logger.debug("WAB: Processing block...")
             # if its signature is validated by the last ctrl key
-            if last_key_block and info_block.verify_signature(
+            # TODO: the below mypy ignore could be cleanly solved by
+            # making an abstract class for the remaining block types
+            if last_key_block and info_block.verify_signature(  # type: ignore
                 last_key_block.get_new_keys()
             ):
                 # set this to the latest info-block
@@ -412,7 +419,8 @@ def get_info_blocks(
     return valid_blocks
 
 
-def get_control_key_age(blockchain: Blockchain, key_id: str):
+def get_control_key_age(blockchain: Blockchain, key_id: str) -> int:
+    """Get the age (generation count) of the given key."""
     keys = get_control_keys_history(blockchain)
     keys.reverse()
     for i, key in enumerate(keys):
@@ -424,6 +432,7 @@ def get_control_key_age(blockchain: Blockchain, key_id: str):
 def get_latest_block(
     blockchain: Blockchain, block_type: Type[InfoBlockType]
 ) -> InfoBlockType | None:
+    """Get the latest block of the given type."""
     blocks = get_info_blocks(blockchain, block_type)
     if blocks:
         return blocks[-1]
@@ -457,6 +466,7 @@ def get_latest_did_doc(blockchain: Blockchain) -> dict:
 
 
 def get_members(blockchain: Blockchain) -> dict[str, dict]:
+    """Get a list of active members of a GroupDidManager."""
     blocks: list[
         MemberJoiningBlock | MemberUpdateBlock | MemberLeavingBlock
     ] = get_info_blocks(
@@ -471,28 +481,31 @@ def get_members(blockchain: Blockchain) -> dict[str, dict]:
             case MemberJoiningBlock.walytis_block_topic:
                 if member["did"] in members.keys():
                     logger.warning(
-                        "Members: Found MemberJoiningBlock for existing member."
+                        "Members: Found MemberJoiningBlock for existing "
+                        "member."
                     )
                 else:
                     members.update({member["did"]: member})
             case MemberUpdateBlock.walytis_block_topic:
                 if member["did"] not in members.keys():
                     logger.warning(
-                        "Members: Found MemberUpdateBlock for non-existent member."
+                        "Members: Found MemberUpdateBlock for non-existent "
+                        "member."
                     )
                 else:
                     members["did"] = member
             case MemberLeavingBlock.walytis_block_topic:
                 if member["did"] not in members.keys():
                     logger.warning(
-                        "Members: Found MemberLeavingBlock for non-existent member."
+                        "Members: Found MemberLeavingBlock for non-existent "
+                        "member."
                     )
                 else:
                     members.pop(member["did"])
     return members
 
 
-INFO_BLOCK_TYPES: set[InfoBlockType] = {
+INFO_BLOCK_TYPES: set[InfoBlockType] = {  # type: ignore
     DidDocBlock,
     MemberJoiningBlock,
     MemberLeavingBlock,
@@ -504,16 +517,16 @@ INFO_BLOCK_TYPES: set[InfoBlockType] = {
 
 def get_block_type(
     topics: list[str] | str,
-) -> InfoBlockType | type(ControlKeyBlock) | None:
+) -> InfoBlockType | type[ControlKeyBlock] | None:
     """Get the block's DID-Manager block-type given its IDs.
 
     Is strict and detects invalid block IDs.
     """
     if isinstance(topics, str):
         topics = [topics]
-    block_type: InfoBlockType | None = None
+    block_type: InfoBlockType | type[ControlKeyBlock] | None = None
     for _type in set.union(INFO_BLOCK_TYPES, {ControlKeyBlock}):
-        if _type.walytis_block_topic in topics:
+        if _type.walytis_block_topic in topics:  # type: ignore
             if block_type:
                 return None
             block_type = _type

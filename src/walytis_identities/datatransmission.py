@@ -1,31 +1,38 @@
-from .key_objects import KeyGroup
-from ipfs_tk_transmission import Conversation
-from walytis_identities.key_store import CodePackage
-from .utils import generate_random_string
+"""Machinery for encrypted communications between GDM instances."""
+
 import json
-from walytis_beta_embedded import ipfs
+import traceback
 from typing import Callable
-from walytis_beta_embedded import ipfs
-from ipfs_tk_transmission.errors import UnreadableReply
 
-from walytis_beta_api._experimental.generic_blockchain import (
-    GenericBlock,
-    GenericBlockchain,
+from ipfs_tk_transmission import (  # type: ignore
+    Conversation,
+    ConversationListener,
 )
-from .log import logger_datatr as logger
-import json
-from .did_manager import CTRL_KEY_FAMILIES
+from ipfs_tk_transmission.errors import UnreadableReply  # type: ignore
+from walytis_beta_embedded import ipfs  # type: ignore
 
-from .utils import NUM_ACTIVE_CONTROL_KEYS, NUM_NEW_CONTROL_KEYS
+from walytis_identities.key_store import CodePackage
+
+from .did_manager import CTRL_KEY_FAMILIES
+from .key_objects import KeyGroup
+from .log import logger_datatr as logger
+from .utils import generate_random_string
 
 COMMS_TIMEOUT_S = 30
 CHALLENGE_STRING_LENGTH = 200
 
 
 def listen_for_conversations(
-    gdm: "GroupDidManager", listener_name: str, eventhandler: Callable
-):
-    def handle_join_request(conv_name, peer_id, salutation_start):
+    gdm: "GroupDidManager",  # type: ignore # noqa
+    listener_name: str,
+    eventhandler: Callable,
+) -> ConversationListener:
+    """Listen for and join incoming encrypted transmissions to this GDM."""
+
+    def handle_join_request(
+        conv_name: str, peer_id: str, salutation_start: bytes
+    ) -> None:
+        """Handle an incoming transmission request (perform handshake)."""
         logger.debug("Received join request")
         salutation = json.loads(salutation_start.decode())
         their_one_time_key = KeyGroup.from_id(salutation["one_time_key"])
@@ -84,7 +91,12 @@ def listen_for_conversations(
             group_key = group_key_proof.get_key()
             member_key = member_key_proof.get_key()
 
-            def _encrypt(plaintext: bytearray) -> bytearray:
+            if not isinstance(member_key, KeyGroup):
+                raise Exception("Expecting a KeyGroup, got {type(member_key)}")
+            if not isinstance(group_key, KeyGroup):
+                raise Exception("Expecting a KeyGroup, got {type(group_key)}")
+
+            def _encrypt(plaintext: bytearray) -> bytes:
                 return encrypt(
                     plaintext=plaintext,
                     group_key=group_key,
@@ -92,7 +104,7 @@ def listen_for_conversations(
                     one_time_key=their_one_time_key,
                 )
 
-            def _decrypt(cipher: bytearray) -> bytearray:
+            def _decrypt(cipher: bytearray) -> bytes:
                 return decrypt(
                     cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
                 )
@@ -120,12 +132,12 @@ def listen_for_conversations(
             finally:
                 conv.terminate()
 
-    def _handle_join_request(conv_name, peer_id, salutation_start):
+    def _handle_join_request(
+        conv_name: str, peer_id: str, salutation_start: bytes
+    ) -> None:
         try:
             handle_join_request(conv_name, peer_id, salutation_start)
         except Exception as e:
-            import traceback
-
             logger.error(traceback.format_exc())
             logger.error(e)
 
@@ -137,11 +149,12 @@ def listen_for_conversations(
 
 
 def start_conversation(
-    gdm: "GroupDidManager",
+    gdm: "GroupDidManager",  # type: ignore # noqa
     conv_name: str,
     peer_id: str,
     others_req_listener: str,
-) -> Conversation | None:
+) -> Conversation:
+    """Start an encrypted conversation to another GDM instance."""
     logger.debug("Starting conversation...")
     our_one_time_key = KeyGroup.create(CTRL_KEY_FAMILIES)
     our_challenge_data = generate_random_string(CHALLENGE_STRING_LENGTH)
@@ -156,7 +169,7 @@ def start_conversation(
     logger.debug("Contacting peer...")
     conv = None
     try:
-        conv: ipfs.Conversation = ipfs.start_conversation(
+        conv = ipfs.start_conversation(
             conv_name,
             peer_id,
             f"WalIdenDatatr-{gdm.blockchain_id}-{others_req_listener}",
@@ -188,7 +201,7 @@ def start_conversation(
                 logger.debug(f"DataTr: received unexpected reply: {message}")
                 conv.close()
                 raise UnreadableReply()
-        member = gdm.get_members_dict()[salutation_join["member_did"]]
+        _ = gdm.get_members_dict()[salutation_join["member_did"]]
         their_one_time_key = KeyGroup.from_id(salutation_join["one_time_key"])
 
         group_key_proof = CodePackage.deserialise(
@@ -201,7 +214,12 @@ def start_conversation(
         group_key = group_key_proof.get_key()
         member_key = member_key_proof.get_key()
 
-        def _encrypt(plaintext: bytearray) -> bytearray:
+        if not isinstance(member_key, KeyGroup):
+            raise Exception("Expecting a KeyGroup, got {type(member_key)}")
+        if not isinstance(group_key, KeyGroup):
+            raise Exception("Expecting a KeyGroup, got {type(group_key)}")
+
+        def _encrypt(plaintext: bytearray) -> bytes:
             return encrypt(
                 plaintext=plaintext,
                 group_key=group_key,
@@ -209,7 +227,7 @@ def start_conversation(
                 one_time_key=their_one_time_key,
             )
 
-        def _decrypt(cipher: bytearray) -> bytearray:
+        def _decrypt(cipher: bytearray) -> bytes:
             return decrypt(
                 cipher=cipher, gdm=gdm, one_time_key=our_one_time_key
             )
@@ -230,17 +248,20 @@ def encrypt(
     group_key: KeyGroup,
     member_key: KeyGroup,
     one_time_key: KeyGroup,
-) -> bytearray:
+) -> bytes:
+    """Encrypt a message for an established conversation."""
     logger.debug("Encrypting content...")
 
     logger.debug("Encrypting with Group Key...")
     # encrypt with Group key (serialised CodePackage)
-    cipher_1 = CodePackage.encrypt(plaintext, group_key).serialise_bytes()
+    cipher_1: bytes = CodePackage.encrypt(
+        plaintext, group_key
+    ).serialise_bytes()
 
     logger.debug("Encrypting with Member Key...")
     # encrypt with peer's Member key (serialised CodePackage)
-    cipher_2 = CodePackage.encrypt(
-        data=cipher_1, key=member_key
+    cipher_2: bytes = CodePackage.encrypt(
+        data_to_encrypt=cipher_1, key=member_key
     ).serialise_bytes()
 
     logger.debug("Encrypting with OneTime Key...")
@@ -251,8 +272,11 @@ def encrypt(
 
 
 def decrypt(
-    cipher: bytearray, gdm: "GroupDidManager", one_time_key: KeyGroup
+    cipher: bytearray,
+    gdm: "GroupDidManager",  # type: ignore # noqa
+    one_time_key: KeyGroup,
 ) -> bytearray:
+    """Encrypt a message from an established conversation."""
     logger.debug("Decrypting content...")
 
     logger.debug("Decrypting with OneTime Key...")
@@ -270,7 +294,11 @@ def decrypt(
     return plaintext
 
 
-def handle_challenge(gdm: "GroupDidManager", _their_challenge: str):
+def handle_challenge(
+    gdm: "GroupDidManager",  # type: ignore # noqa
+    _their_challenge: str,
+) -> dict:
+    """Handle an authentication challenge in a conversation handshake."""
     their_challenge = _their_challenge.encode()
     group_key = gdm.get_control_keys()
     signature_group = CodePackage.sign(their_challenge, group_key).serialise()
@@ -285,7 +313,12 @@ def handle_challenge(gdm: "GroupDidManager", _their_challenge: str):
     return data
 
 
-def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
+def verify_challenge(
+    gdm: "GroupDidManager",  # type: ignore # noqa
+    data: dict,
+    _challenge: str,
+) -> bool:
+    """Verify the result of an authentication challenge in a handshake."""
     group_key_proof = CodePackage.deserialise(data["group_key_proof"])
     member_key_proof = CodePackage.deserialise(data["member_key_proof"])
     challenge = _challenge.encode()
@@ -328,12 +361,16 @@ def verify_challenge(gdm: "GroupDidManager", data: dict, _challenge: str):
 
 
 class ChallengeFailedError(Exception):
+    """Exception when authentication in a handshake fails."""
+
     pass
 
 
 class HandshakeFailedError(Exception):
+    """Exception when a handshake fails."""
+
     def __init__(self, exception: Exception):
         self.data = type(exception)
 
-    def __str__(self):
+    def __str__(self):  # noqa
         return f"{self.data}"

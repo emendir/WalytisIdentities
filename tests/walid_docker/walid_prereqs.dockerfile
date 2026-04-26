@@ -10,7 +10,7 @@ COPY --from=liboqs_build /usr/local/lib/liboqs* /usr/local/lib
 WORKDIR /opt/walytis_identities
 
 
-RUN apt-get install -y iputils-ping rsync sudo
+RUN apt update && apt install -y iputils-ping rsync sudo
 
 COPY . /opt/walytis_identities
 RUN pip install --break-system-packages --root-user-action ignore -r /opt/walytis_identities/requirements-dev.txt

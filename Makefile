@@ -28,22 +28,22 @@ deps: ## Install dependencies
 # ----------------------------
 .PHONY: test lint typecheck format check coverage
 
-# lint: ## Lint code
-# 	ruff check src tests
-#
-# typecheck: ## Type-check
-# 	mypy src tests
+lint: ## Lint code
+	ruff check --fix src
+
+typecheck: ## Type-check
+	mypy --config-file=pyproject.toml --check-untyped-defs src 
 
 format: ## Autoformat code
-	ruff format src tests
+	ruff format --check src
 
-# check: lint typecheck test ## Run lint, typecheck, and test
+check: lint format typecheck ## Run lint, format, typecheck
 
 test: ## Run test suite
-	$(PYTHON) -m pytest -v tests
+	$(PYTHON) tests/run_all_tests.py
 
 coverage: ## Run tests with coverage report
-	$(PYTHON) -m pytest --cov=src --cov-report=term-missing
+	$(PYTHON) tests/run_all_tests.py --cov=src --cov-report=term-missing
 
 # ----------------------------
 # Build & Packaging
