@@ -10,16 +10,17 @@ from typing import Callable
 from docstring_inheritance import (  # type: ignore
     GoogleDocstringInheritanceMeta,
 )
-from walytis_beta_api import Block, Blockchain  # type: ignore
-from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore
-    GenericBlockchain,  # type: ignore
+from walytis_beta_api import (  # type: ignore
+    Block,
+    Blockchain,  # type: ignore
 )
-from walytis_beta_tools._experimental.generic_block import (  # type: ignore
-    GenericBlock,  # type: ignore
+from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore
+    GenericBlock,
+    GenericBlockchain,
 )
 
-from .key_objects import KeyGroup
-from .key_store import KeyStore
+from ..key_objects import KeyGroup
+from ..key_store import KeyStore
 
 
 class GenericDidManager(
@@ -60,6 +61,10 @@ class GenericDidManager(
     @abstractmethod
     def get_control_keys(self) -> KeyGroup:
         """Get the current control key, with private key if possible."""
+
+    @abstractmethod
+    def get_control_keys_history(self) -> list[KeyGroup]:
+        """Get chronological list of all keys ever used."""
 
     @abstractmethod
     def update_did_doc(self, did_doc: dict) -> None:

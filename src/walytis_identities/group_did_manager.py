@@ -71,7 +71,8 @@ from .did_manager_blocks import (
     get_latest_did_doc,
     get_members,
 )
-from .generic_did_manager import GenericDidManager
+from .generics.dm_wrapper import DidManagerWrapper
+from .generics.generic_did_manager import GenericDidManager
 from .key_objects import Key, KeyGroup, KeyLockedError
 from .key_store import CodePackage, KeyStore, UnknownKeyError
 from .log import logger_ckm, logger_gdm_join
@@ -216,7 +217,7 @@ class Member:
             self._blockchain.terminate()
 
 
-class _GroupDidManager(DidManager):
+class _GroupDidManager(DidManagerWrapper):
     """DidManager with member-managment functionality.
 
     Includes functionality for keeping a list of member-DIDs, including
@@ -232,8 +233,7 @@ class _GroupDidManager(DidManager):
         auto_load_missed_blocks: bool = True,
     ):
         self._gdm_other_blocks_handler = other_blocks_handler
-        DidManager.__init__(
-            self,
+        self._did_manager = DidManager(
             key_store=key_store,
             # we handle member management blocks
             other_blocks_handler=self._gdm_on_block_received,
@@ -247,8 +247,28 @@ class _GroupDidManager(DidManager):
         if auto_load_missed_blocks:
             _GroupDidManager.load_missed_blocks(self)
 
+    @classmethod
+    def _create(
+        cls,
+        key_store: KeyStore | str,
+        other_blocks_handler: Callable[[Block], None] | None = None,
+    ) -> Self:
+        dm = DidManager.create(key_store=key_store)
+        dm.terminate()
+        return cls(
+            key_store=dm.key_store, other_blocks_handler=other_blocks_handler
+        )
+
+    @property
+    def did_manager(self) -> DidManager:
+        return self._did_manager
+
+    @property
+    def org_did_manager(self) -> DidManager:
+        return self._did_manager
+
     def load_missed_blocks(self) -> None:  # noqa: D102
-        DidManager.load_missed_blocks(self)
+        self._did_manager.load_missed_blocks()
 
     def _gdm_add_info_block(self, block: InfoBlock) -> Block:
         """Add an InfoBlock type block to this DID-Block's blockchain."""
@@ -401,7 +421,7 @@ class _GroupDidManager(DidManager):
         # present to other programs all blocks not created by this DidManager
         blocks = [
             block
-            for block in DidManager.get_blocks(self)
+            for block in self._did_manager.get_blocks()
             if WALYTIS_BLOCK_TOPIC not in block.topics
             and block.topics != ["genesis"]
         ]
@@ -461,7 +481,7 @@ class _GroupDidManager(DidManager):
         # TODO: see if we should/can use get_info_blocks
         return [
             b
-            for b in DidManager.get_blocks(self)
+            for b in self._did_manager.get_blocks()
             if MemberJoiningBlock.walytis_block_topic in b.topics
         ]
 
@@ -471,7 +491,7 @@ class _GroupDidManager(DidManager):
         # TODO: see if we should/can use get_info_blocks
         return [
             b
-            for b in DidManager.get_blocks(self)
+            for b in self._did_manager.get_blocks()
             if MemberUpdateBlock.walytis_block_topic in b.topics
         ]
 
@@ -508,7 +528,7 @@ class _GroupDidManager(DidManager):
         return peer_ids
 
     def terminate(self) -> None:
-        DidManager.terminate(self)
+        self._did_manager.terminate()
         for member in self.get_members():
             member.terminate()
 
@@ -630,7 +650,7 @@ class GroupDidManager(_GroupDidManager):
             )
 
         logger.debug("GDM: Creating Group Did-Manager...")
-        g_did_manager = _GroupDidManager.create(group_key_store)
+        g_did_manager = _GroupDidManager._create(group_key_store)
         g_did_manager.add_member(member_did_manager)
 
         key = g_did_manager.get_control_keys()
@@ -1335,7 +1355,7 @@ class GroupDidManager(_GroupDidManager):
         GroupDidManager.terminate(self, terminate_member=terminate_member)
         if terminate_member:
             self.member_did_manager.delete()
-        DidManager.delete(self)
+        self._did_manager.delete()
 
     def terminate(self, terminate_member: bool = True) -> None:
         """Stop this Identity object, cleaning up resources."""
@@ -1379,7 +1399,7 @@ class GroupDidManager(_GroupDidManager):
                 pass
             try:
                 logger.debug("GDM: terminating DidManager...")
-                DidManager.terminate(self)
+                self._did_manager.terminate()
             except Exception as e:
                 logger.warning(f"GDM TERMINATING: {e}")
                 pass

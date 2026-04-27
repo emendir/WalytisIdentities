@@ -44,8 +44,10 @@ from .did_manager import (
     DidManager,
     blockchain_id_from_did,
 )
-from .generics import DidManagerWrapper, GroupDidManagerWrapper
-from .group_did_manager import GenericDidManager, GroupDidManager
+from .generics.dm_wrapper import DidManagerWrapper
+from .generics.gdm_wrapper import GroupDidManagerWrapper
+from .generics.generic_did_manager import GenericDidManager
+from .group_did_manager import GroupDidManager
 from .key_objects import Key, KeyGroup
 from .key_store import KeyStore
 from .log import logger_dmws as logger
@@ -843,9 +845,6 @@ class DidManagerWithSupers(DidManagerWrapper):
             data=data,
         )
 
-    def get_control_keys(self) -> KeyGroup:  # noqa: D102
-        return self._did_manager.get_control_keys()
-
     def get_peers(self) -> list[str]:  # noqa: D102
         return self._did_manager.get_peers()
 
@@ -889,10 +888,3 @@ class DidManagerWithSupers(DidManagerWrapper):
     @property
     def key_store(self) -> KeyStore:  # noqa: D102
         return self._did_manager.key_store
-
-    def renew_control_key(self, new_ctrl_key: KeyGroup | None = None) -> None:  # noqa: D102
-        return self._did_manager.renew_control_key(new_ctrl_key)
-
-    def update_did_doc(self, did_doc: dict) -> None:  # noqa: D102
-        """Set a new DID-Document for this DidManager."""
-        return self.update_did_doc(did_doc)

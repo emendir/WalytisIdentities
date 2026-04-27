@@ -10,8 +10,8 @@ from brenthy_tools_beta.utils import (  # type: ignore # noqa
     string_to_time,
     time_to_string,
 )
-from docstring_inheritance._internal import (
-    GoogleDocstringInheritanceMeta,  # type: ignore
+from docstring_inheritance._internal import (  # type: ignore
+    GoogleDocstringInheritanceMeta,
 )
 
 from .log import logger_walid as logger  # noqa

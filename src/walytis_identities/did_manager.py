@@ -36,7 +36,7 @@ from .did_manager_blocks import (
     get_latest_did_doc,
 )
 from .exceptions import NotInitialisedError, NotValidDidBlockchainError
-from .generic_did_manager import GenericDidManager
+from .generics.generic_did_manager import GenericDidManager
 from .key_objects import Key, KeyGroup, KeyLockedError
 from .key_store import CodePackage, KeyStore
 from .log import logger_dm as logger
