@@ -1,7 +1,4 @@
-"""Machinery for managing DID-Documents, i.e. identities' cryptography keys.
-
-Doesn't include machinery for managing other members.
-"""
+"""Purely abstract class declaring form of all types of DidManagers."""
 
 from abc import ABC, abstractmethod, abstractproperty
 from collections.abc import Generator
@@ -26,12 +23,7 @@ from ..key_store import KeyStore
 class GenericDidManager(
     GenericBlockchain, ABC, metaclass=GoogleDocstringInheritanceMeta
 ):
-    """Manage DID documents using a Walytis blockchain.
-
-    Publishes DID documents on a blockchain, secured by an updatable
-    control key system.
-    DOESN'T create ID documents.
-    """
+    """Purely abstract class declaring form of all types of DidManagers."""
 
     @abstractproperty
     def blockchain(self) -> Blockchain:

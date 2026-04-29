@@ -224,22 +224,22 @@ class SuperRegistrationBlock(InfoBlock):
     @classmethod
     def create(
         cls,
-        correspondence_id: str,
+        super_id: str,
         active: bool,
         invitation: dict | None,
     ) -> "SuperRegistrationBlock":
         """Create a new SuperRegistrationBlock."""
         info_content = {
-            "correspondence_id": correspondence_id,
+            "super_id": super_id,
             "active": active,
             "invitation": invitation,
         }
         return cls.new(info_content)
 
     @property
-    def correspondence_id(self) -> str:
+    def super_id(self) -> str:
         """Get the ID of the Super-GDM."""
-        return self.info_content["correspondence_id"]
+        return self.info_content["super_id"]
 
     @property
     def active(self) -> bool:

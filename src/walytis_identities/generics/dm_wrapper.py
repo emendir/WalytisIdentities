@@ -1,4 +1,4 @@
-"""Abstract class for wrapping DidManager objects."""
+"""Prototype for classes that wrap DidManager objects."""
 
 from abc import ABC, abstractproperty
 from collections.abc import Generator
@@ -20,7 +20,7 @@ from .generic_did_manager import GenericDidManager
 class DidManagerWrapper(
     GenericDidManager, ABC, metaclass=GoogleDocstringInheritanceMeta
 ):
-    """Base class for classes that wrap around a DidManager."""
+    """Prototype for classes that wrap DidManager objects."""
 
     @abstractproperty
     def did_manager(self) -> GenericDidManager:

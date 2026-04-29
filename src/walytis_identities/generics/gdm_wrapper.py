@@ -1,4 +1,4 @@
-"""Base classes for various abstracted forms of DidManagers."""
+"""Prototype for classes that wrap GroupDidManager objects."""
 
 from abc import ABC, abstractmethod, abstractproperty
 from collections.abc import Generator
@@ -23,7 +23,7 @@ from .generic_did_manager import GenericDidManager
 class GroupDidManagerWrapper(
     GenericDidManager, ABC, metaclass=GoogleDocstringInheritanceMeta
 ):
-    """Base class for classes that wrap around a DidManager."""
+    """Prototype for classes that wrap GroupDidManager objects."""
 
     @abstractmethod
     def __init__(self, did_manager: GroupDidManager):
