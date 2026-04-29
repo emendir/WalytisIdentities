@@ -18,7 +18,7 @@
 
 - [x] GroupDidManager: don't inherit DidManager, compose instead, inherit GenericDidManager or DidManagerWrapper instead
 - [x] rename correspondence to super
-- [ ] make GroupDidManagerWrapper inherit from DidManagerWrapper
+- [x] make GroupDidManagerWrapper inherit from DidManagerWrapper
 
 ## API
 

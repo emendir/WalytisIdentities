@@ -93,17 +93,13 @@ class DidManagerWithSupers(DidManagerWrapper):
 
         # cached list of archived  GroupDidManager IDs
         self._archived_corresp_ids: set[str] = set()
-        self.supers: dict[
-            str, GroupDidManager | GroupDidManagerWrapper
-        ] = dict()
-        self.supers_to_join: dict[
-            str, SuperRegistrationBlock | None
-        ] = {}
+        self.supers: dict[str, GroupDidManager | GroupDidManagerWrapper] = (
+            dict()
+        )
+        self.supers_to_join: dict[str, SuperRegistrationBlock | None] = {}
         self._load_supers()  # load GroupDidManager objects
         self.__process_invitations = False
-        self._supers_finder_thr = Thread(
-            target=self._join_supers
-        )
+        self._supers_finder_thr = Thread(target=self._join_supers)
 
         # If this is also a GroupDidManager,
         # listen to requests from other members to join an already joined Super
@@ -198,9 +194,7 @@ class DidManagerWithSupers(DidManagerWrapper):
         #     f"Processing invitations: {len(self.supers_to_join)}"
         # )
         _supers_to_join: dict[str, SuperRegistrationBlock | None] = {}
-        joined_supers: dict[
-            str, GroupDidManager | GroupDidManagerWrapper
-        ] = {}
+        joined_supers: dict[str, GroupDidManager | GroupDidManagerWrapper] = {}
         for super_id in self.supers_to_join.keys():
             if self._terminate_dmws:
                 return
@@ -218,9 +212,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                     if reg.active:
                         if reg.super_id == super_id:
                             registration = reg
-                            self.supers_to_join[super_id] = (
-                                reg
-                            )
+                            self.supers_to_join[super_id] = reg
                 if not registration:
                     error_message = (
                         "BUG: "
@@ -235,9 +227,7 @@ class DidManagerWithSupers(DidManagerWrapper):
             )
             super = self._join_already_joined_super(registration)
             if super:
-                joined_supers.update(
-                    {super_id: super}
-                )
+                joined_supers.update({super_id: super})
             else:
                 _supers_to_join.update({super_id: registration})
         for super_id in joined_supers.keys():
@@ -261,15 +251,11 @@ class DidManagerWithSupers(DidManagerWrapper):
             logger.debug("DMWS: Joining created super...")
             # invitation = super.invite_member()
             blockchain_invitation = json.loads(
-                super.blockchain.create_invitation(
-                    one_time=False, shared=True
-                )
+                super.blockchain.create_invitation(one_time=False, shared=True)
             )
             # register GroupDidManager on blockchain
             logger.debug("DMWS: registering created super...")
-            self._register_super(
-                super.did, True, blockchain_invitation
-            )
+            self._register_super(super.did, True, blockchain_invitation)
             logger.debug("DMWS: updating supers...")
 
             # add to internal collection of GroupDidManager objects
@@ -314,22 +300,16 @@ class DidManagerWithSupers(DidManagerWrapper):
                 raise SuperExistsError()
 
             blockchain_invitation = json.loads(
-                super.blockchain.create_invitation(
-                    one_time=False, shared=True
-                )
+                super.blockchain.create_invitation(one_time=False, shared=True)
             )
             # register GroupDidManager on blockchain
-            self._register_super(
-                super.did, True, blockchain_invitation
-            )
+            self._register_super(super.did, True, blockchain_invitation)
             # add to internal collection of GroupDidManager objects
             self.supers.update({super.did: super})
 
             return super
 
-    def archive_super(
-        self, super_id: str, register: bool = True
-    ) -> None:
+    def archive_super(self, super_id: str, register: bool = True) -> None:
         """Cancel our membership of the specified super."""
         with self.lock:
             if super_id in self.supers_to_join:
@@ -338,9 +318,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                 return
             if super_id not in self.supers:
                 return
-            self.supers[super_id].terminate(
-                terminate_member=False
-            )
+            self.supers[super_id].terminate(terminate_member=False)
 
             if register:
                 # register archiving on blockchain
@@ -515,17 +493,10 @@ class DidManagerWithSupers(DidManagerWrapper):
                         "GroupDidManager or GroupDidManagerWrapper"
                     )
                 supers.append(super)
-            self.supers = dict(
-                [
-                    (super.did, super)
-                    for super in supers
-                ]
-            )
+            self.supers = dict([(super.did, super) for super in supers])
             self._archived_corresp_ids = _archived_corresp_ids
 
-            self.supers_to_join = dict(
-                [(cid, None) for cid in new_supers]
-            )
+            self.supers_to_join = dict([(cid, None) for cid in new_supers])
             # logger.debug(
             # f"DMWS: Supers: {len(self.supers)} "
             # f"{ len(self._archived_corresp_ids)} "
@@ -547,9 +518,7 @@ class DidManagerWithSupers(DidManagerWrapper):
         try:
             if crsp_registration.active:
                 if not self.__process_invitations:
-                    entry = {
-                        crsp_registration.super_id: crsp_registration
-                    }
+                    entry = {crsp_registration.super_id: crsp_registration}
                     self.supers_to_join.update(entry)
                     logger.info(
                         "DidManagerWithSupers: not yet joining GroupDidManager"
@@ -560,9 +529,7 @@ class DidManagerWithSupers(DidManagerWrapper):
                         "DidManagerWithSupers: added new GroupDidManager"
                     )
             else:
-                self.archive_super(
-                    crsp_registration.super_id, register=False
-                )
+                self.archive_super(crsp_registration.super_id, register=False)
                 logger.info("DidManagerWithSupers: archived GroupDidManager")
         except SuperExistsError:
             logger.info(
