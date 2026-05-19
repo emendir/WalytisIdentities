@@ -1,0 +1,7 @@
+walytis\_identities.key\_objects module
+=======================================
+
+.. automodule:: walytis_identities.key_objects
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -1,0 +1,7 @@
+walytis\_identities.generics.dm\_wrapper module
+===============================================
+
+.. automodule:: walytis_identities.generics.dm_wrapper
+   :members:
+   :show-inheritance:
+   :undoc-members:

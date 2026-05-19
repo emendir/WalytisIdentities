@@ -1,0 +1,7 @@
+walytis\_identities.group\_did\_manager module
+==============================================
+
+.. automodule:: walytis_identities.group_did_manager
+   :members:
+   :show-inheritance:
+   :undoc-members:

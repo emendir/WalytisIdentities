@@ -1,0 +1,7 @@
+walytis\_identities.generics.generic\_did\_manager module
+=========================================================
+
+.. automodule:: walytis_identities.generics.generic_did_manager
+   :members:
+   :show-inheritance:
+   :undoc-members:

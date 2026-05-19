@@ -771,7 +771,7 @@ class DidManagerWithSupers(DidManagerWrapper):
         self.terminate()
 
     @property
-    def blockchain(self) -> GenericBlockchain:  # noqa
+    def blockchain(self) -> GenericBlockchain:  # noqa: D102
         return self._did_manager.blockchain
 
     @property

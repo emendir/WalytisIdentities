@@ -1,0 +1,7 @@
+walytis\_identities.settings module
+===================================
+
+.. automodule:: walytis_identities.settings
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -4,9 +4,6 @@ from abc import ABC, abstractmethod, abstractproperty
 from collections.abc import Generator
 from typing import Callable
 
-from docstring_inheritance import (  # type: ignore
-    GoogleDocstringInheritanceMeta,
-)
 from walytis_beta_api import (  # type: ignore
     Block,
     Blockchain,  # type: ignore
@@ -18,11 +15,10 @@ from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore
 
 from ..key_objects import KeyGroup
 from ..key_store import KeyStore
+from ..utils import AbstractClassMeta
 
 
-class GenericDidManager(
-    GenericBlockchain, ABC, metaclass=GoogleDocstringInheritanceMeta
-):
+class GenericDidManager(GenericBlockchain, ABC, metaclass=AbstractClassMeta):
     """Purely abstract class declaring form of all types of DidManagers."""
 
     @abstractproperty

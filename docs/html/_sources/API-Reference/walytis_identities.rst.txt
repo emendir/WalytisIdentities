@@ -1,0 +1,36 @@
+walytis\_identities package
+===========================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   walytis_identities.generics
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   walytis_identities.datatransmission
+   walytis_identities.did_manager
+   walytis_identities.did_manager_blocks
+   walytis_identities.did_manager_with_supers
+   walytis_identities.exceptions
+   walytis_identities.group_did_manager
+   walytis_identities.key_objects
+   walytis_identities.key_store
+   walytis_identities.log
+   walytis_identities.settings
+   walytis_identities.utils
+
+Module contents
+---------------
+
+.. automodule:: walytis_identities
+   :members:
+   :show-inheritance:
+   :undoc-members:

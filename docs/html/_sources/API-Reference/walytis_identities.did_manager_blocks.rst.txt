@@ -1,0 +1,7 @@
+walytis\_identities.did\_manager\_blocks module
+===============================================
+
+.. automodule:: walytis_identities.did_manager_blocks
+   :members:
+   :show-inheritance:
+   :undoc-members:

@@ -3,9 +3,6 @@
 from abc import ABC, abstractproperty
 from collections.abc import Generator
 
-from docstring_inheritance import (  # type: ignore  # type: ignore
-    GoogleDocstringInheritanceMeta,
-)
 from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore  # type: ignore
     GenericBlock,
     GenericBlockchain,
@@ -14,12 +11,11 @@ from walytis_beta_api._experimental.generic_blockchain import (  # type: ignore 
 from ..did_manager import DidManager
 from ..key_objects import KeyGroup
 from ..key_store import KeyStore
+from ..utils import AbstractClassMeta
 from .generic_did_manager import GenericDidManager
 
 
-class DidManagerWrapper(
-    GenericDidManager, ABC, metaclass=GoogleDocstringInheritanceMeta
-):
+class DidManagerWrapper(GenericDidManager, ABC, metaclass=AbstractClassMeta):
     """Prototype for classes that wrap DidManager objects."""
 
     @abstractproperty

@@ -1,0 +1,20 @@
+walytis\_identities.generics package
+====================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   walytis_identities.generics.dm_wrapper
+   walytis_identities.generics.gdm_wrapper
+   walytis_identities.generics.generic_did_manager
+
+Module contents
+---------------
+
+.. automodule:: walytis_identities.generics
+   :members:
+   :show-inheritance:
+   :undoc-members:

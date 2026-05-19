@@ -1,0 +1,708 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>walytis_identities package - walytis_identities 0.5.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="README.html"><div class="brand">walytis_identities 0.5.3 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="README.html">
+  
+  <span class="sidebar-brand-text">walytis_identities 0.5.3 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/walytis_identities.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="walytis-identities-package">
+<h1>walytis_identities package<a class="headerlink" href="#walytis-identities-package" title="Link to this heading">¶</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.generics.html">walytis_identities.generics package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.generics.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.generics.dm_wrapper.html">walytis_identities.generics.dm_wrapper module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper"><code class="docutils literal notranslate"><span class="pre">DidManagerWrapper</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.generics.gdm_wrapper.html">walytis_identities.generics.gdm_wrapper module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper"><code class="docutils literal notranslate"><span class="pre">GroupDidManagerWrapper</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.generics.generic_did_manager.html">walytis_identities.generics.generic_did_manager module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager"><code class="docutils literal notranslate"><span class="pre">GenericDidManager</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.generics.html#module-walytis_identities.generics">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.datatransmission.html">walytis_identities.datatransmission module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.ChallengeFailedError"><code class="docutils literal notranslate"><span class="pre">ChallengeFailedError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.HandshakeFailedError"><code class="docutils literal notranslate"><span class="pre">HandshakeFailedError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.decrypt"><code class="docutils literal notranslate"><span class="pre">decrypt()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.encrypt"><code class="docutils literal notranslate"><span class="pre">encrypt()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.handle_challenge"><code class="docutils literal notranslate"><span class="pre">handle_challenge()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.listen_for_conversations"><code class="docutils literal notranslate"><span class="pre">listen_for_conversations()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.start_conversation"><code class="docutils literal notranslate"><span class="pre">start_conversation()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.datatransmission.html#walytis_identities.datatransmission.verify_challenge"><code class="docutils literal notranslate"><span class="pre">verify_challenge()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.did_manager.html">walytis_identities.did_manager module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager"><code class="docutils literal notranslate"><span class="pre">DidManager</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.add_block"><code class="docutils literal notranslate"><span class="pre">DidManager.add_block()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.assign_keystore"><code class="docutils literal notranslate"><span class="pre">DidManager.assign_keystore()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.block_received_handler"><code class="docutils literal notranslate"><span class="pre">DidManager.block_received_handler</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.blockchain"><code class="docutils literal notranslate"><span class="pre">DidManager.blockchain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.blockchain_id"><code class="docutils literal notranslate"><span class="pre">DidManager.blockchain_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.check_control_key"><code class="docutils literal notranslate"><span class="pre">DidManager.check_control_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.clear_block_received_handler"><code class="docutils literal notranslate"><span class="pre">DidManager.clear_block_received_handler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.create"><code class="docutils literal notranslate"><span class="pre">DidManager.create()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.decrypt"><code class="docutils literal notranslate"><span class="pre">DidManager.decrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.delete"><code class="docutils literal notranslate"><span class="pre">DidManager.delete()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.did"><code class="docutils literal notranslate"><span class="pre">DidManager.did</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.did_doc"><code class="docutils literal notranslate"><span class="pre">DidManager.did_doc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.encrypt"><code class="docutils literal notranslate"><span class="pre">DidManager.encrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.from_blockchain_id"><code class="docutils literal notranslate"><span class="pre">DidManager.from_blockchain_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_block"><code class="docutils literal notranslate"><span class="pre">DidManager.get_block()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_block_ids"><code class="docutils literal notranslate"><span class="pre">DidManager.get_block_ids()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_blockchain_appdata_path"><code class="docutils literal notranslate"><span class="pre">DidManager.get_blockchain_appdata_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_blocks"><code class="docutils literal notranslate"><span class="pre">DidManager.get_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_control_key_age"><code class="docutils literal notranslate"><span class="pre">DidManager.get_control_key_age()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_control_keys"><code class="docutils literal notranslate"><span class="pre">DidManager.get_control_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_control_keys_history"><code class="docutils literal notranslate"><span class="pre">DidManager.get_control_keys_history()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_keystore_did"><code class="docutils literal notranslate"><span class="pre">DidManager.get_keystore_did()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_num_blocks"><code class="docutils literal notranslate"><span class="pre">DidManager.get_num_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_peers"><code class="docutils literal notranslate"><span class="pre">DidManager.get_peers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.is_control_key_active"><code class="docutils literal notranslate"><span class="pre">DidManager.is_control_key_active()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.key_store"><code class="docutils literal notranslate"><span class="pre">DidManager.key_store</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.load_missed_blocks"><code class="docutils literal notranslate"><span class="pre">DidManager.load_missed_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.renew_control_key"><code class="docutils literal notranslate"><span class="pre">DidManager.renew_control_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.sign"><code class="docutils literal notranslate"><span class="pre">DidManager.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.terminate"><code class="docutils literal notranslate"><span class="pre">DidManager.terminate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.update_did_doc"><code class="docutils literal notranslate"><span class="pre">DidManager.update_did_doc()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.verify_signature"><code class="docutils literal notranslate"><span class="pre">DidManager.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.DidNotOwnedError"><code class="docutils literal notranslate"><span class="pre">DidNotOwnedError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.blockchain_id_from_did"><code class="docutils literal notranslate"><span class="pre">blockchain_id_from_did()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager.html#walytis_identities.did_manager.did_from_blockchain_id"><code class="docutils literal notranslate"><span class="pre">did_from_blockchain_id()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.did_manager_blocks.html">walytis_identities.did_manager_blocks module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.generate_block_content"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.generate_block_content()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_new_keys"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.get_new_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_new_keys_id"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.get_new_keys_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_old_keys"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.get_old_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_old_keys_id"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.get_old_keys_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_signature_data"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.get_signature_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.load_from_block_content"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.load_from_block_content()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.new"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.new()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.new_keys"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.new_keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.old_keys"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.old_keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.sign"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.signature"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.verify_signature"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.verify_signature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">ControlKeyBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock"><code class="docutils literal notranslate"><span class="pre">DidDocBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.get_did_doc"><code class="docutils literal notranslate"><span class="pre">DidDocBlock.get_did_doc()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.info_content"><code class="docutils literal notranslate"><span class="pre">DidDocBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">DidDocBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.signature"><code class="docutils literal notranslate"><span class="pre">DidDocBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">DidDocBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock"><code class="docutils literal notranslate"><span class="pre">InfoBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.generate_block_content"><code class="docutils literal notranslate"><span class="pre">InfoBlock.generate_block_content()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.get_signature_data"><code class="docutils literal notranslate"><span class="pre">InfoBlock.get_signature_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.info_content"><code class="docutils literal notranslate"><span class="pre">InfoBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.load_from_block_content"><code class="docutils literal notranslate"><span class="pre">InfoBlock.load_from_block_content()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.new"><code class="docutils literal notranslate"><span class="pre">InfoBlock.new()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">InfoBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.sign"><code class="docutils literal notranslate"><span class="pre">InfoBlock.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.signature"><code class="docutils literal notranslate"><span class="pre">InfoBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.verify_signature"><code class="docutils literal notranslate"><span class="pre">InfoBlock.verify_signature()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">InfoBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock"><code class="docutils literal notranslate"><span class="pre">KeyOwnershipBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.get_key_ownership"><code class="docutils literal notranslate"><span class="pre">KeyOwnershipBlock.get_key_ownership()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.info_content"><code class="docutils literal notranslate"><span class="pre">KeyOwnershipBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">KeyOwnershipBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.signature"><code class="docutils literal notranslate"><span class="pre">KeyOwnershipBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">KeyOwnershipBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock"><code class="docutils literal notranslate"><span class="pre">MemberJoiningBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.get_member"><code class="docutils literal notranslate"><span class="pre">MemberJoiningBlock.get_member()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.info_content"><code class="docutils literal notranslate"><span class="pre">MemberJoiningBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">MemberJoiningBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.signature"><code class="docutils literal notranslate"><span class="pre">MemberJoiningBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">MemberJoiningBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock"><code class="docutils literal notranslate"><span class="pre">MemberLeavingBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.get_member"><code class="docutils literal notranslate"><span class="pre">MemberLeavingBlock.get_member()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.info_content"><code class="docutils literal notranslate"><span class="pre">MemberLeavingBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">MemberLeavingBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.signature"><code class="docutils literal notranslate"><span class="pre">MemberLeavingBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">MemberLeavingBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock"><code class="docutils literal notranslate"><span class="pre">MemberUpdateBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.get_member"><code class="docutils literal notranslate"><span class="pre">MemberUpdateBlock.get_member()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.info_content"><code class="docutils literal notranslate"><span class="pre">MemberUpdateBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.priblocks_version"><code class="docutils literal notranslate"><span class="pre">MemberUpdateBlock.priblocks_version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.signature"><code class="docutils literal notranslate"><span class="pre">MemberUpdateBlock.signature</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">MemberUpdateBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.active"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock.active</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.create"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock.create()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.info_content"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock.info_content</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.invitation"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock.invitation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.super_id"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock.super_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.walytis_block_topic"><code class="docutils literal notranslate"><span class="pre">SuperRegistrationBlock.walytis_block_topic</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_block_type"><code class="docutils literal notranslate"><span class="pre">get_block_type()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_control_key_age"><code class="docutils literal notranslate"><span class="pre">get_control_key_age()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_control_keys_history"><code class="docutils literal notranslate"><span class="pre">get_control_keys_history()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_info_blocks"><code class="docutils literal notranslate"><span class="pre">get_info_blocks()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_latest_block"><code class="docutils literal notranslate"><span class="pre">get_latest_block()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_latest_control_key"><code class="docutils literal notranslate"><span class="pre">get_latest_control_key()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_latest_did_doc"><code class="docutils literal notranslate"><span class="pre">get_latest_did_doc()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_members"><code class="docutils literal notranslate"><span class="pre">get_members()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.verify_control_key_update"><code class="docutils literal notranslate"><span class="pre">verify_control_key_update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html">walytis_identities.did_manager_with_supers module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.add_block"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.add_block()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.archive_super"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.archive_super()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.block_received_handler"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.block_received_handler</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.blockchain"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.blockchain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.blockchain_id"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.blockchain_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.clear_block_received_handler"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.clear_block_received_handler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.create_super"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.create_super()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.decrypt"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.decrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.delete"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.delete()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.did"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.did</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.did_doc"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.did_doc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.did_manager"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.did_manager</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.encrypt"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.encrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_active_supers"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_active_supers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_archived_supers"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_archived_supers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_block"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_block()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_block_ids"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_block_ids()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_blocks"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_num_blocks"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_num_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_peers"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_peers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_super"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.get_super()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.join_super"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.join_super()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.key_store"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.key_store</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.load_missed_blocks"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.load_missed_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.org_did_manager"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.org_did_manager</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.request_join_super"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.request_join_super()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.sign"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.super_join_requests_handler"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.super_join_requests_handler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.terminate"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.terminate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.verify_signature"><code class="docutils literal notranslate"><span class="pre">DidManagerWithSupers.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.SuperExistsError"><code class="docutils literal notranslate"><span class="pre">SuperExistsError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.exceptions.html">walytis_identities.exceptions module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.exceptions.html#walytis_identities.exceptions.NotInitialisedError"><code class="docutils literal notranslate"><span class="pre">NotInitialisedError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.exceptions.html#walytis_identities.exceptions.NotValidDidBlockchainError"><code class="docutils literal notranslate"><span class="pre">NotValidDidBlockchainError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.group_did_manager.html">walytis_identities.group_did_manager module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GdmJoinFailureError"><code class="docutils literal notranslate"><span class="pre">GdmJoinFailureError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager"><code class="docutils literal notranslate"><span class="pre">GroupDidManager</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.assert_ownership"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.assert_ownership()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.check_apply_control_key_update"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.check_apply_control_key_update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.check_prepare_control_key_update"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.check_prepare_control_key_update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.create"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.create()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.delete"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.delete()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.from_did_managers"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.from_did_managers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.generate_member_did_doc"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.generate_member_did_doc()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_ipfs_ids"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.get_ipfs_ids()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_member_control_key"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.get_member_control_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_member_did_doc"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.get_member_did_doc()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_member_ipfs_ids"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.get_member_ipfs_ids()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_published_candidate_keys"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.get_published_candidate_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.initiate_control_key_update"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.initiate_control_key_update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.join"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.join()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.key_requests_handler"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.key_requests_handler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.listen_for_conversations"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.listen_for_conversations()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.load_missed_blocks"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.load_missed_blocks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.manage_control_key"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.manage_control_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.manage_member_keys"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.manage_member_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.publish_key_ownership"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.publish_key_ownership()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.request_key"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.request_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.serialise"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.serialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.sleep"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.sleep()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.start_conversation"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.start_conversation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.terminate"><code class="docutils literal notranslate"><span class="pre">GroupDidManager.terminate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.IdentityJoinError"><code class="docutils literal notranslate"><span class="pre">IdentityJoinError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.IncompletePeerInfoError"><code class="docutils literal notranslate"><span class="pre">IncompletePeerInfoError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode"><code class="docutils literal notranslate"><span class="pre">InvitationCode</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.deserialise"><code class="docutils literal notranslate"><span class="pre">InvitationCode.deserialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.deserialise_from_dict"><code class="docutils literal notranslate"><span class="pre">InvitationCode.deserialise_from_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.from_dict"><code class="docutils literal notranslate"><span class="pre">InvitationCode.from_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.from_json"><code class="docutils literal notranslate"><span class="pre">InvitationCode.from_json()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.ipfs_addresses"><code class="docutils literal notranslate"><span class="pre">InvitationCode.ipfs_addresses</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.ipfs_id"><code class="docutils literal notranslate"><span class="pre">InvitationCode.ipfs_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.key"><code class="docutils literal notranslate"><span class="pre">InvitationCode.key</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.schema"><code class="docutils literal notranslate"><span class="pre">InvitationCode.schema()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.serialise"><code class="docutils literal notranslate"><span class="pre">InvitationCode.serialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.serialise_dict"><code class="docutils literal notranslate"><span class="pre">InvitationCode.serialise_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.to_dict"><code class="docutils literal notranslate"><span class="pre">InvitationCode.to_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.to_json"><code class="docutils literal notranslate"><span class="pre">InvitationCode.to_json()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager"><code class="docutils literal notranslate"><span class="pre">InvitationManager</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.create"><code class="docutils literal notranslate"><span class="pre">InvitationManager.create()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.deserialise"><code class="docutils literal notranslate"><span class="pre">InvitationManager.deserialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.generate_code"><code class="docutils literal notranslate"><span class="pre">InvitationManager.generate_code()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.handler"><code class="docutils literal notranslate"><span class="pre">InvitationManager.handler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.serialise"><code class="docutils literal notranslate"><span class="pre">InvitationManager.serialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.terminate"><code class="docutils literal notranslate"><span class="pre">InvitationManager.terminate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.JoinProcess"><code class="docutils literal notranslate"><span class="pre">JoinProcess</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.JoinProcess.join_blockchain"><code class="docutils literal notranslate"><span class="pre">JoinProcess.join_blockchain()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member"><code class="docutils literal notranslate"><span class="pre">Member</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.blockchain"><code class="docutils literal notranslate"><span class="pre">Member.blockchain</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.did"><code class="docutils literal notranslate"><span class="pre">Member.did</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.from_dict"><code class="docutils literal notranslate"><span class="pre">Member.from_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.get_blockchain"><code class="docutils literal notranslate"><span class="pre">Member.get_blockchain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.invitation"><code class="docutils literal notranslate"><span class="pre">Member.invitation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.is_control_key_active"><code class="docutils literal notranslate"><span class="pre">Member.is_control_key_active()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.terminate"><code class="docutils literal notranslate"><span class="pre">Member.terminate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.to_dict"><code class="docutils literal notranslate"><span class="pre">Member.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.MemberBlockchainNotJoinedError"><code class="docutils literal notranslate"><span class="pre">MemberBlockchainNotJoinedError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.NotMemberError"><code class="docutils literal notranslate"><span class="pre">NotMemberError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.key_objects.html">walytis_identities.key_objects module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage"><code class="docutils literal notranslate"><span class="pre">CodePackage</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.decrypt"><code class="docutils literal notranslate"><span class="pre">CodePackage.decrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.deserialise"><code class="docutils literal notranslate"><span class="pre">CodePackage.deserialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.deserialise_bytes"><code class="docutils literal notranslate"><span class="pre">CodePackage.deserialise_bytes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.encrypt"><code class="docutils literal notranslate"><span class="pre">CodePackage.encrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.get_key"><code class="docutils literal notranslate"><span class="pre">CodePackage.get_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.get_key_id"><code class="docutils literal notranslate"><span class="pre">CodePackage.get_key_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.serialise"><code class="docutils literal notranslate"><span class="pre">CodePackage.serialise()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.serialise_bytes"><code class="docutils literal notranslate"><span class="pre">CodePackage.serialise_bytes()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.sign"><code class="docutils literal notranslate"><span class="pre">CodePackage.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.unlock_key"><code class="docutils literal notranslate"><span class="pre">CodePackage.unlock_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.verify_signature"><code class="docutils literal notranslate"><span class="pre">CodePackage.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey"><code class="docutils literal notranslate"><span class="pre">GenericKey</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.clone_public"><code class="docutils literal notranslate"><span class="pre">GenericKey.clone_public()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.decrypt"><code class="docutils literal notranslate"><span class="pre">GenericKey.decrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.encrypt"><code class="docutils literal notranslate"><span class="pre">GenericKey.encrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.from_id"><code class="docutils literal notranslate"><span class="pre">GenericKey.from_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.get_id"><code class="docutils literal notranslate"><span class="pre">GenericKey.get_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.is_unlocked"><code class="docutils literal notranslate"><span class="pre">GenericKey.is_unlocked()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.sign"><code class="docutils literal notranslate"><span class="pre">GenericKey.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.verify_signature"><code class="docutils literal notranslate"><span class="pre">GenericKey.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key"><code class="docutils literal notranslate"><span class="pre">Key</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.clone_public"><code class="docutils literal notranslate"><span class="pre">Key.clone_public()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.create"><code class="docutils literal notranslate"><span class="pre">Key.create()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.creation_time"><code class="docutils literal notranslate"><span class="pre">Key.creation_time</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.deserialise_private"><code class="docutils literal notranslate"><span class="pre">Key.deserialise_private()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.deserialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">Key.deserialise_private_encrypted()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.family"><code class="docutils literal notranslate"><span class="pre">Key.family</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.from_crypt"><code class="docutils literal notranslate"><span class="pre">Key.from_crypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.from_id"><code class="docutils literal notranslate"><span class="pre">Key.from_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.from_key_spec"><code class="docutils literal notranslate"><span class="pre">Key.from_key_spec()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.generate_key_spec"><code class="docutils literal notranslate"><span class="pre">Key.generate_key_spec()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.get_id"><code class="docutils literal notranslate"><span class="pre">Key.get_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.get_private_key"><code class="docutils literal notranslate"><span class="pre">Key.get_private_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.is_unlocked"><code class="docutils literal notranslate"><span class="pre">Key.is_unlocked()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.private_key"><code class="docutils literal notranslate"><span class="pre">Key.private_key</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.public_key"><code class="docutils literal notranslate"><span class="pre">Key.public_key</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.serialise_private"><code class="docutils literal notranslate"><span class="pre">Key.serialise_private()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.Key.serialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">Key.serialise_private_encrypted()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup"><code class="docutils literal notranslate"><span class="pre">KeyGroup</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.clone_public"><code class="docutils literal notranslate"><span class="pre">KeyGroup.clone_public()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.create"><code class="docutils literal notranslate"><span class="pre">KeyGroup.create()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.decrypt"><code class="docutils literal notranslate"><span class="pre">KeyGroup.decrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.deserialise_private"><code class="docutils literal notranslate"><span class="pre">KeyGroup.deserialise_private()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.deserialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">KeyGroup.deserialise_private_encrypted()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.encrypt"><code class="docutils literal notranslate"><span class="pre">KeyGroup.encrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.from_id"><code class="docutils literal notranslate"><span class="pre">KeyGroup.from_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.from_key_specs"><code class="docutils literal notranslate"><span class="pre">KeyGroup.from_key_specs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.generate_key_specs"><code class="docutils literal notranslate"><span class="pre">KeyGroup.generate_key_specs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.get_id"><code class="docutils literal notranslate"><span class="pre">KeyGroup.get_id()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.get_ids"><code class="docutils literal notranslate"><span class="pre">KeyGroup.get_ids()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.get_keys"><code class="docutils literal notranslate"><span class="pre">KeyGroup.get_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.is_unlocked"><code class="docutils literal notranslate"><span class="pre">KeyGroup.is_unlocked()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.serialise_private"><code class="docutils literal notranslate"><span class="pre">KeyGroup.serialise_private()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.serialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">KeyGroup.serialise_private_encrypted()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.sign"><code class="docutils literal notranslate"><span class="pre">KeyGroup.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.verify_signature"><code class="docutils literal notranslate"><span class="pre">KeyGroup.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.KeyLockedError"><code class="docutils literal notranslate"><span class="pre">KeyLockedError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.decode_keygroup_id"><code class="docutils literal notranslate"><span class="pre">decode_keygroup_id()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.generate_key_id"><code class="docutils literal notranslate"><span class="pre">generate_key_id()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_objects.html#walytis_identities.key_objects.generic_key_from_id"><code class="docutils literal notranslate"><span class="pre">generic_key_from_id()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.key_store.html">walytis_identities.key_store module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore"><code class="docutils literal notranslate"><span class="pre">KeyStore</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.add_key"><code class="docutils literal notranslate"><span class="pre">KeyStore.add_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.add_keygroup"><code class="docutils literal notranslate"><span class="pre">KeyStore.add_keygroup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.clone"><code class="docutils literal notranslate"><span class="pre">KeyStore.clone()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.decrypt"><code class="docutils literal notranslate"><span class="pre">KeyStore.decrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.encrypt"><code class="docutils literal notranslate"><span class="pre">KeyStore.encrypt()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_all_keys"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_all_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_custom_metadata"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_custom_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_generic_key"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_generic_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_key"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_key_from_public"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_key_from_public()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_keygroup"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_keygroup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_keystore_pubkey"><code class="docutils literal notranslate"><span class="pre">KeyStore.get_keystore_pubkey()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.has_key"><code class="docutils literal notranslate"><span class="pre">KeyStore.has_key()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.keys"><code class="docutils literal notranslate"><span class="pre">KeyStore.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.reload"><code class="docutils literal notranslate"><span class="pre">KeyStore.reload()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.save_appdata"><code class="docutils literal notranslate"><span class="pre">KeyStore.save_appdata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.set_custom_metadata"><code class="docutils literal notranslate"><span class="pre">KeyStore.set_custom_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.sign"><code class="docutils literal notranslate"><span class="pre">KeyStore.sign()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.terminate"><code class="docutils literal notranslate"><span class="pre">KeyStore.terminate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.update_custom_metadata"><code class="docutils literal notranslate"><span class="pre">KeyStore.update_custom_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.verify_signature"><code class="docutils literal notranslate"><span class="pre">KeyStore.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.key_store.html#walytis_identities.key_store.UnknownKeyError"><code class="docutils literal notranslate"><span class="pre">UnknownKeyError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.log.html">walytis_identities.log module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.settings.html">walytis_identities.settings module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="walytis_identities.utils.html">walytis_identities.utils module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.utils.html#walytis_identities.utils.AbstractClassMeta"><code class="docutils literal notranslate"><span class="pre">AbstractClassMeta</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.utils.html#walytis_identities.utils.bytes_from_string"><code class="docutils literal notranslate"><span class="pre">bytes_from_string()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.utils.html#walytis_identities.utils.bytes_to_string"><code class="docutils literal notranslate"><span class="pre">bytes_to_string()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.utils.html#walytis_identities.utils.generate_random_string"><code class="docutils literal notranslate"><span class="pre">generate_random_string()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.utils.html#walytis_identities.utils.is_valid_uri"><code class="docutils literal notranslate"><span class="pre">is_valid_uri()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="walytis_identities.utils.html#walytis_identities.utils.validate_did_doc"><code class="docutils literal notranslate"><span class="pre">validate_did_doc()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-walytis_identities">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-walytis_identities" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">walytis_identities package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-walytis_identities">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=2a2fe768"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

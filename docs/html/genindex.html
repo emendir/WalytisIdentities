@@ -1,0 +1,1497 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#" /><link rel="search" title="Search" href="search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 --><title>Index - walytis_identities 0.5.3 documentation</title>
+<link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="README.html"><div class="brand">walytis_identities 0.5.3 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="README.html">
+  
+  <span class="sidebar-brand-text">walytis_identities 0.5.3 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="API-Reference/README.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          
+<section class="genindex-section">
+  <h1 id="index">Index</h1>
+  <div class="genindex-jumpbox"><a href="#A"><strong>A</strong></a> | <a href="#B"><strong>B</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#J"><strong>J</strong></a> | <a href="#K"><strong>K</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#V"><strong>V</strong></a> | <a href="#W"><strong>W</strong></a></div>
+</section>
+<section id="A" class="genindex-section">
+  <h2>A</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.utils.html#walytis_identities.utils.AbstractClassMeta">AbstractClassMeta (class in walytis_identities.utils)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.active">active (walytis_identities.did_manager_blocks.SuperRegistrationBlock property)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.add_block">add_block() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.add_block">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.add_block">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.add_block">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.add_block">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.add_key">add_key() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.add_keygroup">add_keygroup() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.archive_super">archive_super() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.assert_ownership">assert_ownership() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.assign_keystore">assign_keystore() (walytis_identities.did_manager.DidManager static method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="B" class="genindex-section">
+  <h2>B</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.block_received_handler">block_received_handler (walytis_identities.did_manager.DidManager property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.block_received_handler">(walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.block_received_handler">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.block_received_handler">(walytis_identities.generics.generic_did_manager.GenericDidManager property)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.blockchain">blockchain (walytis_identities.did_manager.DidManager property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.blockchain">(walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.blockchain">(walytis_identities.generics.dm_wrapper.DidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.blockchain">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.blockchain">(walytis_identities.generics.generic_did_manager.GenericDidManager property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.blockchain">(walytis_identities.group_did_manager.Member property)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.blockchain_id">blockchain_id (walytis_identities.did_manager.DidManager property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.blockchain_id">(walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.blockchain_id">(walytis_identities.generics.generic_did_manager.GenericDidManager property)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.blockchain_id_from_did">blockchain_id_from_did() (in module walytis_identities.did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.utils.html#walytis_identities.utils.bytes_from_string">bytes_from_string() (in module walytis_identities.utils)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.utils.html#walytis_identities.utils.bytes_to_string">bytes_to_string() (in module walytis_identities.utils)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="C" class="genindex-section">
+  <h2>C</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.ChallengeFailedError">ChallengeFailedError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.check_apply_control_key_update">check_apply_control_key_update() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.check_control_key">check_control_key() (walytis_identities.did_manager.DidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.check_prepare_control_key_update">check_prepare_control_key_update() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.clear_block_received_handler">clear_block_received_handler() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.clear_block_received_handler">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.clear_block_received_handler">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.clone">clone() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.clone_public">clone_public() (walytis_identities.key_objects.GenericKey method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.clone_public">(walytis_identities.key_objects.Key method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.clone_public">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage">CodePackage (class in walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock">ControlKeyBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.create">create() (walytis_identities.did_manager.DidManager class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.create">(walytis_identities.did_manager_blocks.SuperRegistrationBlock class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.create">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.create">(walytis_identities.group_did_manager.GroupDidManager class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.create">(walytis_identities.group_did_manager.InvitationManager class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.create">(walytis_identities.key_objects.Key class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.create">(walytis_identities.key_objects.KeyGroup class method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.create_super">create_super() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.creation_time">creation_time (walytis_identities.key_objects.Key attribute)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="D" class="genindex-section">
+  <h2>D</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.decode_keygroup_id">decode_keygroup_id() (in module walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.decrypt">decrypt() (in module walytis_identities.datatransmission)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.decrypt">(walytis_identities.did_manager.DidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.decrypt">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.decrypt">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.decrypt">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.decrypt">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.decrypt">(walytis_identities.key_objects.CodePackage method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.decrypt">(walytis_identities.key_objects.GenericKey method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.decrypt">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.decrypt">(walytis_identities.key_store.KeyStore method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.delete">delete() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.delete">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.delete">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.delete">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.delete">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.delete">(walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.deserialise">deserialise() (walytis_identities.group_did_manager.InvitationCode class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.deserialise">(walytis_identities.group_did_manager.InvitationManager class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.deserialise">(walytis_identities.key_objects.CodePackage class method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.deserialise_bytes">deserialise_bytes() (walytis_identities.key_objects.CodePackage class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.deserialise_from_dict">deserialise_from_dict() (walytis_identities.group_did_manager.InvitationCode class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.deserialise_private">deserialise_private() (walytis_identities.key_objects.Key class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.deserialise_private">(walytis_identities.key_objects.KeyGroup class method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.deserialise_private_encrypted">deserialise_private_encrypted() (walytis_identities.key_objects.Key class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.deserialise_private_encrypted">(walytis_identities.key_objects.KeyGroup class method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.did">did (walytis_identities.did_manager.DidManager property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.did">(walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.did">(walytis_identities.generics.dm_wrapper.DidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.did">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.did">(walytis_identities.generics.generic_did_manager.GenericDidManager property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.did">(walytis_identities.group_did_manager.Member attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.did_doc">did_doc (walytis_identities.did_manager.DidManager property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.did_doc">(walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.did_doc">(walytis_identities.generics.dm_wrapper.DidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.did_doc">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.did_doc">(walytis_identities.generics.generic_did_manager.GenericDidManager property)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.did_from_blockchain_id">did_from_blockchain_id() (in module walytis_identities.did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.did_manager">did_manager (walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.did_manager">(walytis_identities.generics.dm_wrapper.DidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.did_manager">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock">DidDocBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager">DidManager (class in walytis_identities.did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers">DidManagerWithSupers (class in walytis_identities.did_manager_with_supers)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper">DidManagerWrapper (class in walytis_identities.generics.dm_wrapper)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidNotOwnedError">DidNotOwnedError</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="E" class="genindex-section">
+  <h2>E</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.encrypt">encrypt() (in module walytis_identities.datatransmission)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.encrypt">(walytis_identities.did_manager.DidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.encrypt">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.encrypt">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.encrypt">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.encrypt">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.encrypt">(walytis_identities.key_objects.CodePackage class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.encrypt">(walytis_identities.key_objects.GenericKey method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.encrypt">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.encrypt">(walytis_identities.key_store.KeyStore static method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="F" class="genindex-section">
+  <h2>F</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.family">family (walytis_identities.key_objects.Key attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.from_blockchain_id">from_blockchain_id() (walytis_identities.did_manager.DidManager class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.from_crypt">from_crypt() (walytis_identities.key_objects.Key class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.from_dict">from_dict() (walytis_identities.group_did_manager.InvitationCode class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.from_dict">(walytis_identities.group_did_manager.Member class method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.from_did_managers">from_did_managers() (walytis_identities.group_did_manager.GroupDidManager class method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.from_id">from_id() (walytis_identities.key_objects.GenericKey class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.from_id">(walytis_identities.key_objects.Key class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.from_id">(walytis_identities.key_objects.KeyGroup class method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.from_json">from_json() (walytis_identities.group_did_manager.InvitationCode class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.from_key_spec">from_key_spec() (walytis_identities.key_objects.Key class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.from_key_specs">from_key_specs() (walytis_identities.key_objects.KeyGroup class method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="G" class="genindex-section">
+  <h2>G</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GdmJoinFailureError">GdmJoinFailureError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.generate_block_content">generate_block_content() (walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.generate_block_content">(walytis_identities.did_manager_blocks.InfoBlock method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.generate_code">generate_code() (walytis_identities.group_did_manager.InvitationManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.generate_key_id">generate_key_id() (in module walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.generate_key_spec">generate_key_spec() (walytis_identities.key_objects.Key method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.generate_key_specs">generate_key_specs() (walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.generate_member_did_doc">generate_member_did_doc() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.utils.html#walytis_identities.utils.generate_random_string">generate_random_string() (in module walytis_identities.utils)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.generic_key_from_id">generic_key_from_id() (in module walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager">GenericDidManager (class in walytis_identities.generics.generic_did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey">GenericKey (class in walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_active_supers">get_active_supers() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_all_keys">get_all_keys() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_archived_supers">get_archived_supers() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_block">get_block() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_block">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_block">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.get_block">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_block">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_block_ids">get_block_ids() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_block_ids">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_block_ids">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.get_block_ids">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_block_ids">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_block_type">get_block_type() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.get_blockchain">get_blockchain() (walytis_identities.group_did_manager.Member method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_blockchain_appdata_path">get_blockchain_appdata_path() (walytis_identities.did_manager.DidManager static method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_blocks">get_blocks() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_blocks">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_blocks">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.get_blocks">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_blocks">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_control_key_age">get_control_key_age() (in module walytis_identities.did_manager_blocks)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_control_key_age">(walytis_identities.did_manager.DidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_control_keys">get_control_keys() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_control_keys">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_control_keys">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_control_keys_history">get_control_keys_history() (in module walytis_identities.did_manager_blocks)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_control_keys_history">(walytis_identities.did_manager.DidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_control_keys_history">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_control_keys_history">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_custom_metadata">get_custom_metadata() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.get_did_doc">get_did_doc() (walytis_identities.did_manager_blocks.DidDocBlock method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_generic_key">get_generic_key() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.get_id">get_id() (walytis_identities.key_objects.GenericKey method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.get_id">(walytis_identities.key_objects.Key method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.get_id">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.get_ids">get_ids() (walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_info_blocks">get_info_blocks() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_ipfs_ids">get_ipfs_ids() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.get_key">get_key() (walytis_identities.key_objects.CodePackage method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_key">(walytis_identities.key_store.KeyStore method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_key_from_public">get_key_from_public() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.get_key_id">get_key_id() (walytis_identities.key_objects.CodePackage method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.get_key_ownership">get_key_ownership() (walytis_identities.did_manager_blocks.KeyOwnershipBlock method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_keygroup">get_keygroup() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.get_keys">get_keys() (walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_keystore_did">get_keystore_did() (walytis_identities.did_manager.DidManager static method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.get_keystore_pubkey">get_keystore_pubkey() (walytis_identities.key_store.KeyStore static method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_latest_block">get_latest_block() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_latest_control_key">get_latest_control_key() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_latest_did_doc">get_latest_did_doc() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.get_member">get_member() (walytis_identities.did_manager_blocks.MemberJoiningBlock method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.get_member">(walytis_identities.did_manager_blocks.MemberLeavingBlock method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.get_member">(walytis_identities.did_manager_blocks.MemberUpdateBlock method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_member_control_key">get_member_control_key() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_member_did_doc">get_member_did_doc() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_member_ipfs_ids">get_member_ipfs_ids() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.get_members">get_members() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_new_keys">get_new_keys() (walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_new_keys_id">get_new_keys_id() (walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_num_blocks">get_num_blocks() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_num_blocks">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_num_blocks">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.get_num_blocks">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_num_blocks">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_old_keys">get_old_keys() (walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_old_keys_id">get_old_keys_id() (walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.get_peers">get_peers() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_peers">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.get_peers">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.get_peers">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.get_peers">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.get_private_key">get_private_key() (walytis_identities.key_objects.Key method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.get_published_candidate_keys">get_published_candidate_keys() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.get_signature_data">get_signature_data() (walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.get_signature_data">(walytis_identities.did_manager_blocks.InfoBlock method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.get_super">get_super() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager">GroupDidManager (class in walytis_identities.group_did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper">GroupDidManagerWrapper (class in walytis_identities.generics.gdm_wrapper)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="H" class="genindex-section">
+  <h2>H</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.handle_challenge">handle_challenge() (in module walytis_identities.datatransmission)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.handler">handler() (walytis_identities.group_did_manager.InvitationManager method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.HandshakeFailedError">HandshakeFailedError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.has_key">has_key() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="I" class="genindex-section">
+  <h2>I</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.IdentityJoinError">IdentityJoinError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.IncompletePeerInfoError">IncompletePeerInfoError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.info_content">info_content (walytis_identities.did_manager_blocks.DidDocBlock attribute)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.info_content">(walytis_identities.did_manager_blocks.InfoBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.info_content">(walytis_identities.did_manager_blocks.KeyOwnershipBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.info_content">(walytis_identities.did_manager_blocks.MemberJoiningBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.info_content">(walytis_identities.did_manager_blocks.MemberLeavingBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.info_content">(walytis_identities.did_manager_blocks.MemberUpdateBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.info_content">(walytis_identities.did_manager_blocks.SuperRegistrationBlock attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock">InfoBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.initiate_control_key_update">initiate_control_key_update() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.invitation">invitation (walytis_identities.did_manager_blocks.SuperRegistrationBlock property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.invitation">(walytis_identities.group_did_manager.Member attribute)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode">InvitationCode (class in walytis_identities.group_did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager">InvitationManager (class in walytis_identities.group_did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.invite_member">invite_member() (walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.ipfs_addresses">ipfs_addresses (walytis_identities.group_did_manager.InvitationCode attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.ipfs_id">ipfs_id (walytis_identities.group_did_manager.InvitationCode attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.is_control_key_active">is_control_key_active() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.is_control_key_active">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.is_control_key_active">(walytis_identities.group_did_manager.Member method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.is_unlocked">is_unlocked() (walytis_identities.key_objects.GenericKey method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.is_unlocked">(walytis_identities.key_objects.Key method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.is_unlocked">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.utils.html#walytis_identities.utils.is_valid_uri">is_valid_uri() (in module walytis_identities.utils)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="J" class="genindex-section">
+  <h2>J</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.join">join() (walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.join">(walytis_identities.group_did_manager.GroupDidManager class method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.JoinProcess.join_blockchain">join_blockchain() (walytis_identities.group_did_manager.JoinProcess method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.join_super">join_super() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.JoinProcess">JoinProcess (class in walytis_identities.group_did_manager)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="K" class="genindex-section">
+  <h2>K</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key">Key (class in walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.key">key (walytis_identities.group_did_manager.InvitationCode attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.key_requests_handler">key_requests_handler() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.key_store">key_store (walytis_identities.did_manager.DidManager property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.key_store">(walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.key_store">(walytis_identities.generics.dm_wrapper.DidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.key_store">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.key_store">(walytis_identities.generics.generic_did_manager.GenericDidManager property)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup">KeyGroup (class in walytis_identities.key_objects)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyLockedError">KeyLockedError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock">KeyOwnershipBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.keys">keys (walytis_identities.key_store.KeyStore attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore">KeyStore (class in walytis_identities.key_store)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="L" class="genindex-section">
+  <h2>L</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.listen_for_conversations">listen_for_conversations() (in module walytis_identities.datatransmission)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.listen_for_conversations">(walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.load_from_block_content">load_from_block_content() (walytis_identities.did_manager_blocks.ControlKeyBlock class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.load_from_block_content">(walytis_identities.did_manager_blocks.InfoBlock class method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.load_missed_blocks">load_missed_blocks() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.load_missed_blocks">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.load_missed_blocks">(walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="M" class="genindex-section">
+  <h2>M</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.manage_control_key">manage_control_key() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.manage_member_keys">manage_member_keys() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member">Member (class in walytis_identities.group_did_manager)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.MemberBlockchainNotJoinedError">MemberBlockchainNotJoinedError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock">MemberJoiningBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock">MemberLeavingBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock">MemberUpdateBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+        <li>
+    module
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.html#module-walytis_identities">walytis_identities</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.datatransmission.html#module-walytis_identities.datatransmission">walytis_identities.datatransmission</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager.html#module-walytis_identities.did_manager">walytis_identities.did_manager</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#module-walytis_identities.did_manager_blocks">walytis_identities.did_manager_blocks</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#module-walytis_identities.did_manager_with_supers">walytis_identities.did_manager_with_supers</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.exceptions.html#module-walytis_identities.exceptions">walytis_identities.exceptions</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.html#module-walytis_identities.generics">walytis_identities.generics</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#module-walytis_identities.generics.dm_wrapper">walytis_identities.generics.dm_wrapper</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#module-walytis_identities.generics.gdm_wrapper">walytis_identities.generics.gdm_wrapper</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#module-walytis_identities.generics.generic_did_manager">walytis_identities.generics.generic_did_manager</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#module-walytis_identities.group_did_manager">walytis_identities.group_did_manager</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#module-walytis_identities.key_objects">walytis_identities.key_objects</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_store.html#module-walytis_identities.key_store">walytis_identities.key_store</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.log.html#module-walytis_identities.log">walytis_identities.log</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.settings.html#module-walytis_identities.settings">walytis_identities.settings</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.utils.html#module-walytis_identities.utils">walytis_identities.utils</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="N" class="genindex-section">
+  <h2>N</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.new">new() (walytis_identities.did_manager_blocks.ControlKeyBlock class method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.new">(walytis_identities.did_manager_blocks.InfoBlock class method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.new_keys">new_keys (walytis_identities.did_manager_blocks.ControlKeyBlock attribute)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.exceptions.html#walytis_identities.exceptions.NotInitialisedError">NotInitialisedError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.NotMemberError">NotMemberError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.exceptions.html#walytis_identities.exceptions.NotValidDidBlockchainError">NotValidDidBlockchainError</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="O" class="genindex-section">
+  <h2>O</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.old_keys">old_keys (walytis_identities.did_manager_blocks.ControlKeyBlock attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.org_did_manager">org_did_manager (walytis_identities.did_manager_with_supers.DidManagerWithSupers property)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.org_did_manager">(walytis_identities.generics.dm_wrapper.DidManagerWrapper property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.org_did_manager">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper property)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="P" class="genindex-section">
+  <h2>P</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.priblocks_version">priblocks_version (walytis_identities.did_manager_blocks.ControlKeyBlock attribute)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.priblocks_version">(walytis_identities.did_manager_blocks.DidDocBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.priblocks_version">(walytis_identities.did_manager_blocks.InfoBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.priblocks_version">(walytis_identities.did_manager_blocks.KeyOwnershipBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.priblocks_version">(walytis_identities.did_manager_blocks.MemberJoiningBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.priblocks_version">(walytis_identities.did_manager_blocks.MemberLeavingBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.priblocks_version">(walytis_identities.did_manager_blocks.MemberUpdateBlock attribute)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.private_key">private_key (walytis_identities.key_objects.Key attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.public_key">public_key (walytis_identities.key_objects.Key attribute)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.publish_key_ownership">publish_key_ownership() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="R" class="genindex-section">
+  <h2>R</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.reload">reload() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.renew_control_key">renew_control_key() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.renew_control_key">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.renew_control_key">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.request_join_super">request_join_super() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.request_key">request_key() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="S" class="genindex-section">
+  <h2>S</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.save_appdata">save_appdata() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.schema">schema() (walytis_identities.group_did_manager.InvitationCode class method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.serialise">serialise() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.serialise">(walytis_identities.group_did_manager.InvitationCode method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.serialise">(walytis_identities.group_did_manager.InvitationManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.serialise">(walytis_identities.key_objects.CodePackage method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.serialise_bytes">serialise_bytes() (walytis_identities.key_objects.CodePackage method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.serialise_dict">serialise_dict() (walytis_identities.group_did_manager.InvitationCode method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.serialise_private">serialise_private() (walytis_identities.key_objects.Key method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.serialise_private">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.Key.serialise_private_encrypted">serialise_private_encrypted() (walytis_identities.key_objects.Key method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.serialise_private_encrypted">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.set_custom_metadata">set_custom_metadata() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.sign">sign() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.sign">(walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.sign">(walytis_identities.did_manager_blocks.InfoBlock method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.sign">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.sign">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.sign">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.sign">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.sign">(walytis_identities.key_objects.CodePackage class method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.sign">(walytis_identities.key_objects.GenericKey method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.sign">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.sign">(walytis_identities.key_store.KeyStore static method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.signature">signature (walytis_identities.did_manager_blocks.ControlKeyBlock attribute)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.signature">(walytis_identities.did_manager_blocks.DidDocBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.signature">(walytis_identities.did_manager_blocks.InfoBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.signature">(walytis_identities.did_manager_blocks.KeyOwnershipBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.signature">(walytis_identities.did_manager_blocks.MemberJoiningBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.signature">(walytis_identities.did_manager_blocks.MemberLeavingBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.signature">(walytis_identities.did_manager_blocks.MemberUpdateBlock attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.sleep">sleep() (walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.start_conversation">start_conversation() (in module walytis_identities.datatransmission)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.start_conversation">(walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.super_id">super_id (walytis_identities.did_manager_blocks.SuperRegistrationBlock property)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.super_join_requests_handler">super_join_requests_handler() (walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.SuperExistsError">SuperExistsError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock">SuperRegistrationBlock (class in walytis_identities.did_manager_blocks)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="T" class="genindex-section">
+  <h2>T</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.terminate">terminate() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.terminate">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.terminate">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.terminate">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.terminate">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.GroupDidManager.terminate">(walytis_identities.group_did_manager.GroupDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationManager.terminate">(walytis_identities.group_did_manager.InvitationManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.terminate">(walytis_identities.group_did_manager.Member method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.terminate">(walytis_identities.key_store.KeyStore method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.to_dict">to_dict() (walytis_identities.group_did_manager.InvitationCode method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.Member.to_dict">(walytis_identities.group_did_manager.Member method)</a>
+</li>
+        </ul></li>
+        <li><a href="API-Reference/walytis_identities.group_did_manager.html#walytis_identities.group_did_manager.InvitationCode.to_json">to_json() (walytis_identities.group_did_manager.InvitationCode method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="U" class="genindex-section">
+  <h2>U</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.UnknownKeyError">UnknownKeyError</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.unlock_key">unlock_key() (walytis_identities.key_objects.CodePackage method)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.update_custom_metadata">update_custom_metadata() (walytis_identities.key_store.KeyStore method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.update_did_doc">update_did_doc() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.update_did_doc">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.update_did_doc">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="V" class="genindex-section">
+  <h2>V</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.utils.html#walytis_identities.utils.validate_did_doc">validate_did_doc() (in module walytis_identities.utils)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.datatransmission.html#walytis_identities.datatransmission.verify_challenge">verify_challenge() (in module walytis_identities.datatransmission)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.verify_control_key_update">verify_control_key_update() (in module walytis_identities.did_manager_blocks)</a>
+</li>
+        <li><a href="API-Reference/walytis_identities.did_manager.html#walytis_identities.did_manager.DidManager.verify_signature">verify_signature() (walytis_identities.did_manager.DidManager method)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.verify_signature">(walytis_identities.did_manager_blocks.ControlKeyBlock method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.verify_signature">(walytis_identities.did_manager_blocks.InfoBlock method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#walytis_identities.did_manager_with_supers.DidManagerWithSupers.verify_signature">(walytis_identities.did_manager_with_supers.DidManagerWithSupers method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#walytis_identities.generics.dm_wrapper.DidManagerWrapper.verify_signature">(walytis_identities.generics.dm_wrapper.DidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper.verify_signature">(walytis_identities.generics.gdm_wrapper.GroupDidManagerWrapper method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#walytis_identities.generics.generic_did_manager.GenericDidManager.verify_signature">(walytis_identities.generics.generic_did_manager.GenericDidManager method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.CodePackage.verify_signature">(walytis_identities.key_objects.CodePackage method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.GenericKey.verify_signature">(walytis_identities.key_objects.GenericKey method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#walytis_identities.key_objects.KeyGroup.verify_signature">(walytis_identities.key_objects.KeyGroup method)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.key_store.html#walytis_identities.key_store.KeyStore.verify_signature">(walytis_identities.key_store.KeyStore method)</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="W" class="genindex-section">
+  <h2>W</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.ControlKeyBlock.walytis_block_topic">walytis_block_topic (walytis_identities.did_manager_blocks.ControlKeyBlock attribute)</a>
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.DidDocBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.DidDocBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.InfoBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.InfoBlock property)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.KeyOwnershipBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.KeyOwnershipBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberJoiningBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.MemberJoiningBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberLeavingBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.MemberLeavingBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.MemberUpdateBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.MemberUpdateBlock attribute)</a>
+</li>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#walytis_identities.did_manager_blocks.SuperRegistrationBlock.walytis_block_topic">(walytis_identities.did_manager_blocks.SuperRegistrationBlock attribute)</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.html#module-walytis_identities">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.datatransmission
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.datatransmission.html#module-walytis_identities.datatransmission">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.did_manager
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager.html#module-walytis_identities.did_manager">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.did_manager_blocks
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_blocks.html#module-walytis_identities.did_manager_blocks">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.did_manager_with_supers
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.did_manager_with_supers.html#module-walytis_identities.did_manager_with_supers">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.exceptions
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.exceptions.html#module-walytis_identities.exceptions">module</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
+    walytis_identities.generics
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.html#module-walytis_identities.generics">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.generics.dm_wrapper
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.dm_wrapper.html#module-walytis_identities.generics.dm_wrapper">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.generics.gdm_wrapper
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.gdm_wrapper.html#module-walytis_identities.generics.gdm_wrapper">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.generics.generic_did_manager
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.generics.generic_did_manager.html#module-walytis_identities.generics.generic_did_manager">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.group_did_manager
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.group_did_manager.html#module-walytis_identities.group_did_manager">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.key_objects
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_objects.html#module-walytis_identities.key_objects">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.key_store
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.key_store.html#module-walytis_identities.key_store">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.log
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.log.html#module-walytis_identities.log">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.settings
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.settings.html#module-walytis_identities.settings">module</a>
+</li>
+        </ul></li>
+        <li>
+    walytis_identities.utils
+
+        <ul>
+          <li><a href="API-Reference/walytis_identities.utils.html#module-walytis_identities.utils">module</a>
+</li>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
+
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=2a2fe768"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

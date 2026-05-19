@@ -1,0 +1,7 @@
+walytis\_identities.exceptions module
+=====================================
+
+.. automodule:: walytis_identities.exceptions
+   :members:
+   :show-inheritance:
+   :undoc-members:

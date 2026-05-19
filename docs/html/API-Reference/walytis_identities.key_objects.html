@@ -1,0 +1,996 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
+        <title>walytis_identities.key_objects module - walytis_identities 0.5.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=25af2a20" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #2b2b2b;
+  --color-code-foreground: #f8f8f2;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../README.html"><div class="brand">walytis_identities 0.5.3 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../README.html">
+  
+  <span class="sidebar-brand-text">walytis_identities 0.5.3 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="README.html">API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API Reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/API-Reference/walytis_identities.key_objects.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="module-walytis_identities.key_objects">
+<span id="walytis-identities-key-objects-module"></span><h1>walytis_identities.key_objects module<a class="headerlink" href="#module-walytis_identities.key_objects" title="Link to this heading">¶</a></h1>
+<p>Various objects used to facilitate cryptographic operations.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">CodePackage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#walytis_identities.key_objects.GenericKey" title="walytis_identities.key_objects.GenericKey"><span class="pre">GenericKey</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">operation_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Package of encrypted data or a signature with crypto-key-metadata.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.decrypt">
+<span class="sig-name descname"><span class="pre">decrypt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.decrypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.decrypt" title="Link to this definition">¶</a></dt>
+<dd><p>Assuming self.code is a cipher, decrypt it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.deserialise">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.deserialise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.deserialise" title="Link to this definition">¶</a></dt>
+<dd><p>Instatiate a CodePackage object from a string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.deserialise_bytes">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialise_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.deserialise_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.deserialise_bytes" title="Link to this definition">¶</a></dt>
+<dd><p>Instatiate a CodePackage object from bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.encrypt">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">encrypt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_to_encrypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#walytis_identities.key_objects.GenericKey" title="walytis_identities.key_objects.GenericKey"><span class="pre">GenericKey</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">encryption_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.encrypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.encrypt" title="Link to this definition">¶</a></dt>
+<dd><p>Encrypt the provided data using the specified key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_to_encrypt</strong> (<em>bytes</em>) – the data to encrypt</p></li>
+<li><p><strong>key</strong> (<a class="reference internal" href="#walytis_identities.key_objects.Key" title="walytis_identities.key_objects.Key"><em>Key</em></a>) – the key to use to encrypt the data</p></li>
+<li><p><strong>encryption_options</strong> (<em>str</em>) – specification code for which
+encryption/decryption protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>an object containing the ciphertext, public-key,</dt><dd><p>crypto-family and encryption-options</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#walytis_identities.key_objects.CodePackage" title="walytis_identities.key_objects.CodePackage">CodePackage</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.get_key">
+<span class="sig-name descname"><span class="pre">get_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#walytis_identities.key_objects.GenericKey" title="walytis_identities.key_objects.GenericKey"><span class="pre">GenericKey</span></a></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.get_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.get_key" title="Link to this definition">¶</a></dt>
+<dd><p>Get this code package’s key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.get_key_id">
+<span class="sig-name descname"><span class="pre">get_key_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.get_key_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.get_key_id" title="Link to this definition">¶</a></dt>
+<dd><p>Get this code package’s key’s ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.serialise">
+<span class="sig-name descname"><span class="pre">serialise</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.serialise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.serialise" title="Link to this definition">¶</a></dt>
+<dd><p>Serialise this object to a string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.serialise_bytes">
+<span class="sig-name descname"><span class="pre">serialise_bytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.serialise_bytes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.serialise_bytes" title="Link to this definition">¶</a></dt>
+<dd><p>Serialise this object to bytes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.sign">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#walytis_identities.key_objects.Key" title="walytis_identities.key_objects.Key"><span class="pre">Key</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.sign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.sign" title="Link to this definition">¶</a></dt>
+<dd><p>Sign the provided data using the specified key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>bytes</em>) – the data to encrypt</p></li>
+<li><p><strong>key</strong> (<a class="reference internal" href="#walytis_identities.key_objects.Key" title="walytis_identities.key_objects.Key"><em>Key</em></a>) – the key to use to encrypt the data</p></li>
+<li><p><strong>signature_options</strong> (<em>str</em>) – specification code for which
+signing/verification protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>an object containing the ciphertext, public-key,</dt><dd><p>crypto-family and encryption-options</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#walytis_identities.key_objects.CodePackage" title="walytis_identities.key_objects.CodePackage">CodePackage</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.unlock_key">
+<span class="sig-name descname"><span class="pre">unlock_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#walytis_identities.key_objects.GenericKey" title="walytis_identities.key_objects.GenericKey"><span class="pre">GenericKey</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.unlock_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.unlock_key" title="Link to this definition">¶</a></dt>
+<dd><p>Set the key with its private key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.CodePackage.verify_signature">
+<span class="sig-name descname"><span class="pre">verify_signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#CodePackage.verify_signature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.CodePackage.verify_signature" title="Link to this definition">¶</a></dt>
+<dd><p>Verify self.code as a signature against the given signed data.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">GenericKey</span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Base class for Key and KeyGroup objects.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.clone_public">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clone_public</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.clone_public"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.clone_public" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new key object without the private key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.decrypt">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decrypt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encrypted_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encryption_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.decrypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.decrypt" title="Link to this definition">¶</a></dt>
+<dd><p>Decrypt the provided data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>encrypted_data</strong> (<em>bytes</em>) – the data to decrypt</p></li>
+<li><p><strong>encryption_options</strong> (<em>str</em>) – specification code for which
+encryption/decryption protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the decrypted data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.encrypt">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">encrypt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_to_encrypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encryption_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.encrypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.encrypt" title="Link to this definition">¶</a></dt>
+<dd><p>Encrypt the provided data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_to_encrypt</strong> (<em>bytes</em>) – the data to encrypt</p></li>
+<li><p><strong>encryption_options</strong> (<em>str</em>) – specification code for which
+encryption/decryption protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the encrypted data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.from_id">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.from_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.from_id" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiate given a key ID.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key_id</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.get_id">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.get_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.get_id" title="Link to this definition">¶</a></dt>
+<dd><p>Get this key’s ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.is_unlocked">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_unlocked</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.is_unlocked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.is_unlocked" title="Link to this definition">¶</a></dt>
+<dd><p>Check whether we have this key’s private key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.sign">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.sign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.sign" title="Link to this definition">¶</a></dt>
+<dd><p>Sign the provided data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>bytes</em>) – the data to sign</p></li>
+<li><p><strong>signature_options</strong> (<em>str</em>) – specification code for which
+signature/verification protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the signature</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.GenericKey.verify_signature">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">verify_signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#GenericKey.verify_signature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.GenericKey.verify_signature" title="Link to this definition">¶</a></dt>
+<dd><p>Verify the given signature of the given data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signature</strong> (<em>bytes</em>) – the signaure to verify</p></li>
+<li><p><strong>data</strong> (<em>bytes</em>) – the data to sign</p></li>
+<li><p><strong>signature_options</strong> (<em>str</em>) – specification code for which
+signature/verification protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>whether or not the signature matches the data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">Key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">family</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">public_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">private_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creation_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Crypt</span></code>, <a class="reference internal" href="#walytis_identities.key_objects.GenericKey" title="walytis_identities.key_objects.GenericKey"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericKey</span></code></a></p>
+<p>Represents a set of cryptographic keys, compatible with DID specs.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.clone_public">
+<span class="sig-name descname"><span class="pre">clone_public</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.clone_public"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.clone_public" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new key object without the private key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.create">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">family</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.create"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.create" title="Link to this definition">¶</a></dt>
+<dd><p>Initialise a Key from a DID key spec from a DID document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>family</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.creation_time">
+<span class="sig-name descname"><span class="pre">creation_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#walytis_identities.key_objects.Key.creation_time" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.deserialise_private">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialise_private</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.deserialise_private"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.deserialise_private" title="Link to this definition">¶</a></dt>
+<dd><p>Deserialise data with private key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.deserialise_private_encrypted">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialise_private_encrypted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Crypt</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.deserialise_private_encrypted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.deserialise_private_encrypted" title="Link to this definition">¶</a></dt>
+<dd><p>Deserialise data with encrypted private key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – The description is missing.</p></li>
+<li><p><strong>crypt</strong> – The description is missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.family">
+<span class="sig-name descname"><span class="pre">family</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#walytis_identities.key_objects.Key.family" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.from_crypt">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_crypt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Crypt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creation_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.from_crypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.from_crypt" title="Link to this definition">¶</a></dt>
+<dd><p>Create a Key object from a Crypt object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>crypt</strong> – The description is missing.</p></li>
+<li><p><strong>creation_time</strong> – The description is missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.from_id">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.from_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.from_id" title="Link to this definition">¶</a></dt>
+<dd><p>Initialise a Key from a key ID generated by this class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key_id</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.from_key_spec">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_key_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.from_key_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.from_key_spec" title="Link to this definition">¶</a></dt>
+<dd><p>Initialise a Key from a DID key spec from a DID document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key_spec</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.generate_key_spec">
+<span class="sig-name descname"><span class="pre">generate_key_spec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">controller</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.generate_key_spec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.generate_key_spec" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a key spec for a DID document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>controller</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.get_id">
+<span class="sig-name descname"><span class="pre">get_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.get_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.get_id" title="Link to this definition">¶</a></dt>
+<dd><p>Get this key’s ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.get_private_key">
+<span class="sig-name descname"><span class="pre">get_private_key</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.get_private_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.get_private_key" title="Link to this definition">¶</a></dt>
+<dd><p>Get the private key as a hex string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.is_unlocked">
+<span class="sig-name descname"><span class="pre">is_unlocked</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.is_unlocked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.is_unlocked" title="Link to this definition">¶</a></dt>
+<dd><p>Check whether we have this key’s private key.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.private_key">
+<span class="sig-name descname"><span class="pre">private_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#walytis_identities.key_objects.Key.private_key" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.public_key">
+<span class="sig-name descname"><span class="pre">public_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span></em><a class="headerlink" href="#walytis_identities.key_objects.Key.public_key" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.serialise_private">
+<span class="sig-name descname"><span class="pre">serialise_private</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.serialise_private"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.serialise_private" title="Link to this definition">¶</a></dt>
+<dd><p>Serialise this key’s data, including the private key encrypted.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.Key.serialise_private_encrypted">
+<span class="sig-name descname"><span class="pre">serialise_private_encrypted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Crypt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_missing_private_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#Key.serialise_private_encrypted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.Key.serialise_private_encrypted" title="Link to this definition">¶</a></dt>
+<dd><p>Serialise this key’s data, including the private key encrypted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>crypt</strong> – The description is missing.</p></li>
+<li><p><strong>allow_missing_private_key</strong> – The description is missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">KeyGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#walytis_identities.key_objects.Key" title="walytis_identities.key_objects.Key"><span class="pre">Key</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#walytis_identities.key_objects.GenericKey" title="walytis_identities.key_objects.GenericKey"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericKey</span></code></a></p>
+<p>A composite key, consisting of multiple keys.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.clone_public">
+<span class="sig-name descname"><span class="pre">clone_public</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup" title="walytis_identities.key_objects.KeyGroup"><span class="pre">KeyGroup</span></a></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.clone_public"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.clone_public" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new key object without the private key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.create">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_families</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.create"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.create" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new composite key with newly generated keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key_families</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.decrypt">
+<span class="sig-name descname"><span class="pre">decrypt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encrypted_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encryption_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.decrypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.decrypt" title="Link to this definition">¶</a></dt>
+<dd><p>Decrypt the provided data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>encrypted_data</strong> (<em>bytes</em>) – the data to decrypt</p></li>
+<li><p><strong>encryption_options</strong> (<em>str</em>) – specification code for which
+encryption/decryption protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the decrypted data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.deserialise_private">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialise_private</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.deserialise_private"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.deserialise_private" title="Link to this definition">¶</a></dt>
+<dd><p>Deserialise data with private keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.deserialise_private_encrypted">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">deserialise_private_encrypted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Crypt</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.deserialise_private_encrypted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.deserialise_private_encrypted" title="Link to this definition">¶</a></dt>
+<dd><p>Deserialise data with encrypted private keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – The description is missing.</p></li>
+<li><p><strong>crypt</strong> – The description is missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.encrypt">
+<span class="sig-name descname"><span class="pre">encrypt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_to_encrypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encryption_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.encrypt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.encrypt" title="Link to this definition">¶</a></dt>
+<dd><p>Encrypt the provided data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_to_encrypt</strong> (<em>bytes</em>) – the data to encrypt</p></li>
+<li><p><strong>encryption_options</strong> (<em>str</em>) – specification code for which
+encryption/decryption protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the encrypted data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.from_id">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_key_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.from_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.from_id" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiate given a key ID.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>group_key_id</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.from_key_specs">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_key_specs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.from_key_specs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.from_key_specs" title="Link to this definition">¶</a></dt>
+<dd><p>Instantiate from a DID-Document key-spec.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key_spec</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.generate_key_specs">
+<span class="sig-name descname"><span class="pre">generate_key_specs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">controller</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.generate_key_specs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.generate_key_specs" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a key spec for a DID document.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>controller</strong> – The description is missing.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.get_id">
+<span class="sig-name descname"><span class="pre">get_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.get_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.get_id" title="Link to this definition">¶</a></dt>
+<dd><p>Get this key’s ID.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.get_ids">
+<span class="sig-name descname"><span class="pre">get_ids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.get_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.get_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Get the IDs of the keys comprising this KeyGroup.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.get_keys">
+<span class="sig-name descname"><span class="pre">get_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#walytis_identities.key_objects.Key" title="walytis_identities.key_objects.Key"><span class="pre">Key</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.get_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.get_keys" title="Link to this definition">¶</a></dt>
+<dd><p>Get the key objects comprising this KeyGroup.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.is_unlocked">
+<span class="sig-name descname"><span class="pre">is_unlocked</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.is_unlocked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.is_unlocked" title="Link to this definition">¶</a></dt>
+<dd><p>Check whether we have this key’s private key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.serialise_private">
+<span class="sig-name descname"><span class="pre">serialise_private</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.serialise_private"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.serialise_private" title="Link to this definition">¶</a></dt>
+<dd><p>Serialise this key, including its private keys.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.serialise_private_encrypted">
+<span class="sig-name descname"><span class="pre">serialise_private_encrypted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crypt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Crypt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_missing_private_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.serialise_private_encrypted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.serialise_private_encrypted" title="Link to this definition">¶</a></dt>
+<dd><p>Serialise this key encryptedly, including its private keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>crypt</strong> – The description is missing.</p></li>
+<li><p><strong>allow_missing_private_key</strong> – The description is missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.sign">
+<span class="sig-name descname"><span class="pre">sign</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.sign"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.sign" title="Link to this definition">¶</a></dt>
+<dd><p>Sign the provided data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>bytes</em>) – the data to sign</p></li>
+<li><p><strong>signature_options</strong> (<em>str</em>) – specification code for which
+signature/verification protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the signature</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyGroup.verify_signature">
+<span class="sig-name descname"><span class="pre">verify_signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signature</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyGroup.verify_signature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyGroup.verify_signature" title="Link to this definition">¶</a></dt>
+<dd><p>Verify the given signature of the given data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signature</strong> (<em>bytes</em>) – the signaure to verify</p></li>
+<li><p><strong>data</strong> (<em>bytes</em>) – the data to sign</p></li>
+<li><p><strong>signature_options</strong> (<em>str</em>) – specification code for which
+signature/verification protocol should be used</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>whether or not the signature matches the data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.KeyLockedError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">KeyLockedError</span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#KeyLockedError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.KeyLockedError" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>When an error is caused by a Key being locked.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.decode_keygroup_id">
+<span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">decode_keygroup_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group_key_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#decode_keygroup_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.decode_keygroup_id" title="Link to this definition">¶</a></dt>
+<dd><p>Extract the individual key IDs from a KeyGroup ID.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.generate_key_id">
+<span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">generate_key_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">family</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">public_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creation_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#generate_key_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.generate_key_id" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a key ID from metadata.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="walytis_identities.key_objects.generic_key_from_id">
+<span class="sig-prename descclassname"><span class="pre">walytis_identities.key_objects.</span></span><span class="sig-name descname"><span class="pre">generic_key_from_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#walytis_identities.key_objects.Key" title="walytis_identities.key_objects.Key"><span class="pre">Key</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup" title="walytis_identities.key_objects.KeyGroup"><span class="pre">KeyGroup</span></a></span></span><a class="reference internal" href="../_modules/walytis_identities/key_objects.html#generic_key_from_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#walytis_identities.key_objects.generic_key_from_id" title="Link to this definition">¶</a></dt>
+<dd><p>Get a Key or KeyGroup object given a key ID.</p>
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">walytis_identities.key_objects module</a><ul>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage"><code class="docutils literal notranslate"><span class="pre">CodePackage</span></code></a><ul>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.decrypt"><code class="docutils literal notranslate"><span class="pre">CodePackage.decrypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.deserialise"><code class="docutils literal notranslate"><span class="pre">CodePackage.deserialise()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.deserialise_bytes"><code class="docutils literal notranslate"><span class="pre">CodePackage.deserialise_bytes()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.encrypt"><code class="docutils literal notranslate"><span class="pre">CodePackage.encrypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.get_key"><code class="docutils literal notranslate"><span class="pre">CodePackage.get_key()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.get_key_id"><code class="docutils literal notranslate"><span class="pre">CodePackage.get_key_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.serialise"><code class="docutils literal notranslate"><span class="pre">CodePackage.serialise()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.serialise_bytes"><code class="docutils literal notranslate"><span class="pre">CodePackage.serialise_bytes()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.sign"><code class="docutils literal notranslate"><span class="pre">CodePackage.sign()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.unlock_key"><code class="docutils literal notranslate"><span class="pre">CodePackage.unlock_key()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.CodePackage.verify_signature"><code class="docutils literal notranslate"><span class="pre">CodePackage.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey"><code class="docutils literal notranslate"><span class="pre">GenericKey</span></code></a><ul>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.clone_public"><code class="docutils literal notranslate"><span class="pre">GenericKey.clone_public()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.decrypt"><code class="docutils literal notranslate"><span class="pre">GenericKey.decrypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.encrypt"><code class="docutils literal notranslate"><span class="pre">GenericKey.encrypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.from_id"><code class="docutils literal notranslate"><span class="pre">GenericKey.from_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.get_id"><code class="docutils literal notranslate"><span class="pre">GenericKey.get_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.is_unlocked"><code class="docutils literal notranslate"><span class="pre">GenericKey.is_unlocked()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.sign"><code class="docutils literal notranslate"><span class="pre">GenericKey.sign()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.GenericKey.verify_signature"><code class="docutils literal notranslate"><span class="pre">GenericKey.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key"><code class="docutils literal notranslate"><span class="pre">Key</span></code></a><ul>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.clone_public"><code class="docutils literal notranslate"><span class="pre">Key.clone_public()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.create"><code class="docutils literal notranslate"><span class="pre">Key.create()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.creation_time"><code class="docutils literal notranslate"><span class="pre">Key.creation_time</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.deserialise_private"><code class="docutils literal notranslate"><span class="pre">Key.deserialise_private()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.deserialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">Key.deserialise_private_encrypted()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.family"><code class="docutils literal notranslate"><span class="pre">Key.family</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.from_crypt"><code class="docutils literal notranslate"><span class="pre">Key.from_crypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.from_id"><code class="docutils literal notranslate"><span class="pre">Key.from_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.from_key_spec"><code class="docutils literal notranslate"><span class="pre">Key.from_key_spec()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.generate_key_spec"><code class="docutils literal notranslate"><span class="pre">Key.generate_key_spec()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.get_id"><code class="docutils literal notranslate"><span class="pre">Key.get_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.get_private_key"><code class="docutils literal notranslate"><span class="pre">Key.get_private_key()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.is_unlocked"><code class="docutils literal notranslate"><span class="pre">Key.is_unlocked()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.private_key"><code class="docutils literal notranslate"><span class="pre">Key.private_key</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.public_key"><code class="docutils literal notranslate"><span class="pre">Key.public_key</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.serialise_private"><code class="docutils literal notranslate"><span class="pre">Key.serialise_private()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.Key.serialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">Key.serialise_private_encrypted()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup"><code class="docutils literal notranslate"><span class="pre">KeyGroup</span></code></a><ul>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.clone_public"><code class="docutils literal notranslate"><span class="pre">KeyGroup.clone_public()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.create"><code class="docutils literal notranslate"><span class="pre">KeyGroup.create()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.decrypt"><code class="docutils literal notranslate"><span class="pre">KeyGroup.decrypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.deserialise_private"><code class="docutils literal notranslate"><span class="pre">KeyGroup.deserialise_private()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.deserialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">KeyGroup.deserialise_private_encrypted()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.encrypt"><code class="docutils literal notranslate"><span class="pre">KeyGroup.encrypt()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.from_id"><code class="docutils literal notranslate"><span class="pre">KeyGroup.from_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.from_key_specs"><code class="docutils literal notranslate"><span class="pre">KeyGroup.from_key_specs()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.generate_key_specs"><code class="docutils literal notranslate"><span class="pre">KeyGroup.generate_key_specs()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.get_id"><code class="docutils literal notranslate"><span class="pre">KeyGroup.get_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.get_ids"><code class="docutils literal notranslate"><span class="pre">KeyGroup.get_ids()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.get_keys"><code class="docutils literal notranslate"><span class="pre">KeyGroup.get_keys()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.is_unlocked"><code class="docutils literal notranslate"><span class="pre">KeyGroup.is_unlocked()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.serialise_private"><code class="docutils literal notranslate"><span class="pre">KeyGroup.serialise_private()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.serialise_private_encrypted"><code class="docutils literal notranslate"><span class="pre">KeyGroup.serialise_private_encrypted()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.sign"><code class="docutils literal notranslate"><span class="pre">KeyGroup.sign()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyGroup.verify_signature"><code class="docutils literal notranslate"><span class="pre">KeyGroup.verify_signature()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.KeyLockedError"><code class="docutils literal notranslate"><span class="pre">KeyLockedError</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.decode_keygroup_id"><code class="docutils literal notranslate"><span class="pre">decode_keygroup_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.generate_key_id"><code class="docutils literal notranslate"><span class="pre">generate_key_id()</span></code></a></li>
+<li><a class="reference internal" href="#walytis_identities.key_objects.generic_key_from_id"><code class="docutils literal notranslate"><span class="pre">generic_key_from_id()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=2a2fe768"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

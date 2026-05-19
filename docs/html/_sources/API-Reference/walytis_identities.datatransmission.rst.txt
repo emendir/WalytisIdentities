@@ -1,0 +1,7 @@
+walytis\_identities.datatransmission module
+===========================================
+
+.. automodule:: walytis_identities.datatransmission
+   :members:
+   :show-inheritance:
+   :undoc-members:
