@@ -46,7 +46,7 @@ def run_tests() -> None:
         command = (
             f"{sys.executable} -m pytest {test_file} {' '.join(pytest_args)} "
         )
-        if sys.version_info.minor > ADV_PYTEST_PY_VER[1]:
+        if sys.version_info.minor >= ADV_PYTEST_PY_VER[1]:
             command += (
                 f"--html={html_path} "
                 f"--json={json_path} "

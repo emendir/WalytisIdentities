@@ -103,7 +103,9 @@ if True:
     #     override=True,
     # )
     print("IPFS_TK_MODE", os.environ.get("IPFS_TK_MODE"))
-    set_env_var("WALY_LOG_DIR", "/opt/log", override=False)
+    if os.path.exists("/opt/log"):
+        set_env_var("Brenthy_LOG_DIR", "/opt/log/Brenthy", override=False)
+        set_env_var("WALY_LOG_DIR", "/opt/log", override=False)
     import walytis_beta_api
     import walytis_beta_embedded
     from brenthy_tools_beta import BrenthyNotRunningError, brenthy_api
